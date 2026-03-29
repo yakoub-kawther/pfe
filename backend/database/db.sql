@@ -82,12 +82,11 @@ id int auto_increment primary key ,
 name varchar(50));*/
     
 
-/*ALTER TABLE account
-ADD CONSTRAINT one_person_only
+/*ADD CONSTRAINT one_person_only
 CHECK (
-    (student_id IS NOT NULL) +
-    (employee_id IS NOT NULL) = 1
-);*/
+    (student_id IS NOT NULL AND employee_id IS NULL)
+    OR
+    (student_id IS NULL AND employee_id IS NOT NULL)*/
 
 
 /*CREATE TABLE level (
