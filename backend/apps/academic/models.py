@@ -54,7 +54,7 @@ class Class(models.Model):
 
 
 class Schedule(models.Model):
-    class_obj  = models.ForeignKey(Class, on_delete=models.CASCADE)
+    class_id  = models.ForeignKey(Class, on_delete=models.CASCADE)
     classroom  = models.ForeignKey(Classroom, on_delete=models.RESTRICT)
     day_of_week = models.CharField(max_length=20)
     start_time = models.TimeField()
@@ -64,7 +64,7 @@ class Schedule(models.Model):
         db_table = 'schedule'
 
     def __str__(self):
-        return f"{self.class_obj} - {self.day_of_week}"
+        return f"{self.class_id} - {self.day_of_week}"
 
 
 class Session(models.Model):

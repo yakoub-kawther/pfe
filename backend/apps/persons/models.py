@@ -1,4 +1,5 @@
 from django.db import models
+from django.forms import ValidationError
 from apps.academic.models import Language , Position
 
 
@@ -25,6 +26,18 @@ class Student(models.Model):
     date_of_birth = models.DateField()
     special_case  = models.CharField(max_length=255, null=True, blank=True)
 
+
+    def clean(self):
+        # Student cannot be a parent or employee
+        if Parent.objects.filter(person=self.person).exists():
+            raise ValidationError("This person is already a parent.")
+        if Employee.objects.filter(person=self.person).exists():
+            raise ValidationError("This person is already an employee.")
+
+    def save(self, *args, **kwargs):
+        self.clean()
+        super().save(*args, **kwargs)
+
     class Meta:
         db_table = 'student'
 
@@ -40,6 +53,16 @@ class Parent(models.Model):
         ('other','Other')
     ])
     students     = models.ManyToManyField(Student, through='ParentStudent')
+
+
+    def clean(self):
+        # Parent cannot be a student
+        if Student.objects.filter(person=self.person).exists():
+            raise ValidationError("This person is already a student.")
+
+    def save(self, *args, **kwargs):
+        self.clean()
+        super().save(*args, **kwargs)
 
     class Meta:
         db_table = 'parent'
@@ -72,6 +95,16 @@ class Employee(models.Model):
         ('inactive','Inactive')
     ], default='active')
     position  = models.ForeignKey(Position, on_delete=models.SET_NULL, null=True)
+
+
+    def clean(self):
+        # Employee cannot be a student
+        if Student.objects.filter(person=self.person).exists():
+            raise ValidationError("This person is already a student.")
+
+    def save(self, *args, **kwargs):
+        self.clean()
+        super().save(*args, **kwargs)
 
     class Meta:
         db_table = 'employee'
