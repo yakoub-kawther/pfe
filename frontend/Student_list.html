@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Students Dashboard — ZKY Lingua</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+
+<body class="bg-[#fffafe] text-[#701366] min-h-screen">
+
+  <div class="flex min-h-screen">
+
+   <!-- ===== SIDEBAR ===== -->
+ <aside class="fixed top-0 left-0 w-40 h-screen bg-[#F8E0F8] rounded-tr-2xl rounded-br-1.5xl flex flex-col justify-between py-3 px-2">
+
+  <!-- TOP -->
+  <div>
+    <!-- Logo -->
+    <div class="flex flex-col items-start mb-3">
+      <span class="text-4xl font-item text-[#701366] leading-none">ZKY</span>
+      <span class="text-[11px] tracking-widest">LINGUA</span>
+    </div>
+
+    <!-- Navigation -->
+    <nav class="flex flex-col gap-0">
+
+      <a class="flex items-center gap-2 px-2 py-1.5 text-[11.5px] rounded-lg text-[#701366] hover:bg-white/50">
+        <i data-lucide="layout-dashboard" class="w-4 h-4"></i>
+        Dashboard
+      </a>
+
+      <a class="flex items-center gap-2 px-2 py-1.5 text-[11.5px] rounded-lg text-[#701366] hover:bg-white/50">
+        <i data-lucide="graduation-cap" class="w-4 h-4"></i>
+        Teachers
+      </a>
+
+      <a class="flex items-center gap-2 px-2 py-1.5 text-[11.5px] rounded-lg text-[#701366] hover:bg-white/50">
+        <i data-lucide="users" class="w-4 h-4"></i>
+        Students
+      </a>
+
+      <a class="flex items-center gap-2 px-2 py-1.5 text-[11.5px] rounded-lg text-[#701366] hover:bg-white/50">
+        <i data-lucide="briefcase" class="w-4 h-4"></i>
+        Employees
+      </a>
+
+      <a class="flex items-center gap-2 px-2 py-1.5 text-[11.5px] rounded-lg text-[#701366] hover:bg-white/50">
+        <i data-lucide="book-open" class="w-4 h-4"></i>
+        Classes
+      </a>
+
+      <a class="flex items-center gap-2 px-2 py-1.5 text-[11.5px] rounded-lg text-[#701366] hover:bg-white/50">
+        <i data-lucide="credit-card" class="w-4 h-4"></i>
+        Fees
+      </a>
+
+      <a class="flex items-center gap-2 px-2 py-1.5 text-[11.5px] rounded-lg text-[#701366] hover:bg-white/50">
+        <i data-lucide="calendar" class="w-4 h-4"></i>
+        Time Table
+      </a>
+
+      <a class="flex items-center gap-2 px-2 py-1.5 text-[11.5px] rounded-lg text-[#701366] hover:bg-white/50">
+        <i data-lucide="bell" class="w-4 h-4"></i>
+        Notifications
+      </a>
+
+      <a class="flex items-center gap-2 px-2 py-1.5 text-[11.5px] rounded-lg text-[#701366] hover:bg-white/50">
+        <i data-lucide="bar-chart-3" class="w-4 h-4"></i>
+        Reports
+      </a>
+
+      <a class="flex items-center gap-2 px-2 py-1.5 text-[11.5px] rounded-lg text-[#701366] hover:bg-white/50">
+        <i data-lucide="settings" class="w-4 h-4"></i>
+        Settings
+      </a>
+
+    </nav>
+  </div>
+
+  <!-- BOTTOM -->
+  <div class="flex flex-col items-center gap-0.5">
+
+    <img src="images/Support.svg" class="w-24">
+
+    <button class="w-full flex items-center justify-center gap-2 bg-[#701366] text-white text-[12px] hover:bg-[#f8b2ea] py-1 rounded-lg">
+      <i data-lucide="log-out" class="w-4 h-4"></i>
+      Log Out
+    </button>
+
+  </div>
+
+</aside>
+  <!-- ===== MAIN ===== -->
+  <main class="flex-1 ml-40 flex flex-col min-h-screen px-7 pb-7">
+
+    <!-- Top Bar -->
+    <header class="flex items-center justify-end py-4 mb-2">
+      <div class="flex items-center gap-3">
+
+        <!-- Notification Bell -->
+        <button
+          aria-label="Notifications"
+          class="relative w-9 h-9 flex items-center justify-center rounded-full bg-white shadow-sm text-[#701366]  hover:text-white hover:bg-[#701366] transition-all duration-150 hover:scale-105"
+        >
+          <i data-lucide="bell" class="w-5 h-5"></i>
+          <span class="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full border-2 border-white"></span>
+        </button>
+
+        <!-- Settings -->
+        <button
+          aria-label="Settings"
+          class="w-9 h-9 flex items-center justify-center rounded-full bg-white shadow-sm text-[#701366]  hover:text-white hover:bg-[#701366] transition-all duration-150 hover:scale-105"
+        >
+          <i data-lucide="settings" class="w-5 h-5"></i>
+        </button>
+
+      </div>
+    </header>
+
+    <!-- Page Header -->
+    <div class="flex items-center justify-between mb-5 flex-wrap gap-3">
+        <h2 class="text-2xl font-item text-[#701366]">All Students List</h2>
+
+      <div class="flex items-center gap-2">
+
+        <!-- Search -->
+        <div class="relative flex items-center">
+          <i data-lucide="search" class=" absolute left-3 w-4 h-4 text-[#701366]  font-item  pointer-events-none"></i>
+          <input
+            type="text"
+            id="searchInput"
+            placeholder="Search by Name, Parent's Name, Phone"
+            class="pl-9 pr-4 py-2 rounded-full border border-[#701366] bg-white text-sm font-item w-64 outline-none focus:border-[#701366] focus:ring-2 focus:ring-purple-100 transition-all placeholder:text-gray-300"
+          >
+        </div>
+
+        <!-- Filter Button -->
+        <button
+          aria-label="Filter"
+          class="w-9 h-9 flex items-center justify-center rounded-xl border border-[#701366] bg-white text-[#701366] hover:bg-[#701366]  hover:border-[#701366] hover:text-white transition-all duration-150"
+        >
+          <i data-lucide="sliders-horizontal" class="w-4 h-4"></i>
+        </button>
+
+        <!-- Add Button -->
+         <a href="Add_student.html"
+           class=" border border-[#701366] w-9 h-9 flex items-center justify-center rounded-xl bg-[#701366]  text-white hover:bg-white hover:text-[#701366] hover:border-[#701366] transition-all duration-150 hover:scale-110">
+
+           <i data-lucide="plus" class="w-4 h-4"></i>
+          </a>
+
+      </div>
+    </div>
+
+    <!-- Table Card -->
+    <div class="bg-white rounded-2xl shadow-sm overflow-hidden">
+      <table class="w-full text-sm" id="studentsTable">
+
+        <thead>
+          <tr class="bg-[#F8E0F8] text-[#701366] font-item text-left">
+            <th class="px-4 py-3 text-sm font-item">Name</th>
+            <th class="px-4 py-3 text-sm font-item">Contact</th>
+            <th class="px-4 py-3 text-sm font-item">Parent Name</th>
+            <th class="px-4 py-3 text-sm font-item">Statut</th>
+            <th class="px-4 py-3 text-sm font-item">Attendance</th>
+            <th class="px-4 py-3 text-sm font-item">Languages</th>
+            <th class="px-4 py-3 text-sm font-item">Action</th>
+          </tr>
+        </thead>
+
+        <tbody id="tableBody" class="divide-y divide-[#f8e0f8]">
+
+          <tr class="hover:bg-[#fffafe] font-item transition-colors duration-100 student-row">
+            <td class="px-4 py-3 font-item text-[#701366]">Yousra zt</td>
+            <td class="px-4 py-3 text-[#701366]">0669905547</td>
+            <td class="px-4 py-3 text-[#701366]">abdou zt</td>
+            <td class="px-4 py-3"><span class="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium bg-green-100 text-green-600">● Active</span></td>
+            <td class="px-4 py-3 font-item text-green-600">100%</td>
+            <td class="px-4 py-3 text-[#701366]">3</td>
+            <td class="px-4 py-3">
+              <div class="flex items-center gap-2">
+                <button aria-label="Edit"  class="p-1.5 rounded-lg text-[#701366] hover:text-white hover:bg-[#701366] transition-all hover:scale-110"><i data-lucide="square-pen" class="w-4 h-4"></i></button>
+                <button aria-label="More"  class="p-1.5 rounded-lg text-[#701366] hover:text-white hover:bg-[#701366] transition-all hover:scale-110"><i data-lucide="layout-grid" class="w-4 h-4"></i></button>
+              </div>
+            </td>
+          </tr>
+
+          <tr class="hover:bg-[#fffafe]  transition-colors duration-100 student-row">
+            <td class="px-4 py-3 font-item text-[#701366]">Liam Smith</td>
+            <td class="px-4 py-3 text-[#701366]">05555555</td>
+            <td class="px-4 py-3 text-[#701366]">john smith</td>
+            <td class="px-4 py-3"><span class="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-600">● Graduated</span></td>
+            <td class="px-4 py-3 font-item text-red-500">20%</td>
+            <td class="px-4 py-3 text-[#701366]">2</td>
+            <td class="px-4 py-3">
+              <div class="flex items-center gap-2">
+                 <button aria-label="Edit"  class="p-1.5 rounded-lg text-[#701366] hover:text-white hover:bg-[#701366] transition-all hover:scale-110"><i data-lucide="square-pen" class="w-4 h-4"></i></button>
+                <button aria-label="More"  class="p-1.5 rounded-lg text-[#701366] hover:text-white hover:bg-[#701366] transition-all hover:scale-110"><i data-lucide="layout-grid" class="w-4 h-4"></i></button>
+              </div>
+            </td>
+          </tr>
+
+          <tr class="hover:bg-[#fffafe]  transition-colors duration-100 student-row">
+            <td class="px-4 py-3 font-item text-[#701366]">Emma Brown</td>
+            <td class="px-4 py-3 text-[#701366]">07777777</td>
+            <td class="px-4 py-3 text-[#701366]">brown family</td>
+            <td class="px-4 py-3"><span class="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium bg-red-100 text-red-600">● Inactive</span></td>
+            <td class="px-4 py-3 font-item text-yellow-500">70%</td>
+            <td class="px-4 py-3 text-[#701366]">4</td>
+            <td class="px-4 py-3">
+              <div class="flex items-center gap-2">
+                 <button aria-label="Edit"  class="p-1.5 rounded-lg text-[#701366] hover:text-white hover:bg-[#701366] transition-all hover:scale-110"><i data-lucide="square-pen" class="w-4 h-4"></i></button>
+                <button aria-label="More"  class="p-1.5 rounded-lg text-[#701366] hover:text-white hover:bg-[#701366] transition-all hover:scale-110"><i data-lucide="layout-grid" class="w-4 h-4"></i></button>
+              </div>
+            </td>
+          </tr>
+
+          <tr class="hover:bg-[#fffafe]  transition-colors duration-100 student-row">
+            <td class="px-4 py-3 font-item text-[#701366]">Noah Martin</td>
+            <td class="px-4 py-3 text-[#701366]">06612345</td>
+            <td class="px-4 py-3 text-[#701366]">martin family</td>
+            <td class="px-4 py-3"><span class="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium bg-green-100 text-green-600">● Active</span></td>
+            <td class="px-4 py-3 font-item text-yellow-500">40%</td>
+            <td class="px-4 py-3 text-[#701366]">3</td>
+            <td class="px-4 py-3">
+              <div class="flex items-center gap-2">
+                <button aria-label="Edit"   class="p-1.5 rounded-lg text-[#701366] hover:text-white hover:bg-[#701366] transition-all hover:scale-110"><i data-lucide="square-pen" class="w-4 h-4"></i></button>
+                <button aria-label="More"   class="p-1.5 rounded-lg text-[#701366] hover:text-white hover:bg-[#701366] transition-all hover:scale-110"><i data-lucide="layout-grid" class="w-4 h-4"></i></button>
+              </div>
+            </td>
+          </tr>
+
+          <tr class="hover:bg-[#fffafe]  transition-colors duration-100 student-row">
+            <td class="px-4 py-3 font-item text-[#701366]">Olivia Davis</td>
+            <td class="px-4 py-3 text-[#701366]">06789123</td>
+            <td class="px-4 py-3 text-[#701366]">davis family</td>
+            <td class="px-4 py-3"><span class="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-600">● Graduated</span></td>
+            <td class="px-4 py-3 font-item text-red-500">20%</td>
+            <td class="px-4 py-3 text-[#701366]">5</td>
+            <td class="px-4 py-3">
+              <div class="flex items-center gap-2">
+                <button aria-label="Edit"   class="p-1.5 rounded-lg text-[#701366] hover:text-white hover:bg-[#701366] transition-all hover:scale-110"><i data-lucide="square-pen" class="w-4 h-4"></i></button>
+                <button aria-label="More"   class="p-1.5 rounded-lg text-[#701366] hover:text-white hover:bg-[#701366] transition-all hover:scale-110"><i data-lucide="layout-grid" class="w-4 h-4"></i></button>
+              </div>
+            </td>
+          </tr>
+
+          <tr class="hover:bg-[#fffafe]  transition-colors duration-100 student-row">
+            <td class="px-4 py-3 font-item text-[#701366]">James Lee</td>
+            <td class="px-4 py-3 text-[#701366]">06123456</td>
+            <td class="px-4 py-3 text-[#701366]">lee family</td>
+            <td class="px-4 py-3"><span class="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium bg-red-100 text-red-600">● Inactive</span></td>
+            <td class="px-4 py-3 font-item text-yellow-500">70%</td>
+            <td class="px-4 py-3 text-[#701366]">2</td>
+            <td class="px-4 py-3">
+              <div class="flex items-center gap-2">
+                <button aria-label="Edit"   class="p-1.5 rounded-lg text-[#701366] hover:text-white hover:bg-[#701366] transition-all hover:scale-110"><i data-lucide="square-pen" class="w-4 h-4"></i></button>
+                <button aria-label="More"   class="p-1.5 rounded-lg text-[#701366] hover:text-white hover:bg-[#701366] transition-all hover:scale-110"><i data-lucide="layout-grid" class="w-4 h-4"></i></button>
+              </div>
+            </td>
+          </tr>
+
+          <tr class="hover:bg-[#fffafe]  transition-colors duration-100 student-row">
+            <td class="px-4 py-3 font-item text-[#701366]">Ava Johnson</td>
+            <td class="px-4 py-3 text-[#701366]">06987654</td>
+            <td class="px-4 py-3 text-[#701366]">johnson family</td>
+            <td class="px-4 py-3"><span class="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium bg-green-100 text-green-600">● Active</span></td>
+            <td class="px-4 py-3 font-item text-yellow-500">40%</td>
+            <td class="px-4 py-3 text-[#701366]">3</td>
+            <td class="px-4 py-3">
+              <div class="flex items-center gap-2">
+                <button aria-label="Edit"   class="p-1.5 rounded-lg text-[#701366] hover:text-white hover:bg-[#701366] transition-all hover:scale-110"><i data-lucide="square-pen" class="w-4 h-4"></i></button>
+                <button aria-label="More"   class="p-1.5 rounded-lg text-[#701366] hover:text-white hover:bg-[#701366] transition-all hover:scale-110"><i data-lucide="layout-grid" class="w-4 h-4"></i></button>
+              </div>
+            </td>
+          </tr>
+
+        </tbody>
+      </table>
+    </div>
+
+  </main>
+</div>
+
+<script src="https://unpkg.com/lucide@latest"></script>
+<script>
+  lucide.createIcons();
+
+</script>
+
+</body>
+</html>
+
+
