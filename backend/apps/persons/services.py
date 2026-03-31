@@ -7,40 +7,21 @@ from datetime import date
 from .models import Person, Student, Parent, ParentStudent, Employee, Teacher
 
 
-MINOR_AGE_LIMIT = 18
 
 
-# ──────────────────────────────
-# VALIDATION UTILITIES
-# ──────────────────────────────
-
-def validate_person_data(data):
-    """Ensure phone and email are unique."""
-    if Person.objects.filter(phone=data.get('phone')).exists():
-        raise ValidationError("Phone number already exists.")
-    if data.get('email') and Person.objects.filter(email=data['email']).exists():
-        raise ValidationError("Email already exists.")
 
 
-def calculate_age(birth_date):
-    """Calculate age based on birth date."""
-    today = date.today()
-    return today.year - birth_date.year - ((today.month, today.day) < (birth_date.month, birth_date.day))
 
 
-def validate_hire_date(data):
-    """Ensure hire_date is provided for employees."""
-    if not data.get('hire_date'):
-        raise ValidationError("Hire date is required.")
 
 
-# ──────────────────────────────
-# PERSON CREATION
-# ──────────────────────────────
+
+
+
 
 def create_person(data):
-    """Validate and create a Person record."""
-    validate_person_data(data)
+    
+    
     return Person.objects.create(
         first_name=data['first_name'],
         last_name=data['last_name'],
@@ -51,16 +32,10 @@ def create_person(data):
     )
 
 
-# ──────────────────────────────
-# STUDENT CREATION
-# ──────────────────────────────
 
 @transaction.atomic
 def create_student(data):
-    """
-    Create a Student record with optional parent linking.
-    Accounts and roles are handled by accounts app separately.
-    """
+    
     person = create_person(data)
 
     student = Student(
@@ -71,36 +46,30 @@ def create_student(data):
     student.full_clean()
     student.save()
 
-    age = calculate_age(student.date_of_birth)
-    if age < MINOR_AGE_LIMIT:
-        parent_id = data.get('parent_id')
-        if not parent_id:
-            raise ValidationError("Minor students must have a parent linked.")
+    #link the parent 
+    parent_id = data.get('parent_id')
+    if parent_id:
         parent = Parent.objects.filter(pk=parent_id).first()
-        if not parent:
-            raise ValidationError("Parent not found.")
-        ParentStudent.objects.get_or_create(parent=parent, student=student)
-
+        if parent:
+            ParentStudent.objects.get_or_create(
+                parent  = parent,
+                student = student
+            )
+    
     return student
 
 
-# ──────────────────────────────
-# EMPLOYEE / TEACHER CREATION
-# ──────────────────────────────
 
 @transaction.atomic
 def create_employee(data):
-    """
-    Create an Employee record.
-    Accounts and roles are handled in the accounts/academic app.
-    """
-    validate_hire_date(data)
+    
+    
     person = create_person(data)
 
     employee = Employee.objects.create(
         person=person,
         hire_date=data['hire_date'],
-        position_id=data.get('position_id'),  # validation moved to academic service
+        position_id=data.get('position_id'),  #
         status='active'
     )
     return employee
@@ -108,10 +77,7 @@ def create_employee(data):
 
 @transaction.atomic
 def create_teacher(data):
-    """
-    Create a Teacher record.
-    Employee creation is separated.
-    """
+    
     employee = create_employee(data)
 
     teacher = Teacher(
@@ -125,15 +91,11 @@ def create_teacher(data):
     return teacher
 
 
-# ──────────────────────────────
-# PARENT CREATION
-# ──────────────────────────────
+
 
 @transaction.atomic
 def create_parent(data):
-    """
-    Create a Parent record with optional student linking.
-    """
+    
     person = create_person(data)
     parent = Parent(person=person, relationship=data['relationship'])
     parent.full_clean()
@@ -150,16 +112,11 @@ def create_parent(data):
     return parent
 
 
-# ──────────────────────────────
-# EMPLOYEE STATUS MANAGEMENT
-# ──────────────────────────────
+
 
 @transaction.atomic
 def deactivate_employee(employee_id):
-    """
-    Deactivate an employee.
-    Accounts are managed separately in accounts app.
-    """
+    
     employee = Employee.objects.filter(pk=employee_id).first()
     if not employee:
         raise ValidationError("Employee not found.")
@@ -172,9 +129,7 @@ def deactivate_employee(employee_id):
     return employee
 
 
-# ──────────────────────────────
-# HEAD TEACHER PROMOTION / DEMOTION
-# ──────────────────────────────
+
 
 @transaction.atomic
 def promote_to_head_teacher(teacher_id):
