@@ -9,6 +9,18 @@ BASE_DIR = Path(__file__).resolve().parent.parent.parent
 SECRET_KEY = os.getenv('SECRET_KEY')
 
 INSTALLED_APPS = [
+<<<<<<< HEAD
+=======
+    'apps.persons',
+    'apps.academic',
+    'apps.saleries',
+    'apps.test_bank',
+    'apps.accounts',
+    'apps.attendance',
+    'apps.inscription',
+    'apps.notifications',
+    'apps.payments',
+>>>>>>> viewsets
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -18,7 +30,12 @@ INSTALLED_APPS = [
     'rest_framework',
     'rest_framework_simplejwt',
     'corsheaders',
+<<<<<<< HEAD
     'apps.persons',
+=======
+    
+    
+>>>>>>> viewsets
 ]
 
 MIDDLEWARE = [
