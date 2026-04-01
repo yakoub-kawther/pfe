@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Add Student — ZKY Lingua</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+
+<body class="bg-[#fffafe] text-[#701366] min-h-screen">
+
+  <div class="flex min-h-screen">
+
+   <!-- ===== SIDEBAR ===== -->
+ <aside class="fixed top-0 left-0 w-40 h-screen bg-[#F8E0F8] rounded-tr-2xl rounded-br-1.5xl flex flex-col justify-between py-3 px-2">
+
+  <!-- TOP -->
+  <div>
+    <!-- Logo -->
+    <div class="flex flex-col items-start mb-3">
+      <span class="text-4xl font-item text-[#701366] leading-none">ZKY</span>
+      <span class="text-[11px] tracking-widest">LINGUA</span>
+    </div>
+
+    <!-- Navigation -->
+    <nav class="flex flex-col gap-0">
+
+      <a class="flex items-center gap-2 px-2 py-1.5 text-[11.5px] rounded-lg text-[#701366] hover:bg-white/50">
+        <i data-lucide="layout-dashboard" class="w-4 h-4"></i>
+        Dashboard
+      </a>
+
+      <a class="flex items-center gap-2 px-2 py-1.5 text-[11.5px] rounded-lg text-[#701366] hover:bg-white/50">
+        <i data-lucide="graduation-cap" class="w-4 h-4"></i>
+        Teachers
+      </a>
+
+      <a class="flex items-center gap-2 px-2 py-1.5 text-[11.5px] rounded-lg text-[#701366] hover:bg-white/50">
+        <i data-lucide="users" class="w-4 h-4"></i>
+        Students
+      </a>
+
+      <a class="flex items-center gap-2 px-2 py-1.5 text-[11.5px] rounded-lg text-[#701366] hover:bg-white/50">
+        <i data-lucide="briefcase" class="w-4 h-4"></i>
+        Employees
+      </a>
+
+      <a class="flex items-center gap-2 px-2 py-1.5 text-[11.5px] rounded-lg text-[#701366] hover:bg-white/50">
+        <i data-lucide="book-open" class="w-4 h-4"></i>
+        Classes
+      </a>
+
+      <a class="flex items-center gap-2 px-2 py-1.5 text-[11.5px] rounded-lg text-[#701366] hover:bg-white/50">
+        <i data-lucide="credit-card" class="w-4 h-4"></i>
+        Fees
+      </a>
+
+      <a class="flex items-center gap-2 px-2 py-1.5 text-[11.5px] rounded-lg text-[#701366] hover:bg-white/50">
+        <i data-lucide="calendar" class="w-4 h-4"></i>
+        Time Table
+      </a>
+
+      <a class="flex items-center gap-2 px-2 py-1.5 text-[11.5px] rounded-lg text-[#701366] hover:bg-white/50">
+        <i data-lucide="bell" class="w-4 h-4"></i>
+        Notifications
+      </a>
+
+      <a class="flex items-center gap-2 px-2 py-1.5 text-[11.5px] rounded-lg text-[#701366] hover:bg-white/50">
+        <i data-lucide="bar-chart-3" class="w-4 h-4"></i>
+        Reports
+      </a>
+
+      <a class="flex items-center gap-2 px-2 py-1.5 text-[11.5px] rounded-lg text-[#701366] hover:bg-white/50">
+        <i data-lucide="settings" class="w-4 h-4"></i>
+        Settings
+      </a>
+
+    </nav>
+  </div>
+
+  <!-- BOTTOM -->
+  <div class="flex flex-col items-center gap-0.5">
+
+    <img src="images/Support.svg" class="w-24">
+
+    <button class="w-full flex items-center justify-center gap-2 bg-[#701366] text-white text-[12px] hover:bg-[#f8b2ea] py-1 rounded-lg">
+      <i data-lucide="log-out" class="w-4 h-4"></i>
+      Log Out
+    </button>
+
+  </div>
+
+</aside>
+
+    <!-- MAIN CONTENT -->
+    <main class="flex-1 ml-40 px-7 pb-7">
+
+
+      <!-- Top Bar -->
+    <header class="flex items-center justify-end py-4 mb-2">
+      <div class="flex items-center gap-3">
+
+        <!-- Notification Bell -->
+        <button
+          aria-label="Notifications"
+          class="relative w-9 h-9 flex items-center justify-center rounded-full bg-white shadow-sm text-[#701366] hover:text-white hover:bg-[#701366] transition-all duration-150 hover:scale-105"
+        >
+          <i data-lucide="bell" class="w-5 h-5"></i>
+          <span class="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full border-2 border-white"></span>
+        </button>
+
+        <!-- Settings -->
+        <button
+          aria-label="Settings"
+          class="w-9 h-9 flex items-center justify-center rounded-full bg-white shadow-sm text-[#701366] hover:bg-[#701366] hover:text-white transition-all duration-150 hover:scale-105"
+        >
+          <i data-lucide="settings" class="w-5 h-5"></i>
+        </button>
+
+      </div>
+    </header>
+
+<!-- Page Header -->
+<div class="flex justify-between items-center mb-6">
+  <h2 class="text-2xl font-bold text-[#701366]">Student's Profile</h2>
+
+  <div class="flex gap-2">
+    <a href="Student_list.html"
+      class="border border-[#701366] px-4 py-2 text-sm text-[#701366] bg-white hover:bg-[#701366] hover:text-white rounded-xl">
+      Cancel
+    </a>
+
+    <button
+      class="border border-[#701366] px-4 py-2 text-sm text-[#701366] bg-white hover:bg-[#701366] hover:text-white rounded-xl">
+      Edit
+    </button>
+
+    <button
+      class="px-4 py-2 border border-[#701366] text-sm text-white bg-[#701366] hover:bg-white hover:text-[#701366] rounded-xl">
+      Save
+    </button>
+  </div>
+</div>
+  
+   <!-- TABS -->
+    <div class="grid grid-cols-4 gap-2 mb-5 w-full max-w-[calc(100%-13rem)]">     
+      <a href="Profile_student.html" class=" text-center px-4 py-2 rounded-full font-inter text-[#701366]  bg-[#F8E0F8] shadow text-sm w-full">Profile</a>
+      <a href="Classes_student.html" class="text-center px-4 py-2 rounded-full font-inter text-[#701366] bg-white hover:bg-[#F8E0F8] shadow text-sm w-full">Classes</a>
+      <a href="Payment_student.html" class="text-center px-4 py-2 rounded-full font-inter text-[#701366] bg-white hover:bg-[#F8E0F8] shadow text-sm w-full">Payment</a>
+      <a href="Attendance_student.html" class="text-center px-4 py-2 rounded-full font-inter text-[#701366] bg-white hover:bg-[#F8E0F8] shadow text-sm w-full">Attendance</a>
+    </div>
+
+
+      <!-- FORM GRID -->
+      <div class="grid grid-cols-2 gap-6">
+
+        <!-- LEFT SIDE -->
+        <div class="space-y-6">
+
+          <!-- Basic info -->
+          <div class="bg-white rounded-2xl shadow-sm p-6">
+            <h3 class="text-[#701366] text-xl font-inter mb-4 border-b pb-2">
+              Basic Information
+            </h3>
+
+            <div class="grid grid-cols-2 gap-4">
+
+              <div>
+                <label class="text-sm">First Name</label>
+                <input class="w-full border border-[#701366] placeholder:text-gray-400 text-[#701366] rounded-lg px-3 py-2 text-sm font-inter" placeholder="Zitouni">
+              </div>
+
+              <div>
+                <label class="text-sm">Last Name</label>
+                <input class="w-full border border-[#701366] placeholder:text-gray-400 text-[#701366] rounded-lg px-3 py-2 text-sm font-inter" placeholder="Yousra">
+              </div>
+
+              <!-- Gender -->
+              <div>
+                <label class="text-sm block mb-1">Gender</label>
+                <div class="flex gap-4 text-sm text-[#701366] font-inter">
+                  <label class="flex items-center gap-2">
+                    <input type="radio" name="gender"> Male
+                  </label>
+                  <label class="flex items-center gap-2">
+                    <input type="radio" name="gender"> Female
+                  </label>
+                </div>
+              </div>
+
+              <!-- Date of Birth -->
+              <div>
+                <label class="text-sm">Date of Birth</label>
+                <input type="date" class="w-full border border-[#701366] rounded-lg px-3 py-2 text-sm">
+              </div>
+
+              <div>
+                <label class="text-sm">Class</label>
+                <select class="w-full border border-[#701366] rounded-lg px-3 py-2 text-sm">
+                  <option>Eng-A2</option>
+                  <option>Eng-B1</option>
+                  <option>Eng-B2</option>
+                  <option>Eng-C1</option>
+                </select>
+              </div>
+
+              <div>
+                <label class="text-sm">Special Case</label>
+                <select class="w-full border border-[#701366] rounded-lg px-3 py-2 text-sm font-inter">
+                  <option>Orphan</option>
+                  <option>Scholarship</option>
+                </select>
+              </div>
+
+            </div>
+          </div>
+
+          <!-- Parent Details -->
+          <div class="bg-white rounded-2xl shadow-sm p-6">
+            <h3 class="text-[#701366] text-xl font-inter mb-4">Parent Details</h3>
+            <div class="grid grid-cols-2 gap-4">
+              <div>
+                <label class="text-sm">Father Name</label>
+                <input type="text" placeholder="Abdeslame zt" class="border border-[#701366] placeholder:text-gray-400 text-[#701366] rounded-lg px-3 py-2 text-sm">
+              </div>
+
+              <div>
+                <label class="text-sm">Mother Name</label>
+                <input type="text" placeholder="Rachida hn" class="border border-[#701366] placeholder:text-gray-400 text-[#701366] rounded-lg px-3 py-2 text-sm">
+              </div>
+
+              <div>
+                <label class="text-sm">Father Contact</label>
+                <input type="text" placeholder="0772140814" class="border border-[#701366] placeholder:text-gray-400 text-[#701366] rounded-lg px-3 py-2 text-sm">
+              </div>
+
+              <div>
+                <label class="text-sm">Mother Contact</label>
+                <input type="text" placeholder="0552153232" class="border border-[#701366] placeholder:text-gray-400 text-[#701366] rounded-lg px-3 py-2 text-sm">
+              </div>
+
+            </div>
+          </div>
+
+        </div>
+
+        <!-- RIGHT SIDE -->
+        <div class="space-y-6">
+
+          <!-- Account -->
+          <div class="bg-white rounded-2xl shadow-sm p-6">
+            <h3 class="text-[#701366] text-xl font-inter mb-4">Account</h3>
+            <div class="grid grid-cols-2 gap-4">
+              <div>
+                <label class="text-sm">User Name</label>
+                <input type="text" placeholder="Yousra_zitouni" class="border border-[#701366] placeholder:text-gray-400 text-[#701366] rounded-lg px-3 py-2 text-sm">
+              </div>
+              <div>
+                <label class="text-sm">Password</label>
+                <input type="password" placeholder="YousraZitouni**" class="border border-[#701366] placeholder:text-gray-400 text-[#701366] rounded-lg px-3 py-2 text-sm">
+              </div>
+            </div>
+          </div>
+
+          <!-- Contact -->
+          <div class="bg-white rounded-2xl shadow-sm p-6">
+            <h3 class="text-[#701366] text-xl font-inter mb-4">Contact Details</h3>
+            <div class="grid grid-cols-2 gap-4">
+              <div>
+                <label class="text-sm">Phone</label>
+                <input type="text" placeholder="Phone" class="border border-[#701366] placeholder:text-gray-400 text-[#701366] rounded-lg px-3 py-2 text-sm w-full">
+              </div>            
+              <div>
+                <label class="text-sm">Email</label>
+                <input type="email" placeholder="Email" class="border border-[#701366] placeholder:text-gray-400 text-[#701366] rounded-lg px-3 py-2 text-sm w-full">
+              </div>
+              <div class="col-span-2">
+                <label class="text-sm">Address</label>
+                <input type="text" placeholder="Address" class="border border-[#701366] placeholder:text-gray-400 text-[#701366] rounded-lg px-3 py-2 text-sm w-full">
+              </div>
+            </div>
+          </div>
+
+        </div>
+
+      </div>
+
+    </main>
+
+  </div>
+
+  <script>
+    lucide.createIcons();
+  </script>
+
+</body>
+</html>
