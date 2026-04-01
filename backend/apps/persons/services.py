@@ -9,16 +9,6 @@ from .models import Person, Student, Parent, ParentStudent, Employee, Teacher
 
 
 
-
-
-
-
-
-
-
-
-
-
 def create_person(data):
     
     
@@ -30,6 +20,18 @@ def create_person(data):
         email=data.get('email'),
         address=data.get('address')
     )
+
+
+@transaction.atomic
+def update_person(person, data):
+    person.first_name = data.get('first_name', person.first_name)
+    person.last_name = data.get('last_name', person.last_name)
+    person.gender = data.get('gender', person.gender)
+    person.phone = data.get('phone', person.phone)
+    person.email = data.get('email', person.email)
+    person.address = data.get('address', person.address)
+    person.save()
+    return person
 
 
 
@@ -60,6 +62,32 @@ def create_student(data):
 
 
 
+
+@transaction.atomic
+def update_student(student, data):
+    
+    person = update_person(student.person, data)
+
+    
+    student.date_of_birth = data.get('date_of_birth', student.date_of_birth)
+    student.special_case  = data.get('special_case',  student.special_case)
+    student.full_clean()
+    student.save()
+
+    parent_id = data.get('parent_id')
+    if parent_id:
+     parent = Parent.objects.filter(pk=parent_id).first()
+     if parent:
+        ParentStudent.objects.get_or_create(
+            parent  = parent,
+            student = student
+        )
+
+    return student
+
+
+
+
 @transaction.atomic
 def create_employee(data):
     
@@ -73,6 +101,16 @@ def create_employee(data):
         status='active'
     )
     return employee
+
+@transaction.atomic
+def update_employee(employee, data):
+    person = update_person(employee.person , data)
+
+    #employee.hire_date = data.get('hire_date', employee.hire_date)
+    employee.position_id = data.get('position_id', employee.position_id)
+    employee.save()
+    return employee
+
 
 
 @transaction.atomic
@@ -91,6 +129,15 @@ def create_teacher(data):
     return teacher
 
 
+@transaction.atomic
+def update_teacher(teacher, data):
+    employee = update_employee(teacher.employee, data)
+
+    teacher.qualifications = data.get('qualifications', teacher.qualifications)
+    teacher.language_id = data.get('language_id', teacher.language_id)
+    teacher.is_head_teacher = data.get('is_head_teacher', teacher.is_head_teacher)
+    teacher.save()
+    return teacher
 
 
 @transaction.atomic
@@ -111,6 +158,22 @@ def create_parent(data):
 
     return parent
 
+@transaction.atomic
+def update_parent(parent, data):
+    person = update_person(parent.person, data)
+
+    parent.relationship = data.get('relationship', parent.relationship)
+    parent.save()
+
+    student_ids = data.get('student_ids')
+    if student_ids is not None:
+        students = Student.objects.filter(pk__in=student_ids)
+        if len(students) != len(student_ids):
+            raise ValidationError("Some students not found.")
+        parent.students.set(students)
+
+    return parent
+
 
 
 
@@ -127,8 +190,6 @@ def deactivate_employee(employee_id):
     employee.end_date = date.today()
     employee.save()
     return employee
-
-
 
 
 @transaction.atomic
@@ -155,3 +216,6 @@ def demote_from_head_teacher(teacher_id):
     teacher.is_head_teacher = False
     teacher.save()
     return teacher
+
+
+

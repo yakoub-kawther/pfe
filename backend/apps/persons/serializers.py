@@ -4,6 +4,8 @@ from rest_framework import serializers
 from rest_framework.validators import UniqueValidator
 from datetime import date
 
+from .services import create_student
+
 from .models import Person, Student, Parent, Employee, Teacher
 from apps.academic.serializers import LanguageSerializer, PositionSerializer
 from apps.academic.models import Language , Position
@@ -49,31 +51,36 @@ class PersonSerializer(serializers.Serializer):
 # create serializers
 
 class StudentCreateSerializer(PersonSerializer):
-    date_of_birth = serializers.DateField(validators=[validate_date_of_birth])
-    special_case  = serializers.CharField(required=False, allow_null=True)
-    parent_id     = serializers.IntegerField(required=False, allow_null=True)
+    date_of_birth = serializers.DateField(validators=[validate_date_of_birth]) 
+    special_case = serializers.CharField(required=False, allow_null=True) 
+    parent_id = serializers.IntegerField(required=False, allow_null=True)
     
 
     def validate(self, data):
-        dob = data.get('date_of_birth')
+        dob = data['date_of_birth']
         parent_id = data.get('parent_id')
-
-        if dob:
-            today = date.today()
-            age = today.year - dob.year - (
-                (today.month, today.day) < (dob.month, dob.day)
-            )
-
-            if age < 18 and not parent_id:
-                raise serializers.ValidationError({
-                    'parent_id': "Minor students must have a parent linked."
-                })
-
+        today = date.today()
+        age = today.year - dob.year - ((today.month, today.day) < (dob.month, dob.day))
+        if age < 18 and not parent_id:
+            raise serializers.ValidationError({'parent_id': "Minor students must have a parent linked."})
         return data
 
-    def create(self, validated_data):
-        from .services import create_student
-        return create_student(validated_data)
+    def create(self, validated_data): 
+        from .services import create_student 
+        return create_student(validated_data) 
+    def update(self, instance, validated_data): 
+        return super().update(instance, validated_data)
+    
+    def update(self, instance, validated_data):
+        person_data = validated_data.pop('person', {})
+        for key, value in person_data.items():
+            setattr(instance.person, key, value)
+        instance.person.save()
+
+        for key, value in validated_data.items():
+            setattr(instance, key, value)
+        instance.save()
+        return instance
 
 
 class ParentCreateSerializer(PersonSerializer):
@@ -87,6 +94,9 @@ class ParentCreateSerializer(PersonSerializer):
     def create(self, validated_data):
         from .services import create_parent
         return create_parent(validated_data)
+    
+    def update(self, instance, validated_data):
+        return super().update(instance, validated_data)
 
 
 class EmployeeCreateSerializer(PersonSerializer):
@@ -106,6 +116,9 @@ class EmployeeCreateSerializer(PersonSerializer):
     def create(self, validated_data):
         from .services import create_employee
         return create_employee(validated_data)
+    
+    def update(self, instance, validated_data):
+        return super().update(instance, validated_data)
 
 
 class TeacherCreateSerializer(EmployeeCreateSerializer):
@@ -121,17 +134,20 @@ class TeacherCreateSerializer(EmployeeCreateSerializer):
     def create(self, validated_data):
         from .services import create_teacher
         return create_teacher(validated_data)
+    
+    def update(self, instance, validated_data):
+        return super().update(instance, validated_data)
 
 
 #read serializers
 
-class StudentSerializer(PersonSerializer):
+class StudentSerializer(serializers.ModelSerializer):
     person = PersonSerializer(read_only=True)
-
     class Meta:
         model = Student
-        fields = ['person', 'date_of_birth', 'special_case']
-
+        fields = [
+         'person', 'date_of_birth', 'special_case'
+        ]
 
 class ParentSerializer(serializers.ModelSerializer):
     person = PersonSerializer(read_only=True)
