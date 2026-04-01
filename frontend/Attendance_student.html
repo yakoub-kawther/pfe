@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>All Attendances — ZKY Lingua</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+
+<body class="bg-[#fffafe] text-[#701366] min-h-screen">
+
+  <div class="flex min-h-screen">
+
+   <!-- ===== SIDEBAR ===== -->
+ <aside class="fixed top-0 left-0 w-40 h-screen bg-[#F8E0F8] rounded-tr-2xl rounded-br-1.5xl flex flex-col justify-between py-3 px-2">
+
+  <!-- TOP -->
+  <div>
+    <!-- Logo -->
+    <div class="flex flex-col items-start mb-3">
+      <span class="text-4xl font-item text-[#701366] leading-none">ZKY</span>
+      <span class="text-[11px] tracking-widest">LINGUA</span>
+    </div>
+
+    <!-- Navigation -->
+    <nav class="flex flex-col gap-0">
+
+      <a class="flex items-center gap-2 px-2 py-1.5 text-[11.5px] rounded-lg text-[#701366] hover:bg-white/50">
+        <i data-lucide="layout-dashboard" class="w-4 h-4"></i>
+        Dashboard
+      </a>
+
+      <a class="flex items-center gap-2 px-2 py-1.5 text-[11.5px] rounded-lg text-[#701366] hover:bg-white/50">
+        <i data-lucide="graduation-cap" class="w-4 h-4"></i>
+        Teachers
+      </a>
+
+      <a class="flex items-center gap-2 px-2 py-1.5 text-[11.5px] rounded-lg text-[#701366] hover:bg-white/50">
+        <i data-lucide="users" class="w-4 h-4"></i>
+        Students
+      </a>
+
+      <a class="flex items-center gap-2 px-2 py-1.5 text-[11.5px] rounded-lg text-[#701366] hover:bg-white/50">
+        <i data-lucide="briefcase" class="w-4 h-4"></i>
+        Employees
+      </a>
+
+      <a class="flex items-center gap-2 px-2 py-1.5 text-[11.5px] rounded-lg text-[#701366] hover:bg-white/50">
+        <i data-lucide="book-open" class="w-4 h-4"></i>
+        Classes
+      </a>
+
+      <a class="flex items-center gap-2 px-2 py-1.5 text-[11.5px] rounded-lg text-[#701366] hover:bg-white/50">
+        <i data-lucide="credit-card" class="w-4 h-4"></i>
+        Fees
+      </a>
+
+      <a class="flex items-center gap-2 px-2 py-1.5 text-[11.5px] rounded-lg text-[#701366] hover:bg-white/50">
+        <i data-lucide="calendar" class="w-4 h-4"></i>
+        Time Table
+      </a>
+
+      <a class="flex items-center gap-2 px-2 py-1.5 text-[11.5px] rounded-lg text-[#701366] hover:bg-white/50">
+        <i data-lucide="bell" class="w-4 h-4"></i>
+        Notifications
+      </a>
+
+      <a class="flex items-center gap-2 px-2 py-1.5 text-[11.5px] rounded-lg text-[#701366] hover:bg-white/50">
+        <i data-lucide="bar-chart-3" class="w-4 h-4"></i>
+        Reports
+      </a>
+
+      <a class="flex items-center gap-2 px-2 py-1.5 text-[11.5px] rounded-lg text-[#701366] hover:bg-white/50">
+        <i data-lucide="settings" class="w-4 h-4"></i>
+        Settings
+      </a>
+
+    </nav>
+  </div>
+
+  <!-- BOTTOM -->
+  <div class="flex flex-col items-center gap-0.5">
+
+    <img src="images/Support.svg" class="w-24">
+
+    <button class="w-full flex items-center justify-center gap-2 bg-[#701366] text-white text-[12px] hover:bg-[#f8b2ea] py-1 rounded-lg">
+      <i data-lucide="log-out" class="w-4 h-4"></i>
+      Log Out
+    </button>
+
+  </div>
+
+</aside>
+
+  <!-- ===== MAIN ===== -->
+  <main class="flex-1 ml-40 flex flex-col min-h-screen px-7 pb-7">
+
+      <!-- Top Bar -->
+    <header class="flex items-center justify-end py-4 mb-2">
+      <div class="flex items-center gap-3">
+
+        <!-- Notification Bell -->
+        <button
+          aria-label="Notifications"
+          class="relative w-9 h-9 flex items-center justify-center rounded-full bg-white shadow-sm text-[#701366]  hover:text-white hover:bg-[#701366] transition-all duration-150 hover:scale-105"
+        >
+          <i data-lucide="bell" class="w-5 h-5"></i>
+          <span class="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full border-2 border-white"></span>
+        </button>
+
+        <!-- Settings -->
+        <button
+          aria-label="Settings"
+          class="w-9 h-9 flex items-center justify-center rounded-full bg-white shadow-sm text-[#701366]  hover:text-white hover:bg-[#701366] transition-all duration-150 hover:scale-105"
+        >
+          <i data-lucide="settings" class="w-5 h-5"></i>
+        </button>
+
+      </div>
+    </header>
+
+
+    <!-- TITLE -->
+    <div class="flex justify-between items-center mb-6">
+      <h1 class="text-2xl font-item text-[#701366]">All Attendances</h1>
+    </div>
+
+    <!-- TABS -->
+    <div class="grid grid-cols-4 gap-2 mb-5 w-full max-w-[calc(100%-13rem)]">     
+      <a href="Profile_student.html" class=" text-center px-4 py-2 rounded-full font-inter text-[#701366] bg-white hover:bg-[#F8E0F8] shadow text-sm w-full">Profile</a>
+      <a href="Classes_student.html" class="text-center px-4 py-2 rounded-full font-inter text-[#701366] bg-white hover:bg-[#F8E0F8] shadow text-sm w-full">Classes</a>
+      <a href="Payment_student.html" class="text-center px-4 py-2 rounded-full font-inter text-[#701366] bg-white hover:bg-[#F8E0F8] shadow text-sm w-full">Payment</a>
+      <a href="Attendance_student.html" class="text-center px-4 py-2 rounded-full font-inter text-[#701366] bg-[#F8E0F8] shadow text-sm w-full">Attendance</a>
+    </div>
+
+    <div class="flex gap-6">
+
+      <!-- TABLE -->
+      <div class="flex-1 bg-white rounded-2xl shadow-sm overflow-hidden">
+        <table class="w-full text-sm" id="AttendanceTable">
+          <thead >
+          <tr class="bg-[#F8E0F8] text-[#701366] font-item text-left">
+              <th class="px-4 pl-8 py-3 text-sm font-item">Language</th>
+              <th class="px-4 py-3 text-sm font-item">Level</th>
+              <th class="px-4 py-3 text-sm font-item">Date</th>
+              <th class="px-4 py-3 text-sm font-item">Status</th>
+            </tr>
+          </thead>
+
+        <tbody id="AttendanceBody" class="divide-y divide-[#f8e0f8]">
+
+            <tr class="hover:bg-[#fffafe] font-item transition-colors duration-100 ">
+              <td class="px-4 py-3 pl-8">English</td>
+              <td class="px-4 py-3">C1</td>
+              <td class="px-4 py-3">15/7/2025</td>
+              <td class="px-4 py-3">
+                <select class="px-3 py-1 text-xs font-item rounded-full bg-green-100 text-green-600">
+                    <option value="present" class="bg-green-100 text-green-600 ">Present</option>
+                    <option value="absent" class="bg-red-100 text-red-500">Absent</option>
+                </select>
+              </td>
+            </tr>
+
+            <tr class="hover:bg-[#fffafe]">
+              <td class="px-4 py-3 pl-8">English</td>
+              <td class="px-4 py-3">C1</td>
+              <td class="px-4 py-3">15/7/2025</td>
+              <td class="px-4 py-3">
+                 <select class="px-3 py-1 text-xs font-item rounded-full bg-green-100 text-green-600">
+                    <option value="present" class="bg-green-100 text-green-600 ">Present</option>
+                    <option value="absent" class="bg-red-100 text-red-500">Absent</option>
+                  </select>             
+             </td>
+            </tr>
+
+            <tr class="hover:bg-[#fffafe]">
+              <td class="px-4 py-3 pl-8">English</td>
+              <td class="px-4 py-3">C1</td>
+              <td class="px-4 py-3">15/7/2025</td>
+              <td class="px-4 py-3">
+                 <select class="px-3 py-1 text-xs font-item rounded-full bg-green-100 text-green-600">
+                    <option value="present" class="bg-green-100 text-green-600 ">Present</option>
+                    <option value="absent" class="bg-red-100 text-red-500">Absent</option>
+                  </select>  
+              </td>
+            </tr>
+
+          </tbody>
+        </table>
+
+      </div>
+
+      <!-- RIGHT CARD (ATTENDANCE RATE) -->
+      <div class="w-65 bg-white rounded-2xl shadow p-4">
+
+        <h3 class="text-xl font-item mb-4">Attendance Rate</h3>
+     
+        <!-- DONUT -->
+        <div class="relative w-36 h-36 mx-auto">
+          <div class="absolute inset-0 rounded-full"
+               style="background: conic-gradient(#701366 0% 80%, #FAEB7C 80% 100%);">
+          </div>
+
+          <div class="absolute inset-4 bg-white rounded-full flex items-center justify-center">
+            <span class="text-lg font-item">80%</span>
+          </div>
+        </div>
+
+        <div class="flex justify-center gap-4 mt-4 text-xs">
+          <span class="flex items-center gap-1"><span class="w-2 h-2 bg-[#701366] rounded-full"></span> Present</span>
+          <span class="flex items-center gap-1"><span class="w-2 h-2 bg-[#FAEB7C] rounded-full"></span> Absent</span>
+        </div>
+
+      </div>
+
+    </div>
+
+  </main>
+</div>
+
+<script>
+  lucide.createIcons();
+</script>
+
+</body>
+</html>
