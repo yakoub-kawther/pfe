@@ -1,8 +1,8 @@
-<<<<<<< HEAD
+
 from django.shortcuts import render
 
 # Create your views here.
-=======
+
 # apps/persons/views.py
 
 from rest_framework import viewsets, status
@@ -278,4 +278,4 @@ class TeacherViewSet(viewsets.ViewSet):
             {'error': e.message},
             status=status.HTTP_400_BAD_REQUEST
          )
->>>>>>> viewsets
+
