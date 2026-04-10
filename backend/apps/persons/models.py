@@ -3,7 +3,7 @@ from django.db import models
 
 # Create your models here.
 
-from apps.academic.models import Language , Position
+
 
 
 class Person(models.Model):
@@ -79,7 +79,7 @@ class Employee(models.Model):
         ('active','Active'),
         ('inactive','Inactive')
     ], default='active')
-    position  = models.ForeignKey(Position, on_delete=models.SET_NULL, null=True)
+    position  = models.ForeignKey('academic.Position', on_delete=models.SET_NULL, null=True)
 
     
     
@@ -93,7 +93,7 @@ class Employee(models.Model):
 class Teacher(models.Model):
     employee        = models.OneToOneField(Employee, on_delete=models.CASCADE, primary_key=True)
     qualifications  = models.TextField(null=True, blank=True)
-    language        = models.ForeignKey(Language, on_delete=models.SET_NULL, null=True)
+   # language        = models.ForeignKey('academic.Language', on_delete=models.SET_NULL, null=True)
     is_head_teacher = models.BooleanField(default=False)
 
     class Meta:
