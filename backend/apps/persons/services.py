@@ -97,7 +97,7 @@ def create_employee(data):
     employee = Employee.objects.create(
         person=person,
         hire_date=data['hire_date'],
-        position_id=data.get('position_id'),  #
+        position_id=data.get('position_id'),  
         status='active'
     )
     return employee
@@ -106,7 +106,7 @@ def create_employee(data):
 def update_employee(employee, data):
     person = update_person(employee.person , data)
 
-    #employee.hire_date = data.get('hire_date', employee.hire_date)
+    employee.hire_date = data.get('hire_date', employee.hire_date)
     employee.position_id = data.get('position_id', employee.position_id)
     employee.save()
     return employee
