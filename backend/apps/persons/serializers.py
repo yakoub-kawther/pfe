@@ -7,7 +7,7 @@ from datetime import date
 from .services import create_student
 
 from .models import Person, Student, Parent, Employee, Teacher
-from .academic.serializers import LanguageSerializer, PositionSerializer
+from apps.academic.serializers import LanguageSerializer, PositionSerializer
 from apps.academic.models import Language , Position
 
 
