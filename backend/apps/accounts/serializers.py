@@ -11,32 +11,29 @@ class LoginSerializer(serializers.Serializer):
         username = data.get('username')
         password = data.get('password')
 
-        # 1. find account
+        
         try:
             account = Account.objects.select_related(
                 'role',
-                'student__person',
-                'employee__person',
+                'student',
+                'employee',
             ).get(username=username)
         except Account.DoesNotExist:
             raise serializers.ValidationError("username or password is incorrect.")
 
-        # 2. check status
+        
         if account.status != 'active':
             raise serializers.ValidationError("Account is inactive.")
 
-        # 3. check password
+        
         if not check_password(password, account.password_hash):
             raise serializers.ValidationError("username or password is incorrect.")
 
-        # 4. get person info
-        if account.student:
-            person = account.student.person
-        else:
-            person = account.employee.person
-
         data['account']   = account
         data['role']      = account.role.name
-        data['full_name'] = f"{person.first_name} {person.last_name}"
+        if account.student:
+            data['full_name'] = f"{account.student.first_name} {account.student.last_name}"
+        else:
+            data['full_name'] = f"{account.employee.first_name} {account.employee.last_name}"
 
         return data
