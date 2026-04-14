@@ -1,4 +1,3 @@
-from django.shortcuts import render
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
@@ -12,9 +11,9 @@ def get_tokens(account):
     refresh['account_id'] = account.id
     refresh['role']       = account.role.name
     refresh['full_name']  = (
-        account.student.person.first_name
+        account.student.first_name
         if account.student
-        else account.employee.person.first_name
+        else account.employee.first_name
     )
     return {
         'refresh': str(refresh),
