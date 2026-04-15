@@ -12,79 +12,70 @@ import {
   LogOut
 } from "lucide-react";
 
-import { Link } from "react-router-dom";
-
+import { Link , useLocation  } from "react-router-dom"; 
+import { useNavigate } from "react-router-dom";
+ 
 function Sidebar() {
-  return (
-    <aside className="fixed top-0 left-0 w-36 h-screen bg-[#F8E0F8] rounded-tr-2xl rounded-br-1.5xl flex flex-col py-2 px-1.5">
+  const navigate = useNavigate();
+  const location = useLocation();
 
+    const handleLogout = () => {
+    localStorage.removeItem("user");
+    navigate("/Login");
+  };
+
+  return (
+<aside className="fixed top-0 left-0 w-40 h-screen bg-[#F8E0F8] rounded-tr-2xl rounded-br-2xl flex flex-col justify-between py-3 px-3">
+    
+     <div className="flex flex-col gap-4 mt-10 ml-6">
       {/* Logo */}
-      <div className="flex flex-col items-start mb-2">
-        <span className="text-3xl text-[#701366] font-item leading-none">ZKY</span>
-        <span className="text-[10px] text-[#701366] font-item tracking-widest">LINGUA</span>
+      <div className="flex flex-col  items-start ">
+        <span className="text-4xl text-[#701366] font-item leading-none">ZKY</span>
+        <span className="text-[11px] text-[#701366] font-item tracking-widest">LINGUA</span>
       </div>
 
       {/* Navigation */}
-      <nav className="flex flex-col gap-0">
-        <Link to="/Dashboard" className="flex items-center gap-2 pl-2 px-1 py-[1px] text-[10.5px] rounded-lg text-[#701366] hover:bg-white/50">
-          <LayoutDashboard className="w-3.5 h-3.5 shrink-0" />
-          Dashboard
-        </Link>
+      <nav className="flex flex-col items-center gap-2 ">
 
-        <Link to="/Teachers" className="flex items-center gap-2 pl-2 px-1 py-[1px] text-[10.5px] rounded-lg text-[#701366] hover:bg-white/50">
-          <GraduationCap className="w-3.5 h-3.5 shrink-0" />
-          Teachers
-        </Link>
-
-        <Link to="/Students" className="flex items-center gap-2 pl-2 px-1 py-[1px] text-[10.5px] rounded-lg text-[#701366] hover:bg-white/50">
-          <Users className="w-3.5 h-3.5 shrink-0" />
-          Students
-        </Link>
-
-        <Link to="/Employees" className="flex items-center gap-2 pl-2 px-1 py-[1px] text-[10.5px] rounded-lg text-[#701366] hover:bg-white/50">
-          <Briefcase className="w-3.5 h-3.5 shrink-0" />
-          Employees
-        </Link>
-
-        <Link to="/Classes" className="flex items-center gap-2 pl-2 px-1 py-[1px] text-[10.5px] rounded-lg text-[#701366] hover:bg-white/50">
-          <BookOpen className="w-3.5 h-3.5 shrink-0" />
-          Classes
-        </Link>
-
-        <Link to="/Fees" className="flex items-center gap-2 pl-2 px-1 py-[1px] text-[10.5px] rounded-lg text-[#701366] hover:bg-white/50">
-          <CreditCard className="w-3.5 h-3.5 shrink-0" />
-          Fees
-        </Link>
-
-        <Link to="/timetable" className="flex items-center gap-2 pl-2 px-1 py-[1px] text-[10.5px] rounded-lg text-[#701366] hover:bg-white/50">
-          <Calendar className="w-3.5 h-3.5 shrink-0" />
-          Time Table
-        </Link>
-
-        <Link to="/notifications" className="flex items-center gap-2 pl-2 px-1 py-[1px] text-[10.5px] rounded-lg text-[#701366] hover:bg-white/50">
-          <Bell className="w-3.5 h-3.5 shrink-0" />
-          Notifications
-        </Link>
-
-        <Link to="/reports" className="flex items-center gap-2 pl-2 px-1 py-[1px] text-[10.5px] rounded-lg text-[#701366] hover:bg-white/50">
-          <BarChart3 className="w-3.5 h-3.5 shrink-0" />
-          Reports
-        </Link>
-
-        <Link to="/settings" className="flex items-center gap-2 pl-2 px-1 py-[1px] text-[10.5px] rounded-lg text-[#701366] hover:bg-white/50">
-          <Settings className="w-3.5 h-3.5 shrink-0" />
-          Settings
-        </Link>
+{[
+          { to: "/Dashboard", icon: <LayoutDashboard className="w-4 h-4" />, label: "Dashboard" },
+          { to: "/Teachers", icon: <GraduationCap className="w-4 h-4" />, label: "Teachers" },
+          { to: "/Students", icon: <Users className="w-4 h-4" />, label: "Students" },
+          { to: "/Employees", icon: <Briefcase className="w-4 h-4" />, label: "Employees" },
+          { to: "/Classes", icon: <BookOpen className="w-4 h-4" />, label: "Classes" },
+          { to: "/Fees", icon: <CreditCard className="w-4 h-4" />, label: "Fees" },
+          { to: "/Time_table", icon: <Calendar className="w-4 h-4" />, label: "Time Table" },
+          { to: "/Notifications", icon: <Bell className="w-4 h-4" />, label: "Notifications" },
+          { to: "/Reports", icon: <BarChart3 className="w-4 h-4" />, label: "Reports" },
+          { to: "/Settings", icon: <Settings className="w-4 h-4" />, label: "Settings" },
+        ].map(({ to, icon, label }) => (
+          <Link
+            key={to}
+            to={to}
+            className={`flex items-center gap-2 px-2 py-1.5 w-[85%] text-[13px] rounded-lg transition-all duration-150
+              ${location.pathname === to
+                ? "bg-white text-[#701366] font-item"
+                : "text-[#701366] hover:bg-white/50"
+              }`}
+          >
+            {icon}
+            {label}
+          </Link>
+        ))}
       </nav>
-
+  </div>    
       {/* Spacer */}
       <div className="flex-1" />
 
       {/* BOTTOM */}
-      <div className="flex flex-col items-center gap-1 shrink-0">
-        <img src="/src/assets/Support.svg" className="w-22" />
-        <button className="w-full flex items-center justify-center gap-2 bg-[#701366] text-white text-[12px] hover:bg-[#f8b2ea] py-0 rounded-lg">
-          <LogOut className="w-4 h-4" />
+      <div className="flex flex-col items-center gap-1 ">
+        <img src="/src/assets/Support.svg" className="w-24" />
+        <button
+          onClick={handleLogout}
+          className="w-35 h-6.5 flex items-center justify-center gap-2 bg-[#701366] text-white text-[12px] hover:bg-[#f8b2ea] py-1 rounded-lg"
+        >    
+             
+         <LogOut className="w-4 h-4" />
           Log Out
         </button>
       </div>
