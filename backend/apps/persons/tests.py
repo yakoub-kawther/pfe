@@ -21,7 +21,7 @@ class PersonServicesTestCase(TestCase):
         self.person_data = {
             'first_name': 'Aymen',
             'last_name': 'Kawther',
-            'gender': 'M',
+            'gender': 'male',
             'phone': '0555555555',
             'email': 'aymen@example.com',
             'address': '123 Street'
@@ -77,10 +77,17 @@ class PersonServicesTestCase(TestCase):
         self.assertEqual(student.date_of_birth, self.student_data['date_of_birth'])
 
     def test_create_minor_student_without_parent(self):
-        data = self.student_data.copy()
-        data['date_of_birth'] = date.today() - timedelta(days=365*10)  
-        with self.assertRaises(ValidationError):
-            create_student(data)  # Should fail: minor without parent
+     data = {
+        **self.student_data,
+        'phone': '0777777777',
+        'email': 'minor@example.com',
+        'date_of_birth': date.today() - timedelta(days=365 * 10),  # 10 years old
+        # no parent_id
+     }
+     data.pop('special_case')
+     response = self.client.post('/api/persons/students/', data, format='json')
+     self.assertEqual(response.status_code, 400)
+     self.assertIn('parent_id', response.data)
 
     def test_create_minor_student_with_parent(self):
         # Create parent
