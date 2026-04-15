@@ -2,8 +2,8 @@ from django.test import TestCase
 from rest_framework.test import APIClient
 from datetime import date
  
-from apps.persons.models import Person, Employee, Teacher, Position
-from apps.academic.models import Language, Level, Classroom, Class, Schedule
+from apps.persons.models import Person, Employee, Teacher
+from apps.academic.models import Language, Level, Classroom, Class, Schedule , Position
  
  
 class ScheduleTest(TestCase):

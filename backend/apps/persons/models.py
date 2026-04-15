@@ -93,7 +93,7 @@ class Employee(models.Model):
 class Teacher(models.Model):
     employee        = models.OneToOneField(Employee, on_delete=models.CASCADE, primary_key=True)
     qualifications  = models.TextField(null=True, blank=True)
-   # language        = models.ForeignKey('academic.Language', on_delete=models.SET_NULL, null=True)
+    language        = models.ForeignKey('academic.Language', on_delete=models.SET_NULL, null=True)
     is_head_teacher = models.BooleanField(default=False)
 
     class Meta:

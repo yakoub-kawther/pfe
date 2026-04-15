@@ -184,17 +184,7 @@ def create_schedule(data):
     if data['start_time'] >= data['end_time']:
         raise ValidationError("End time must be after start time.")
 
-    # Classroom conflict
-    if Schedule.objects.filter(
-        classroom=data['classroom'],
-        day_of_week=data['day_of_week'],
-        start_time__lt=data['end_time'],
-        end_time__gt=data['start_time'],
-        class_obj__status='active'
-    ).exists():
-        raise ValidationError("Classroom is already booked at this time.")
-
-    # Teacher conflict
+    # Teacher conflict FIRST
     if Schedule.objects.filter(
         class_obj__teacher=data['class_obj'].teacher,
         day_of_week=data['day_of_week'],
@@ -204,10 +194,18 @@ def create_schedule(data):
     ).exclude(class_obj=data['class_obj']).exists():
         raise ValidationError("Teacher is already busy at this time.")
 
+    # Classroom conflict SECOND
+    if Schedule.objects.filter(
+        classroom=data['classroom'],
+        day_of_week=data['day_of_week'],
+        start_time__lt=data['end_time'],
+        end_time__gt=data['start_time'],
+        class_obj__status='active'
+    ).exists():
+        raise ValidationError("Classroom is already booked at this time.")
+
     schedule = Schedule.objects.create(**data)
-
     generate_sessions(schedule)
-
     return schedule
 
 
