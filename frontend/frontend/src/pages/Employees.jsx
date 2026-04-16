@@ -49,19 +49,19 @@ export default function Employees() {
           <table className="w-full text-sm">
             <thead>
               <tr className="bg-[#F8E0F8] h-12 text-[#701366] text-left">
-                <th className="py-3 text-sm font-medium" style={{ paddingLeft: "30px" }}>Name</th>
-                <th className="px-4 py-3 text-sm font-medium">Phone</th>
-                <th className="px-4 py-3 text-sm font-medium">Position</th>
-                <th className="px-4 py-3 text-sm font-medium">Hire Date</th>
-                <th className="px-4 py-3 text-sm font-medium">Status</th>
-                <th className="px-4 py-3 text-sm font-medium">Action</th>
+                <th className="py-3 text-sm font-Inter" style={{ paddingLeft: "30px" }}>Name</th>
+                <th className="px-4 py-3 text-sm font-Inter">Phone</th>
+                <th className="px-4 py-3 text-sm font-Inter">Position</th>
+                <th className="px-4 py-3 text-sm font-Inter">Hire Date</th>
+                <th className="px-4 py-3 text-sm font-Inter">Status</th>
+                <th className="px-4 py-3 text-sm font-Inter">Action</th>
               </tr>
             </thead>
 
             <tbody className="divide-y divide-[#f8e0f8]">
               {employeesData.map((emp, idx) => (
                 <tr key={idx} className="hover:bg-[#fffafe] transition-colors duration-100 h-12">
-                  <td className="py-3 text-[#701366] font-medium" style={{ paddingLeft: "30px" }}>{emp.name}</td>
+                  <td className="py-3 text-[#701366] font-Inter" style={{ paddingLeft: "30px" }}>{emp.name}</td>
                   <td className="px-4 py-3 text-[#701366]">{emp.phone}</td>
                   <td className="px-4 py-3 text-[#701366]">{emp.position}</td>
                   <td className="px-4 py-3 text-[#701366]">{emp.hireDate}</td>

@@ -106,7 +106,7 @@ function EventPopup({ ev, anchorRect, onClose, onDelete, onEdit }) {
       {/* Header */}
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 10 }}>
         <div>
-          <div style={{ fontSize: 14, fontWeight: 700, color: c.text }}>{ev.title}</div>
+          <div style={{ fontSize: 14, fontWeight: 500, color: c.text }}>{ev.title}</div>
           <div style={{ fontSize: 11, color: "#999", marginTop: 2 }}>
             {DOW_FULL[ev.dow]} · {pad(ev.startHour)}:00 – {pad(ev.startHour + ev.duration)}:00
           </div>
@@ -127,7 +127,7 @@ function EventPopup({ ev, anchorRect, onClose, onDelete, onEdit }) {
           onClick={() => onEdit(ev)}
           style={{
             flex: 1, padding: "7px 0", borderRadius: 9, border: `1.5px solid #701366`,
-            background: "white", color: "#701366", fontSize: 12, fontWeight: 700, cursor: "pointer",
+            background: "white", color: "#701366", fontSize: 12, fontWeight: 400, cursor: "pointer",
           }}
         >
            Edit
@@ -136,7 +136,7 @@ function EventPopup({ ev, anchorRect, onClose, onDelete, onEdit }) {
           onClick={() => { onDelete(ev.id); onClose(); }}
           style={{
             flex: 1, padding: "7px 0", borderRadius: 9, border: "1.5px solid #e91e63",
-            background: "#fce4ec", color: "#880e4f", fontSize: 12, fontWeight: 700, cursor: "pointer",
+            background: "#fce4ec", color: "#880e4f", fontSize: 12, fontWeight: 400, cursor: "pointer",
           }}
         >
           Delete
@@ -175,7 +175,7 @@ function EventBlock({ ev, style, size = "sm", onClick }) {
           <span style={{ ...tagStyle(c), background: c.tag + "55", color: c.text }}>{ev.room}</span>
         )}
       </div>
-      <div style={{ fontSize: size === "lg" ? 14 : 10, fontWeight: 700, color: c.text, lineHeight: 1.2 }}>
+      <div style={{ fontSize: size === "lg" ? 14 : 10, fontWeight: 500, color: c.text, lineHeight: 1.2 }}>
         {ev.title}
       </div>
       {size === "sm" && ev.room && (
@@ -187,7 +187,7 @@ function EventBlock({ ev, style, size = "sm", onClick }) {
 
 function tagStyle(c) {
   return {
-    display: "inline-block", fontSize: 8, fontWeight: 700, color: "#fff",
+    display: "inline-block", fontSize: 8, fontWeight: 500, color: "#fff",
     background: c.tag, borderRadius: 4, padding: "1px 4px", marginRight: 2, marginBottom: 2,
   };
 }
@@ -212,9 +212,9 @@ function WeekView({ cursor, events, today, onEventClick }) {
         return (
           <div key={di} style={{ flex: 1, minWidth: 90, position: "relative" }}>
             <div style={{ height: 44, textAlign: "center", paddingBottom: 6, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "flex-end" }}>
-              <span style={{ fontSize: 10, color: "#999", fontWeight: 500 }}>{DOW_SHORT[di]}</span>
+              <span style={{ fontSize: 10, color: "#999", fontWeight: 400 }}>{DOW_SHORT[di]}</span>
               <span style={{
-                fontSize: isToday ? 13 : 18, fontWeight: 700, lineHeight: 1.1,
+                fontSize: isToday ? 13 : 18, fontWeight: 500, lineHeight: 1.1,
                 color: isToday ? "#fff" : "#333",
                 background: isToday ? "#701366" : "transparent",
                 borderRadius: isToday ? "50%" : 0,
@@ -257,7 +257,7 @@ function DayView({ cursor, events, today, onEventClick }) {
       </div>
       <div style={{ flex: 1, position: "relative" }}>
         <div style={{ height: 44, display: "flex", alignItems: "flex-end", paddingBottom: 8, paddingLeft: 8, gap: 8 }}>
-          <span style={{ fontSize: "1.1rem", fontWeight: 700, color: "#701366" }}>{DOW_FULL[di]}</span>
+          <span style={{ fontSize: "1.1rem", fontWeight: 500, color: "#701366" }}>{DOW_FULL[di]}</span>
           <span style={{ fontSize: "0.85rem", color: "#999" }}>
             {cursor.getDate()} {MONTHS[cursor.getMonth()]} {cursor.getFullYear()}
             {isToday ? " · Today" : ""}
@@ -290,7 +290,7 @@ function MonthView({ cursor, events, today, onEventClick }) {
   return (
     <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: 1, background: "#f0eaf8", borderRadius: 10, overflow: "hidden" }}>
       {DOW_SHORT.map((d) => (
-        <div key={d} style={{ background: "white", textAlign: "center", fontSize: 10, fontWeight: 700, color: "#701366", padding: "8px 2px 6px", letterSpacing: "0.05em" }}>
+        <div key={d} style={{ background: "white", textAlign: "center", fontSize: 10, fontWeight: 600, color: "#701366", padding: "8px 2px 6px", letterSpacing: "0.05em" }}>
           {d}
         </div>
       ))}
@@ -305,7 +305,7 @@ function MonthView({ cursor, events, today, onEventClick }) {
         return (
           <div key={i} style={{ background: isToday ? "#fdf6fc" : "white", minHeight: 90, padding: 4 }}>
             <div style={{
-              fontSize: 11, fontWeight: 700, color: isToday ? "#fff" : "#444",
+              fontSize: 11, fontWeight: 500, color: isToday ? "#fff" : "#444",
               background: isToday ? "#701366" : "transparent",
               borderRadius: "50%", width: 20, height: 20,
               display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 3,
@@ -315,7 +315,7 @@ function MonthView({ cursor, events, today, onEventClick }) {
                 key={ev.id}
                 onClick={(e) => onEventClick(ev, e)}
                 style={{
-                  fontSize: 8, fontWeight: 700, borderRadius: 4, padding: "1px 5px",
+                  fontSize: 8, fontWeight: 500, borderRadius: 4, padding: "1px 5px",
                   marginBottom: 2, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis",
                   background: c.bg, color: c.text, border: `1px solid ${c.border}55`, cursor: "pointer",
                 }}
@@ -357,18 +357,18 @@ function EventModal({ initial, onClose, onSave }) {
 
   const inputStyle = {
     width: "100%", border: "1.5px solid #e0d6f0", borderRadius: 10,
-    padding: "9px 12px", fontSize: 13, marginBottom: 12, outline: "none",
+    padding: "9px 12px", fontSize: 11.5, marginBottom: 12, outline: "none",
     color: "#1a1a2e", background: "white", boxSizing: "border-box",
   };
   const labelStyle = {
-    fontSize: 10, fontWeight: 700, color: "#701366", marginBottom: 4,
+    fontSize: 10, fontWeight: 500, color: "#701366", marginBottom: 4,
     textTransform: "uppercase", letterSpacing: "0.05em", display: "block",
   };
 
   return (
     <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.4)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 100 }}>
       <div style={{ background: "white", borderRadius: 18, padding: 24, width: 340, boxShadow: "0 8px 40px rgba(112,19,102,0.18)", maxHeight: "90vh", overflowY: "auto" }}>
-        <div style={{ fontSize: "1.3rem", color: "#701366", marginBottom: 16, fontWeight: 700 }}>
+        <div style={{ fontSize: "1.3rem", color: "#701366", marginBottom: 16, fontWeight: 500 }}>
           {isEdit ? " Edit Class" : " Add Class"}
         </div>
 
@@ -403,13 +403,13 @@ function EventModal({ initial, onClose, onSave }) {
         <div style={{ display: "flex", justifyContent: "flex-end", gap: 8, marginTop: 4 }}>
           <button
             onClick={onClose}
-            style={{ border: "1.5px solid #701366", color: "#701366", background: "white", borderRadius: 10, padding: "7px 18px", fontSize: 13, fontWeight: 700, cursor: "pointer" }}
+            style={{ border: "1.5px solid #701366", color: "#701366", background: "white", borderRadius: 10, padding: "7px 18px", fontSize: 11, fontWeight: 400, cursor: "pointer" }}
           >
             Cancel
           </button>
           <button
             onClick={handleSave}
-            style={{ background: "#701366", color: "white", border: "1.5px solid #701366", borderRadius: 10, padding: "7px 18px", fontSize: 13, fontWeight: 700, cursor: "pointer" }}
+            style={{ background: "#701366", color: "white", border: "1.5px solid #701366", borderRadius: 10, padding: "7px 18px", fontSize: 11.5, fontWeight:400, cursor: "pointer" }}
           >
             {isEdit ? "Update" : "Save"}
           </button>
@@ -494,12 +494,12 @@ export default function Time_table() {
         <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
           <button
             onClick={() => setCursor(new Date(today))}
-            style={{ fontSize: "0.78rem", color: "#701366", cursor: "pointer", border: "1.5px solid #e0d6f0", background: "white", borderRadius: 8, padding: "3px 10px", fontWeight: 500 }}
+            style={{ fontSize: "0.78rem", color: "#701366", cursor: "pointer", border: "1.5px solid #e0d6f0", background: "white", borderRadius: 8, padding: "3px 10px", fontWeight: 400 }}
           >
             Today
           </button>
           <button onClick={() => navigate(-1)} style={{ border: "1.5px solid #e0d6f0", background: "white", borderRadius: 8, padding: "2px 10px", fontSize: "1rem", color: "#701366", cursor: "pointer" }}>‹</button>
-          <span style={{ fontSize: "0.85rem", fontWeight: 600, color: "#333", minWidth: 200, textAlign: "center" }}>{getNavLabel()}</span>
+          <span style={{ fontSize: "0.85rem", fontWeight: 500, color: "#333", minWidth: 200, textAlign: "center" }}>{getNavLabel()}</span>
           <button onClick={() => navigate(1)}  style={{ border: "1.5px solid #e0d6f0", background: "white", borderRadius: 8, padding: "2px 10px", fontSize: "1rem", color: "#701366", cursor: "pointer" }}>›</button>
         </div>
 
@@ -517,7 +517,7 @@ export default function Time_table() {
           </div>
           <button
             onClick={() => { setEditingEvent(null); setShowModal(true); }}
-            style={{ background: "#701366", color: "white", font:"item" ,border: "1.5px solid #701366", borderRadius: 10, padding: "7px 16px", fontSize: "0.82rem", fontWeight: 700, cursor: "pointer" }}
+            style={{ background: "#701366", color: "white", font:"item" ,border: "1.5px solid #701366", borderRadius: 10, padding: "7px 16px", fontSize: "0.82rem", fontWeight: 400, cursor: "pointer" }}
           >
             + Add Event
           </button>
