@@ -1,12 +1,20 @@
 import Navbar from "../components/Navbar";
 import DashboardLayout from "../components/DashboardLayout";
 import Searchbar from "../components/Searchbar";
-import { Tabs } from "../components/Tabs";
+import Tabs from "../components/Tabs";
 
 const statusStyles = {
   "In Progress": "bg-[#F8E0F8] text-[#701366]",
   Completed: "bg-[#701366] text-white",
 };
+
+const studentTabs = [
+  { name: "Profile", path: "/Student_profile" },
+  { name: "Classes", path: "/Student_classes" },
+  { name: "Payment", path: "/Payment_student" },
+  { name: "Attendance", path: "/Attendance_student" },
+];
+
 
 const classesData = [
   {
@@ -27,13 +35,13 @@ const classesData = [
   },
 ];
 
-export default function ClassesStudent() {
+export default function Studentclasses() {
   return (
     <DashboardLayout>
       <h2 className="text-2xl">Classes</h2>
 
       <div className="flex justify-between items-center mb-6">
-        <Tabs />
+        <Tabs tabs={studentTabs} />
         <Searchbar onAdd={false} />
       </div>
 
