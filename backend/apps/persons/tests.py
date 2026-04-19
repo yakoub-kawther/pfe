@@ -1,8 +1,4 @@
 from django.test import TestCase
-<<<<<<< HEAD
-
-# Create your tests here.
-=======
 from django.core.exceptions import ValidationError
 from datetime import date, timedelta
 
@@ -129,4 +125,3 @@ class PersonServicesTestCase(TestCase):
         deactivate_employee(employee.person_id)
         employee.refresh_from_db()
         self.assertEqual(employee.status, 'inactive')
->>>>>>> viewsets
