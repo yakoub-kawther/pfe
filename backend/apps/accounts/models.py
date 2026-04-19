@@ -1,3 +1,4 @@
+# models.py
 from django.db import models
 from apps.persons.models import Student, Employee
 from django.contrib.auth.hashers import make_password
@@ -9,8 +10,8 @@ class Role(models.Model):
     class Meta:
         db_table = 'role'
 
-    def str(self):
-        return self.name
+    def __str__(self):
+        return f"{self.name}"
 
 
 class Account(models.Model):
@@ -37,13 +38,24 @@ class Account(models.Model):
                 name='one_person_only'
             )
         ]
-
+    """
     def save(self, *args, **kwargs):
         if not self.password_hash.startswith('pbkdf2_'):
             self.password_hash = make_password(self.password_hash)
         super().save(*args, **kwargs)
-
-    def str(self):
+    
+    def __str__(self):
         if self.student:
             return f"{self.username} - {self.role}"
         return f"{self.username} - {self.role}"
+     """
+    @property
+    def is_authenticated(self):
+        return True
+
+    @property
+    def is_anonymous(self):
+        return False
+    
+
+    

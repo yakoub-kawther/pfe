@@ -1,6 +1,8 @@
 from rest_framework import serializers
-from django.contrib.auth.hashers import check_password
 from .models import Account
+from .services import login
+
+
 
 
 class LoginSerializer(serializers.Serializer):
@@ -8,32 +10,53 @@ class LoginSerializer(serializers.Serializer):
     password = serializers.CharField(write_only=True)
 
     def validate(self, data):
-        username = data.get('username')
-        password = data.get('password')
-
-        
         try:
-            account = Account.objects.select_related(
-                'role',
-                'student',
-                'employee',
-            ).get(username=username)
-        except Account.DoesNotExist:
-            raise serializers.ValidationError("username or password is incorrect.")
+            account = login(data['username'], data['password'])
+        except ValueError as exc:
+            raise serializers.ValidationError(str(exc))
 
+        return {'account': account}
+
+
+class TokenSerializer(serializers.Serializer):
+   
+    access  = serializers.CharField()
+    refresh = serializers.CharField()
+
+class AccountSerializer(serializers.ModelSerializer):
+    full_name = serializers.SerializerMethodField()
+    role = serializers.CharField(source='role.name', read_only=True)
+
+    class Meta:
+        model = Account
+        fields = [
+            'id',
+            'username',
+            'role',
+            'full_name',
+            'status',
+            'created_at'
+        ]
+        read_only_fields = fields
+
+    def get_full_name(self, obj):
+        if obj.student:
+            return f"{obj.student.person.first_name} {obj.student.person.last_name}"
+        if obj.employee:
+            return f"{obj.employee.person.first_name} {obj.employee.person.last_name}"
+        return None
+
+
+
+
+class PasswordResetSerializer(serializers.Serializer):
+    old_password = serializers.CharField(write_only=True)
+    new_password = serializers.CharField(write_only=True, min_length=8)
+
+    def validate_new_password(self, value):
         
-        if account.status != 'active':
-            raise serializers.ValidationError("Account is inactive.")
-
-        
-        if not check_password(password, account.password_hash):
-            raise serializers.ValidationError("username or password is incorrect.")
-
-        data['account']   = account
-        data['role']      = account.role.name
-        if account.student:
-            data['full_name'] = f"{account.student.first_name} {account.student.last_name}"
-        else:
-            data['full_name'] = f"{account.employee.first_name} {account.employee.last_name}"
-
-        return data
+        if len(value) < 8:
+            raise serializers.ValidationError(
+                "Password must be at least 8 characters long."
+            )
+        return value
