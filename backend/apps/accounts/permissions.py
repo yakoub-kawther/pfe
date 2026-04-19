@@ -1,46 +1,27 @@
 from rest_framework.permissions import BasePermission
 
 
-class IsSuperAdmin(BasePermission):
+class _RolePermission(BasePermission):
+    allowed_roles = ()
+
     def has_permission(self, request, view):
-        return (
-            request.user
-            and request.user.is_authenticated
-            and request.auth.get('role') == 'super_admin'
-        )
+        if not request.user or not request.user.is_authenticated:
+            return False
+
+        return request.user.role.name in self.allowed_roles
 
 
-class IsAdmin(BasePermission):
-    def has_permission(self, request, view):
-        return (
-            request.user
-            and request.user.is_authenticated
-            and request.auth.get('role') == 'admin'
-        )
+class IsAdmin(_RolePermission):
+    allowed_roles = ('admin',)
 
 
-class IsTeacher(BasePermission):
-    def has_permission(self, request, view):
-        return (
-            request.user
-            and request.user.is_authenticated
-            and request.auth.get('role') == 'teacher'
-        )
+class IsTeacher(_RolePermission):
+    allowed_roles = ('teacher',)
 
 
-class IsStudent(BasePermission):
-    def has_permission(self, request, view):
-        return (
-            request.user
-            and request.user.is_authenticated
-            and request.auth.get('role') == 'student'
-        )
+class IsStudent(_RolePermission):
+    allowed_roles = ('student',)
 
 
-class IsAdminOrSuperAdmin(BasePermission):
-    def has_permission(self, request, view):
-        return (
-            request.user
-            and request.user.is_authenticated
-            and request.auth.get('role') in ['admin', 'super_admin']
-        )
+class IsAdminOrSuperAdmin(_RolePermission):
+    allowed_roles = ('admin', 'super_admin')
