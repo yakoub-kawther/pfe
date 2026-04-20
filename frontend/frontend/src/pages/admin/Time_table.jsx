@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from "react";
-import DashboardLayout from "../components/DashboardLayout";
+import DashboardLayout from "../../components/DashboardLayout";
 
 // ──────────────────────────────────────────────────────
 // CONSTANTS
@@ -20,7 +20,6 @@ const DAY_COLORS = [
   { bg: "#fff3e0", border: "#ff7043", tag: "#ff7043", text: "#bf360c" },
 ];
 
-// Master list of available classes
 const CLASS_OPTIONS = [
   "English A1", "English A2", "English B1", "English B2", "English C1", "English C2",
   "French A1", "French A2", "French B1", "French B2", "French C1",
@@ -44,6 +43,44 @@ const INITIAL_EVENTS = [
   { id: 9,  title: "French B2",   dow: 5, startHour: 15, duration: 2, room: "Room C1" },
   { id: 10, title: "Spanish B2",  dow: 6, startHour: 16, duration: 2, room: "Room A2" },
 ];
+
+// ──────────────────────────────────────────────────────
+// OVERLAP LAYOUT HELPER
+// Assigns each event a `col` index and a `totalCols` so
+// overlapping events are displayed side-by-side.
+// ──────────────────────────────────────────────────────
+function getEventLayout(dayEvs) {
+  const sorted = [...dayEvs].sort((a, b) => a.startHour - b.startHour);
+
+  // colEnds[i] = the end hour of the last event placed in column i
+  const colEnds = [];
+  const colAssign = new Map(); // id -> col index
+
+  for (const ev of sorted) {
+    let placed = false;
+    for (let i = 0; i < colEnds.length; i++) {
+      if (colEnds[i] <= ev.startHour) {
+        colAssign.set(ev.id, i);
+        colEnds[i] = ev.startHour + ev.duration;
+        placed = true;
+        break;
+      }
+    }
+    if (!placed) {
+      colAssign.set(ev.id, colEnds.length);
+      colEnds.push(ev.startHour + ev.duration);
+    }
+  }
+
+  const totalCols = colEnds.length;
+
+  // Build result map: id -> { col, totalCols }
+  const layout = new Map();
+  for (const ev of dayEvs) {
+    layout.set(ev.id, { col: colAssign.get(ev.id), totalCols });
+  }
+  return layout;
+}
 
 // ──────────────────────────────────────────────────────
 // HELPERS
@@ -72,7 +109,7 @@ function pad(n) {
 }
 
 // ──────────────────────────────────────────────────────
-// EVENT POPUP (click on event (Edit / Delete))
+// EVENT POPUP
 // ──────────────────────────────────────────────────────
 function EventPopup({ ev, anchorRect, onClose, onDelete, onEdit }) {
   const popupRef = useRef(null);
@@ -103,7 +140,6 @@ function EventPopup({ ev, anchorRect, onClose, onDelete, onEdit }) {
         border: `2px solid ${c.border}33`,
       }}
     >
-      {/* Header */}
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 10 }}>
         <div>
           <div style={{ fontSize: 14, fontWeight: 500, color: c.text }}>{ev.title}</div>
@@ -118,10 +154,8 @@ function EventPopup({ ev, anchorRect, onClose, onDelete, onEdit }) {
         >×</button>
       </div>
 
-      {/* Color accent bar */}
       <div style={{ height: 3, borderRadius: 2, background: c.border, marginBottom: 12 }} />
 
-      {/* Actions */}
       <div style={{ display: "flex", gap: 8 }}>
         <button
           onClick={() => onEdit(ev)}
@@ -205,10 +239,14 @@ function WeekView({ cursor, events, today, onEventClick }) {
           </div>
         ))}
       </div>
+
       {Array.from({ length: 7 }, (_, di) => {
         const date = addDays(ws, di);
         const isToday = isSameDay(date, today);
         const dayEvs = events.filter((e) => e.dow === di);
+        // ── compute side-by-side layout for this day ──
+        const layout = getEventLayout(dayEvs);
+
         return (
           <div key={di} style={{ flex: 1, minWidth: 90, position: "relative" }}>
             <div style={{ height: 44, textAlign: "center", paddingBottom: 6, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "flex-end" }}>
@@ -223,16 +261,28 @@ function WeekView({ cursor, events, today, onEventClick }) {
                 alignItems: "center", justifyContent: "center",
               }}>{date.getDate()}</span>
             </div>
+
             {HOURS.map((h) => (
               <div key={h} style={{ height: CELL_H, borderTop: "1px solid #f0eaf8" }} />
             ))}
-            {dayEvs.map((ev) => (
-              <EventBlock
-                key={ev.id} ev={ev}
-                style={{ top: 44 + (ev.startHour - HOURS[0]) * CELL_H + 4, left: 3, right: 3, height: ev.duration * CELL_H - 8 }}
-                onClick={(e) => onEventClick(ev, e)}
-              />
-            ))}
+
+            {dayEvs.map((ev) => {
+              const { col, totalCols } = layout.get(ev.id);
+              const widthPct = 100 / totalCols;
+              const leftPct  = col * widthPct;
+              return (
+                <EventBlock
+                  key={ev.id} ev={ev}
+                  style={{
+                    top:    44 + (ev.startHour - HOURS[0]) * CELL_H + 4,
+                    left:   `calc(${leftPct}% + 2px)`,
+                    width:  `calc(${widthPct}% - 4px)`,
+                    height: ev.duration * CELL_H - 8,
+                  }}
+                  onClick={(e) => onEventClick(ev, e)}
+                />
+              );
+            })}
           </div>
         );
       })}
@@ -245,6 +295,9 @@ function DayView({ cursor, events, today, onEventClick }) {
   const di = dowIndex(cursor);
   const isToday = isSameDay(cursor, today);
   const dayEvs = events.filter((e) => e.dow === di);
+  // ── compute side-by-side layout ──
+  const layout = getEventLayout(dayEvs);
+
   return (
     <div style={{ display: "flex" }}>
       <div style={{ width: 52, flexShrink: 0 }}>
@@ -255,6 +308,7 @@ function DayView({ cursor, events, today, onEventClick }) {
           </div>
         ))}
       </div>
+
       <div style={{ flex: 1, position: "relative" }}>
         <div style={{ height: 44, display: "flex", alignItems: "flex-end", paddingBottom: 8, paddingLeft: 8, gap: 8 }}>
           <span style={{ fontSize: "1.1rem", fontWeight: 500, color: "#701366" }}>{DOW_FULL[di]}</span>
@@ -263,16 +317,28 @@ function DayView({ cursor, events, today, onEventClick }) {
             {isToday ? " · Today" : ""}
           </span>
         </div>
+
         {HOURS.map((h) => (
           <div key={h} style={{ height: CELL_H, borderTop: "1px solid #f0eaf8" }} />
         ))}
-        {dayEvs.map((ev) => (
-          <EventBlock
-            key={ev.id} ev={ev} size="lg"
-            style={{ top: 44 + (ev.startHour - HOURS[0]) * CELL_H + 6, left: 12, right: 12, height: ev.duration * CELL_H - 12 }}
-            onClick={(e) => onEventClick(ev, e)}
-          />
-        ))}
+
+        {dayEvs.map((ev) => {
+          const { col, totalCols } = layout.get(ev.id);
+          const widthPct = 100 / totalCols;
+          const leftPct  = col * widthPct;
+          return (
+            <EventBlock
+              key={ev.id} ev={ev} size="lg"
+              style={{
+                top:    44 + (ev.startHour - HOURS[0]) * CELL_H + 6,
+                left:   `calc(${leftPct}% + 6px)`,
+                width:  `calc(${widthPct}% - 12px)`,
+                height: ev.duration * CELL_H - 12,
+              }}
+              onClick={(e) => onEventClick(ev, e)}
+            />
+          );
+        })}
       </div>
     </div>
   );
@@ -409,7 +475,7 @@ function EventModal({ initial, onClose, onSave }) {
           </button>
           <button
             onClick={handleSave}
-            style={{ background: "#701366", color: "white", border: "1.5px solid #701366", borderRadius: 10, padding: "7px 18px", fontSize: 11.5, fontWeight:400, cursor: "pointer" }}
+            style={{ background: "#701366", color: "white", border: "1.5px solid #701366", borderRadius: 10, padding: "7px 18px", fontSize: 11.5, fontWeight: 400, cursor: "pointer" }}
           >
             {isEdit ? "Update" : "Save"}
           </button>
@@ -427,7 +493,7 @@ export default function Time_table() {
   const [view, setView] = useState("Week");
   const [showModal, setShowModal] = useState(false);
   const [editingEvent, setEditingEvent] = useState(null);
-  const [popup, setPopup] = useState(null); // { ev, rect }
+  const [popup, setPopup] = useState(null);
 
   const todayRef = new Date();
   todayRef.setHours(0, 0, 0, 0);
@@ -517,7 +583,7 @@ export default function Time_table() {
           </div>
           <button
             onClick={() => { setEditingEvent(null); setShowModal(true); }}
-            style={{ background: "#701366", color: "white", font:"item" ,border: "1.5px solid #701366", borderRadius: 10, padding: "7px 16px", fontSize: "0.82rem", fontWeight: 400, cursor: "pointer" }}
+            style={{ background: "#701366", color: "white", font: "item", border: "1.5px solid #701366", borderRadius: 10, padding: "7px 16px", fontSize: "0.82rem", fontWeight: 400, cursor: "pointer" }}
           >
             + Add Event
           </button>
@@ -531,7 +597,6 @@ export default function Time_table() {
         {view === "Month" && <MonthView cursor={cursor} events={events} today={today} onEventClick={handleEventClick} />}
       </div>
 
-      {/* Event popup (click on event) */}
       {popup && (
         <EventPopup
           ev={popup.ev}
@@ -542,7 +607,6 @@ export default function Time_table() {
         />
       )}
 
-      {/* Add / Edit modal */}
       {showModal && (
         <EventModal
           initial={editingEvent}

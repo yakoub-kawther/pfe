@@ -124,17 +124,17 @@ const Table = ({ search = "", filter = "All" }) => {
                 <td className="px-4 py-3 text-[#701366]">{student.languages}</td>
                 <td className="px-4 py-3">
                   <div className="flex items-center gap-2">
-<button
-  aria-label="Edit"
-  onClick={() => navigate("/Edit_student", { state: { student } })}
-  className="p-1.5 rounded-lg text-[#701366] hover:text-white hover:bg-[#701366] transition-all hover:scale-110"
->
-  <SquarePen className="w-4 h-4" />
-</button>
+               <button
+                  aria-label="Edit"
+                  onClick={() => navigate("/Edit_student", { state: { student } })}
+                  className="p-1.5 rounded-sm text-[#701366]  hover:text-white hover:bg-[#701366] transition-all hover:scale-110"
+                >
+                <SquarePen className="w-4 h-4" />
+                </button>
                     <button
                       aria-label="More"
                       onClick={() => navigate("/Student_profile")}
-                      className="p-1.5 rounded-lg text-[#701366] hover:text-white hover:bg-[#701366] transition-all hover:scale-110"
+                      className="p-1.5 rounded-sm text-[#701366] hover:text-white hover:bg-[#701366] transition-all hover:scale-110"
                     >
                       <LayoutGrid className="w-4 h-4" />
                     </button>

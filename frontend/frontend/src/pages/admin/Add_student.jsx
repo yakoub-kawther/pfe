@@ -1,6 +1,6 @@
-import DashboardLayout from "../components/DashboardLayout";
-import Buttons from "../components/Buttons";
-import Form from "../components/Form";
+import DashboardLayout from "../../components/DashboardLayout";
+import Buttons from "../../components/Buttons";
+import Form from "../../components/Form";
 
 function AddStudent() {
   return (

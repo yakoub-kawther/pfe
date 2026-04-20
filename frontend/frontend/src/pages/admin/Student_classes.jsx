@@ -1,7 +1,7 @@
-import Navbar from "../components/Navbar";
-import DashboardLayout from "../components/DashboardLayout";
-import Searchbar from "../components/Searchbar";
-import Tabs from "../components/Tabs";
+import Navbar from "../../components/Navbar";
+import DashboardLayout from "../../components/DashboardLayout";
+import Searchbar from "../../components/Searchbar";
+import Tabs from "../../components/Tabs";
 
 const statusStyles = {
   "In Progress": "bg-[#F8E0F8] text-[#701366]",

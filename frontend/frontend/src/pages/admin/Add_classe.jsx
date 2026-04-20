@@ -1,0 +1,162 @@
+import { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import DashboardLayout from "../../components/DashboardLayout";
+
+const inp = {
+  width: "100%",
+  border: "1px solid #e2d0e2",
+  borderRadius: "8px",
+  padding: "10px 14px",
+  fontSize: "14px",
+  color: "#701366",
+  outline: "none",
+  boxSizing: "border-box",
+  fontFamily: "Inter, sans-serif",
+  backgroundColor: "#fff",
+};
+
+const sel = { ...inp, cursor: "pointer" };
+
+const Field = ({ label, children, full = false }) => (
+  <div className="flex flex-col gap-1.5" style={full ? { gridColumn: "1 / -1" } : {}}>
+    {label ? <label className="text-[13px] text-gray-500 font-medium">{label}</label> : null}
+    {children}
+  </div>
+);
+
+const Card = ({ title, children }) => (
+  <div
+    className="bg-white rounded-2xl border border-gray-100"
+    style={{ padding: "24px 28px", boxShadow: "0 1px 6px rgba(0,0,0,0.05)" }}
+  >
+    <h3 className="text-[#701366] font-semibold" style={{ fontSize: "16px", marginBottom: "20px" }}>
+      {title}
+    </h3>
+    {children}
+  </div>
+);
+
+const btnBase    = "inline-flex items-center justify-center px-5 py-1.5 h-7 w-12 text-sm rounded-lg border transition-colors font-Inter";
+const btnOutline = `${btnBase} border-[#701366] text-[#701366] bg-white hover:bg-[#701366] hover:text-white`;
+const btnGhost   = `${btnBase} border-[#701366] text-[#701366] bg-white hover:bg-[#701366] hover:text-white`;
+const btnFilled  = `${btnBase} border-[#701366] text-white bg-[#701366] hover:bg-white hover:text-[#701366] `;
+
+const emptyForm = {
+  name: "", language: "", level: "", teacher: "",
+  students: "", year: "", classroom: "", status: "Active",
+  schedule: "", description: "",
+};
+
+export default function Add_classe() {
+  const navigate = useNavigate();
+  const [form, setForm] = useState(emptyForm);
+
+  const handle = (field) => (e) =>
+    setForm((prev) => ({ ...prev, [field]: e.target.value }));
+
+  const handleReset = () => setForm(emptyForm);
+
+  const handleSave = () => {
+    if (!form.name) { alert("Please enter a class name."); return; }
+    console.log("New class:", form);
+    navigate("/Classes");
+  };
+
+  return (
+    <DashboardLayout>
+      <div className="max-w-5xl mx-auto pb-10" style={{ padding: "30px 16px" }}>
+
+        {/* Header */}
+        <div className="flex items-center justify-between mb-8">
+          <h1 className="text-2xl text-[#701366] font-Inter">Add New Class</h1>
+          <div className="flex gap-2">
+            <button onClick={() => navigate("/Classes")} className={btnOutline}>cancel</button>
+            <button onClick={handleReset} className={btnGhost}>reset</button>
+            <button onClick={handleSave} className={btnFilled}>save</button>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-2" style={{ gap: "24px", alignItems: "start", marginTop: "30px"  }}>
+
+          {/* LEFT — Class Information */}
+          <Card title="Class Information">
+            <div className="grid grid-cols-2" style={{ gap: "18px" }}>
+
+              <Field label="Class Name" full>
+                <input style={inp} value={form.name} onChange={handle("name")} placeholder="e.g. Class A" />
+              </Field>
+
+              <Field label="Language">
+                <select style={sel} value={form.language} onChange={handle("language")}>
+                  <option value="">Select language</option>
+                  <option>English</option>
+                  <option>French</option>
+                  <option>Arabic</option>
+                  <option>Spanish</option>
+                  <option>Italian</option>
+                </select>
+              </Field>
+
+              <Field label="Level">
+                <select style={sel} value={form.level} onChange={handle("level")}>
+                  <option value="">Select level</option>
+                  <option>A1</option>
+                  <option>A2</option>
+                  <option>B1</option>
+                  <option>B2</option>
+                  <option>C1</option>
+                  <option>C2</option>
+                </select>
+              </Field>
+
+              <Field label="Teacher">
+                <input style={inp} value={form.teacher} onChange={handle("teacher")} placeholder="e.g. Mr Ahmed" />
+              </Field>
+
+              <Field label="Max Students">
+                <input type="number" min="1" style={inp} value={form.students} onChange={handle("students")} placeholder="e.g. 15" />
+              </Field>
+
+              <Field label="Academic Year">
+                <input style={inp} value={form.year} onChange={handle("year")} placeholder="e.g. 2025-2026" />
+              </Field>
+
+              <Field label="Classroom">
+                <input style={inp} value={form.classroom} onChange={handle("classroom")} placeholder="e.g. Room 3" />
+              </Field>
+
+              <Field label="Status">
+                <select style={sel} value={form.status} onChange={handle("status")}>
+                  <option>Active</option>
+                  <option>Inactive</option>
+                </select>
+              </Field>
+
+            </div>
+          </Card>
+
+          {/* RIGHT — Schedule & Notes */}
+          <Card title="Schedule & Notes">
+            <div className="grid grid-cols-1" style={{ gap: "18px" }}>
+
+              <Field label="Schedule">
+                <input style={inp} value={form.schedule} onChange={handle("schedule")} placeholder="e.g. Mon / Wed / Fri — 10:00 AM" />
+              </Field>
+
+              <Field label="Description">
+                <textarea
+                  style={{ ...inp, resize: "none", height: "120px" }}
+                  value={form.description}
+                  onChange={handle("description")}
+                  placeholder="Additional notes about this class..."
+                />
+              </Field>
+
+            </div>
+          </Card>
+
+        </div>
+      </div>
+    </DashboardLayout>
+  );
+}

@@ -1,8 +1,8 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import DashboardLayout from "../components/DashboardLayout.jsx";
-import Searchbar from "../components/Searchbar.jsx";
-import Table from "../components/Table.jsx";
+import DashboardLayout from "../../components/DashboardLayout.jsx";
+import Searchbar from "../../components/Searchbar.jsx";
+import Table from "../../components/Table.jsx";
 
 const Students = () => {
   const navigate = useNavigate();

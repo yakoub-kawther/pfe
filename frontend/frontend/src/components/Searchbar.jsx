@@ -24,7 +24,7 @@ const Searchbar = ({
       <div className="flex items-center gap-2">
 
         {/* Search */}
-        <div className="relative flex items-center">
+        <div className="relative flex  items-center">
           <Search className="absolute left-3 w-4 h-4 text-[#701366] pointer-events-none" />
           <input
             type="text"

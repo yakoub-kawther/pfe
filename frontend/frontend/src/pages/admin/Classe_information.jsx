@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import DashboardLayout from "../components/DashboardLayout.jsx";
+import DashboardLayout from "../../components/DashboardLayout.jsx";
 import {
   Search, SquarePen, Check, ArrowLeft,
   BookOpen, Clock, CheckCircle, Users, GraduationCap,

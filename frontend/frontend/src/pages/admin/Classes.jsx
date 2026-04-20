@@ -1,9 +1,9 @@
 import React, { useState } from "react";
-import DashboardLayout from "../components/DashboardLayout";
-import Tabs from "../components/Tabs";
+import DashboardLayout from "../../components/DashboardLayout";
+import Tabs from "../../components/Tabs";
 import { useNavigate } from "react-router-dom";
 import { LayoutGrid } from "lucide-react";
-import Searchbar from "../components/Searchbar";
+import Searchbar from "../../components/Searchbar";
 
 export default function Classes() {
   const navigate = useNavigate();
@@ -73,7 +73,7 @@ export default function Classes() {
             <Searchbar
               placeholder="Search by name,language,teacher.."
               filterOptions={["Active", "Inactive"]}
-              addPath="/Add_classes"
+              addPath="/Add_classe"
               showAdd={true}
               onSearchChange={(val) => setSearch(val)}
               onFilterChange={(val) => setFilter(val)}
@@ -112,14 +112,14 @@ export default function Classes() {
                   <td className="px-4 py-3 text-[#701366]">{cls.students}</td>
                   <td className="px-4 py-3 text-[#701366]">{cls.year}</td>
                   <td className="px-4 py-3">
-                    <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${statusStyles[cls.status.color]}`}>
+                    <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-Inter ${statusStyles[cls.status.color]}`}>
                       {cls.status.text}
                     </span>
                   </td>
                   <td className="px-4 py-3">
                  <button
-                   onClick={() => navigate("/Class_information", { state: { cls } })}
-                   className="p-1.5 rounded-lg text-[#701366] hover:text-white hover:bg-[#701366] transition-all hover:scale-110"
+                   onClick={() => navigate("/Classes_information", { state: { cls } })}
+                   className="p-1.5 rounded-sm text-[#701366] hover:text-white hover:bg-[#701366] transition-all hover:scale-110"
                  >
                    <LayoutGrid className="w-4 h-4" />
                  </button>

@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import DashboardLayout from "../components/DashboardLayout.jsx";
+import DashboardLayout from "../../components/DashboardLayout.jsx";
 
 const inp = {
   width: "100%",
@@ -33,7 +33,7 @@ const Card = ({ title, children }) => (
     style={{ padding: "28px 32px", boxShadow: "0 1px 4px rgba(0,0,0,0.06)" }}
   >
     <h3
-      className="text-[#701366] font-medium border-b border-[#f0e0ee]"
+      className="text-[#701366] font-Inter border-b border-[#f0e0ee]"
       style={{ fontSize: "17px", marginBottom: "20px", paddingBottom: "12px" }}
     >
       {title}
@@ -85,18 +85,18 @@ const Edit_student = () => {
         {/* Header */}
         <div className="flex items-center justify-between mb-8">
           <h1 className="text-2xl text-[#701366]">
-            Edit Student — <span className="font-medium">{student?.name}</span>
+            Edit Student — <span className="font-Inter">{student?.name}</span>
           </h1>
           <div className="flex gap-3">
             <button
               onClick={() => navigate(-1)}
-              className="px-5 py-2 rounded-xl border border-[#701366] text-[#701366] text-sm hover:bg-[#f8e0f8] transition-all"
+              className="px-5 py-2 rounded-sm border border-[#701366] bg-white text-[#701366] text-sm hover:bg-[#701366] hover:text-white transition-all"
             >
               Cancel
             </button>
             <button
               onClick={handleSubmit}
-              className="px-5 py-2 rounded-xl bg-[#701366] text-white text-sm hover:opacity-90 transition-all"
+              className="px-5 py-2 rounded-sm border border-[#701366] bg-[#701366] text-white text-sm hover:bg-white hover:text-[#701366] transition-all"
             >
               Save Changes
             </button>
@@ -104,7 +104,7 @@ const Edit_student = () => {
         </div>
 
         {/* Form Grid */}
-        <div className="grid grid-cols-2 mx-auto" style={{ gap: "28px", maxWidth: "1700px" }}>
+        <div className="grid grid-cols-2 mx-auto" style={{ gap: "28px", maxWidth: "1700px", marginTop: "30px"  }}>
 
           {/* LEFT */}
           <div className="flex flex-col" style={{ gap: "28px" }}>

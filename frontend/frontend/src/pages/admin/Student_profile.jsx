@@ -1,8 +1,8 @@
 import { useState } from "react";
-import DashboardLayout from "../components/DashboardLayout";
-import  Tabs from "../components/Tabs";
-import  Form  from "../components/Form";
-import Buttons from "../components/Buttons";
+import DashboardLayout from "../../components/DashboardLayout";
+import  Tabs from "../../components/Tabs";
+import  Form  from "../../components/Form";
+import Buttons from "../../components/Buttons";
 
 
 

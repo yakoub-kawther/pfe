@@ -1,6 +1,6 @@
 import React from "react";
 import { useNavigate } from "react-router-dom";
-import DashboardLayout from "../components/DashboardLayout";
+import DashboardLayout from "../../components/DashboardLayout";
 import {
   UserPlus, CreditCard, Bell, ChevronRight,
   Users, GraduationCap, CheckCircle, Clock, AlertCircle, TrendingUp,
