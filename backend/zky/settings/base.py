@@ -9,8 +9,6 @@ BASE_DIR = Path(__file__).resolve().parent.parent.parent
 SECRET_KEY = os.getenv('SECRET_KEY')
 
 INSTALLED_APPS = [
-<<<<<<< HEAD
-=======
     'apps.persons',
     'apps.academic',
     'apps.saleries',
@@ -20,7 +18,6 @@ INSTALLED_APPS = [
     'apps.inscription',
     'apps.notifications',
     'apps.payments',
->>>>>>> viewsets
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -31,12 +28,8 @@ INSTALLED_APPS = [
     'rest_framework_simplejwt',
     'rest_framework_simplejwt.token_blacklist',
     'corsheaders',
-<<<<<<< HEAD
-    'apps.persons',
-=======
     
     
->>>>>>> viewsets
 ]
 
 from datetime import timedelta

@@ -1,5 +1,9 @@
 from django.contrib import admin
-from .models import Person, Student, Parent, Employee, Teacher, Position, ParentStudent
+
+
+# Register your models here.
+
+from .models import Person, Student, Parent, Employee, Teacher, ParentStudent
 
 class ParentStudentInline(admin.TabularInline):
     model = ParentStudent
@@ -13,4 +17,4 @@ admin.site.register(Student)
 admin.site.register(Parent, ParentAdmin)
 admin.site.register(Employee)
 admin.site.register(Teacher)
-admin.site.register(Position)
+
