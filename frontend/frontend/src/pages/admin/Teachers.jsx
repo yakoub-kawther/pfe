@@ -1,62 +1,87 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import DashboardLayout from "../../components/DashboardLayout";
-import { SquarePen, LayoutGrid } from "lucide-react";
+import { SquarePen, LayoutGrid, Loader2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import Searchbar from "../../components/Searchbar";
 
-const teachersData = [
-  {
-    id: 1,
-    name: "Benahmed Ahmed",
-    email: "benahmed@gmail.com",
-    phone: "0669907507",
-    language: "English",
-    status: "Active",
-    gender: "Male",
-    dob: "",
-    address: "",
-    username: "benahmed",
-    head_teacher: true,
-  },
-  {
-    id: 2,
-    name: "Benali Ali",
-    email: "benali@gmail.com",
-    phone: "0555163466",
-    language: "French",
-    status: "Inactive",
-    gender: "Male",
-    dob: "",
-    address: "",
-    username: "benali",
-    head_teacher: false,
-  },
-];
+const API_BASE = "http://localhost:8000/api";
 
-const statusStyles = {
-  Active: "bg-green-100 text-green-700",
-  Inactive: "bg-red-100 text-red-700",
-};
+// keys match the raw lowercase values from the API: "active" / "inactive"
+// const statusStyles = {
+//   active:   "bg-green-100 text-green-700",
+//   inactive: "bg-red-100 text-red-700",
+// };
 
 const Teachers = () => {
   const navigate = useNavigate();
-  const [teachers] = useState(teachersData);
-  const [search, setSearch] = useState("");
-  const [filter, setFilter] = useState("All");
 
-  const filtered = teachers.filter((t) => {
-    const q = search.toLowerCase();
-    const headTeacherMatch =
-      (q === "yes" && t.head_teacher === true) ||
-      (q === "no"  && t.head_teacher === false);
-    const matchSearch =
-      t.name.toLowerCase().includes(q) ||
-      t.phone.includes(q) ||
-      t.language.toLowerCase().includes(q) ||
-      headTeacherMatch;
-    const matchFilter = filter === "All" || t.status === filter;
-    return matchSearch && matchFilter;
-  });
+  const [teachers, setTeachers] = useState([]);
+  const [loading, setLoading]   = useState(false);
+  const [error, setError]       = useState(null);
+  const [search, setSearch]     = useState("");
+  const [filter, setFilter]     = useState("All");
+
+  const buildParams = useCallback((searchVal, filterVal) => {
+    const params = new URLSearchParams();
+
+    if (searchVal.trim()) {
+      const q = searchVal.trim().toLowerCase();
+      if (q === "yes") {
+        params.set("is_head_teacher", "true");
+      } else if (q === "no") {
+        params.set("is_head_teacher", "false");
+      } else {
+        params.set("search", searchVal.trim());
+      }
+    }
+
+    if (filterVal && filterVal !== "All") {
+      // must match the param name read in Django: request.query_params.get('employee__status')
+      params.set("employee__status", filterVal.toLowerCase());
+    }
+
+    return params.toString();
+  }, []);
+
+  const fetchTeachers = useCallback(
+    async (searchVal, filterVal) => {
+      setLoading(true);
+      setError(null);
+      try {
+        const qs  = buildParams(searchVal, filterVal);
+        const url = `${API_BASE}/persons/teachers/${qs ? `?${qs}` : ""}`;
+
+        const res = await fetch(url, {
+          headers: {
+            "Content-Type": "application/json",
+            // Authorization: `Bearer ${localStorage.getItem("access_token")}`,
+          },
+        });
+
+        if (!res.ok) throw new Error(`Server error: ${res.status}`);
+
+        const data = await res.json();
+        setTeachers(Array.isArray(data) ? data : (data.results ?? []));
+      } catch (err) {
+        setError(err.message || "Failed to load teachers.");
+      } finally {
+        setLoading(false);
+      }
+    },
+    [buildParams]
+  );
+
+  // initial load
+  useEffect(() => {
+    fetchTeachers("", "All");
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // re-fetch on search / filter change (debounced 300 ms)
+  useEffect(() => {
+    const timer = setTimeout(() => fetchTeachers(search, filter), 300);
+    return () => clearTimeout(timer);
+  }, [search, filter, fetchTeachers]);
 
   return (
     <DashboardLayout>
@@ -64,9 +89,11 @@ const Teachers = () => {
 
         {/* Header */}
         <section className="flex items-center gap-4 h-10" style={{ marginTop: "30px" }}>
-          <h1 className="text-2xl text-[#701366] text-left whitespace-nowrap">Teachers List</h1>
+          <h1 className="text-2xl text-[#701366] text-left whitespace-nowrap">
+            Teachers List
+          </h1>
           <Searchbar
-            placeholder=" Name,phone,Head Teacher..."
+            placeholder=" Name, phone, Head Teacher..."
             filterOptions={["Active", "Inactive"]}
             addPath="/Add_teacher"
             showAdd={true}
@@ -89,36 +116,109 @@ const Teachers = () => {
                 <th className="px-4 py-3 text-sm">Action</th>
               </tr>
             </thead>
+
             <tbody className="divide-y divide-[#f8e0f8]">
-              {filtered.length === 0 ? (
+
+              {/* Loading */}
+              {loading && (
+                <tr>
+                  <td colSpan={7} className="text-center py-8">
+                    <div className="flex items-center justify-center gap-2 text-[#701366] opacity-60">
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      <span className="text-sm">Loading teachers...</span>
+                    </div>
+                  </td>
+                </tr>
+              )}
+
+              {/* Error */}
+              {!loading && error && (
+                <tr>
+                  <td colSpan={7} className="text-center py-8 text-red-500 text-sm">
+                    {error}
+                  </td>
+                </tr>
+              )}
+
+              {/* Empty */}
+              {!loading && !error && teachers.length === 0 && (
                 <tr>
                   <td colSpan={7} className="text-center py-8 text-[#701366] opacity-50 text-sm">
                     No teachers found.
                   </td>
                 </tr>
-              ) : (
-                filtered.map((teacher) => (
-                  <tr key={teacher.id} className="hover:bg-[#fffafe] transition-colors duration-100 h-12">
-                    <td className="py-3 text-[#701366]" style={{ paddingLeft: "20px" }}>{teacher.name}</td>
-                    <td className="px-2 py-3 text-[#701366]">{teacher.email}</td>
-                    <td className="px-4 py-3 text-[#701366]">{teacher.phone}</td>
-                    <td className="px-4 py-3 text-[#701366]">{teacher.language}</td>
-                    <td className="px-4 py-3">
-                      <span
-                        className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-Inter ${
-                          teacher.head_teacher
-                            ? "bg-[#f8e0f8] text-[#701366]"
-                            : "bg-gray-200 text-gray-700"
-                        }`}
-                      >
-                        {teacher.head_teacher ? "Yes" : "No"}
-                      </span>
+              )}
+
+              {/* Rows */}
+              {!loading && !error && teachers.map((teacher) => {
+                const person   = teacher.employee?.person ?? {};
+                const employee = teacher.employee         ?? {};
+                const fullName = `${person.first_name ?? ""} ${person.last_name ?? ""}`.trim();
+
+                // raw value from API is lowercase: "active" or "inactive"
+                const status = (employee.status ?? "").toLowerCase();
+
+                return (
+                  <tr
+                    key={employee.person_id}
+                    className="hover:bg-[#fffafe] transition-colors duration-100 h-12"
+                  >
+                    <td className="py-3 text-[#701366]" style={{ paddingLeft: "20px" }}>
+                      {fullName || "---"}
                     </td>
+                    <td className="px-2 py-3 text-[#701366]">{person.email  || "---"}</td>
+                    <td className="px-4 py-3 text-[#701366]">{person.phone  || "---"}</td>
+                    <td className="px-4 py-3 text-[#701366]">{teacher.language ?.language_name?? "---"}</td>
+
+                    {/* Head Teacher badge */}
                     <td className="px-4 py-3">
-                      <span className={`inline-flex items-center px-3 py-1 rounded-xl text-xs ${statusStyles[teacher.status] || "bg-gray-100 text-gray-600"}`}>
-                        {teacher.status || "—"}
-                      </span>
-                    </td>
+  <span style={{
+    display      : "inline-flex",
+    alignItems   : "center",
+    gap          : "5px",
+    padding      : "4px 12px",
+    borderRadius : "20px",
+    fontSize     : "11px",
+    fontWeight   : "600",
+    fontFamily   : "Inter, sans-serif",
+    letterSpacing: "0.03em",
+    background   : teacher.is_head_teacher ? "#f8e0f8" : "#f3f4f6",
+    color        : teacher.is_head_teacher ? "#701366"  : "#6b7280",
+    border       : `1px solid ${teacher.is_head_teacher ? "#e9b8e9" : "#e5e7eb"}`,
+  }}>
+    <span style={{
+      width: "6px", height: "6px", borderRadius: "50%", flexShrink: 0,
+      background: teacher.is_head_teacher ? "#701366" : "#9ca3af",
+    }} />
+    {teacher.is_head_teacher ? "Yes" : "No"}
+  </span>
+</td>
+
+                    {/* Status badge - lookup uses lowercase key */}
+                    <td className="px-4 py-3">
+  <span style={{
+    display      : "inline-flex",
+    alignItems   : "center",
+    gap          : "5px",
+    padding      : "4px 12px",
+    borderRadius : "20px",
+    fontSize     : "11px",
+    fontWeight   : "600",
+    fontFamily   : "Inter, sans-serif",
+    letterSpacing: "0.03em",
+    background   : status === "active" ? "#dcfce7" : "#fee2e2",
+    color        : status === "active" ? "#15803d"  : "#b91c1c",
+    border       : `1px solid ${status === "active" ? "#bbf7d0" : "#fecaca"}`,
+  }}>
+    <span style={{
+      width: "6px", height: "6px", borderRadius: "50%", flexShrink: 0,
+      background: status === "active" ? "#16a34a" : "#dc2626",
+    }} />
+    {status ? status.charAt(0).toUpperCase() + status.slice(1) : "---"}
+  </span>
+</td>
+
+                    {/* Actions */}
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-2">
                         <button
@@ -138,8 +238,9 @@ const Teachers = () => {
                       </div>
                     </td>
                   </tr>
-                ))
-              )}
+                );
+              })}
+
             </tbody>
           </table>
         </div>

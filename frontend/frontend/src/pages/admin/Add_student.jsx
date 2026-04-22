@@ -9,7 +9,7 @@ function AddStudent() {
       <section className="flex items-center  justify-between mb-6">
        <h1 className="text-2xl  text-[#701366]">Add Student</h1>
         
-        <Buttons />
+        {/* <Buttons /> */}
       </section>
         <Form />
 

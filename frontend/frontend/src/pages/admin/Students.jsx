@@ -5,7 +5,7 @@ import Searchbar from "../../components/Searchbar.jsx";
 import Table from "../../components/Table.jsx";
 
 const Students = () => {
-  const navigate = useNavigate();
+  // const navigate = useNavigate();
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState("All");
 
