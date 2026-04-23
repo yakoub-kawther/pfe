@@ -47,10 +47,10 @@ const card = {
 };
 
 /* ─── Stat Card ── */
-const StatCard = ({ Icon, iconColor, value, label }) => (
+const StatCard = ({ Icon, iconColor, bgColor, value, label }) => (
   <div style={{
     ...card,
-    padding: "35px 10px",
+    padding: "30px 10px",
     display: "flex",
     alignItems: "center",
     gap: 8,
@@ -58,15 +58,16 @@ const StatCard = ({ Icon, iconColor, value, label }) => (
     minWidth: 0,
   }}>
     <div style={{
-      width: 30, height: 30, borderRadius: 8,
-      background: "#f3f0ff", flexShrink: 0,
+      width: 50, height: 50, borderRadius: 50,
+      background: bgColor ?? "#f9f9f9",
+      flexShrink: 0,
       display: "flex", alignItems: "center", justifyContent: "center",
     }}>
-      <Icon size={14} color={iconColor} strokeWidth={1.7} />
+      <Icon size={30} color={iconColor} strokeWidth={1.7} />
     </div>
     <div style={{ minWidth: 0 }}>
-      <div style={{ fontSize: 17, fontFamily: "Inter, sans-serif", fontWeight: 600, color: "#1a1a2e", lineHeight: 1 }}>{value}</div>
-      <div style={{ fontSize: 9, color: "#9e9eb8", marginTop: 2, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{label}</div>
+      <div style={{ fontSize: 20, fontFamily: "Inter, sans-serif", fontWeight: 600, color: "#1a1a2e", lineHeight: 1 }}>{value}</div>
+      <div style={{ fontSize: 15, color: "#9e9eb8", marginTop: 3, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{label}</div>
     </div>
   </div>
 );
@@ -90,8 +91,8 @@ const AttendanceDonut = ({ pct = 80 }) => {
         display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
         pointerEvents: "none",
       }}>
-        <span style={{ fontSize: 19, fontWeight: 600, color: "#1a1a2e", lineHeight: 1 }}>{pct}%</span>
-        <span style={{ fontSize: 10, color: "#9e9eb8", marginTop: 2, fontWeight: 500 }}>Attendance</span>
+        <span style={{ fontSize: 21, fontWeight: 600, color: "#1a1a2e", lineHeight: 1 }}>{pct}%</span>
+        <span style={{ fontSize: 11, color: "#9e9eb8", marginTop: 2, fontWeight: 500 }}>Attendance</span>
       </div>
     </div>
   );
@@ -116,19 +117,19 @@ const Dashboard = () => {
         {/* ── Row 1: [Stats + Quick Actions] | [Welcome Back] ── */}
         <div style={{ display: "flex", gap: 8, alignItems: "stretch", flexShrink: 0, minWidth: 0 }}>
 
-          {/* LEFT: Stats + Quick Actions — natural sizes, no stretching */}
+          {/* LEFT: Stats + Quick Actions */}
           <div style={{ display: "flex", flexDirection: "column", gap: 6, flex: 1, minWidth: 0 }}>
 
-            {/* Stats — original padding preserved */}
+            {/* Stats */}
             <div style={{ display: "flex", gap: 6, minWidth: 0 }}>
-              <StatCard Icon={Users}         iconColor="#7c3aed" value="345" label="Total Students"  />
-              <StatCard Icon={GraduationCap} iconColor="#2563eb" value="18"  label="Total Teachers"  />
-              <StatCard Icon={CheckCircle}   iconColor="#16a34a" value="245" label="Paid Payment"     />
-              <StatCard Icon={Clock}         iconColor="#d97706" value="23"  label="Pending Payment"  />
-              <StatCard Icon={AlertCircle}   iconColor="#e11d48" value="8"   label="Overdue Payment"  />
+              <StatCard Icon={Users}         iconColor="#7c3aed" bgColor="#f3f0ff" value="345" label="Total Students"  />
+              <StatCard Icon={GraduationCap} iconColor="#2563eb" bgColor="#eff6ff" value="18"  label="Total Teachers"  />
+              <StatCard Icon={CheckCircle}   iconColor="#16a34a" bgColor="#f0fdf4" value="245" label="Paid Payment"     />
+              <StatCard Icon={Clock}         iconColor="#d97706" bgColor="#fffbeb" value="23"  label="Pending Payment"  />
+              <StatCard Icon={AlertCircle}   iconColor="#e11d48" bgColor="#fff1f2" value="8"   label="Overdue Payment"  />
             </div>
 
-            {/* Quick Actions — original size, not stretched */}
+            {/* Quick Actions */}
             <div style={{
               ...card,
               padding: "8px 14px",
@@ -138,7 +139,7 @@ const Dashboard = () => {
               flexShrink: 0,
               alignSelf: "stretch",
             }}>
-              <div style={{ fontSize: 8, fontWeight: 500, color: "#9e9eb8", letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 6 }}>
+              <div style={{ fontSize: 15, fontWeight: 700, color: "#110410", letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 6 }}>
                 Quick Actions
               </div>
               <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "nowrap" }}>
@@ -150,11 +151,11 @@ const Dashboard = () => {
                   <button key={label} onClick={() => navigate(path)} style={{
                     display: "flex", alignItems: "center", gap: 6,
                     background: bg, border: "none", borderRadius: 8,
-                    cursor: "pointer", padding: "5px 10px",
-                    fontSize: 10, fontWeight: 600, color,
+                    cursor: "pointer", padding: "6px 12px",
+                    fontSize: 12, fontWeight: 600, color,
                     flexShrink: 0, whiteSpace: "nowrap",
                   }}>
-                    <Icon size={11} strokeWidth={2} /> {label}
+                    <Icon size={13} strokeWidth={2} /> {label}
                   </button>
                 ))}
               </div>
@@ -162,9 +163,9 @@ const Dashboard = () => {
 
           </div>
 
-          {/* RIGHT: Welcome Back — height driven by left column */}
+          {/* RIGHT: Welcome Back */}
           <div style={{
-            width: 185,
+            width: 200,
             flexShrink: 0,
             borderRadius: 12,
             background: "#fff",
@@ -177,8 +178,8 @@ const Dashboard = () => {
             overflow: "hidden",
             boxSizing: "border-box",
           }}>
-            <div style={{ fontSize: 8, fontWeight: 500, color: "#9e9eb8", letterSpacing: "0.1em", textTransform: "uppercase" }}>Admin</div>
-            <div style={{ fontSize: 16, fontWeight: 700, color: "#1a1a2e", lineHeight: 1.3, marginTop: 4 }}>WELCOME BACK</div>
+            <div style={{ fontSize: 10, fontWeight: 700, color: "#9e9eb8", letterSpacing: "0.1em", textTransform: "uppercase" }}>Admin</div>
+            <div style={{ fontSize: 17, fontWeight: 700, color: "#1a1a2e", lineHeight: 1.3, marginTop: 4 }}>WELCOME BACK</div>
             <div style={{ flex: 1, display: "flex", alignItems: "flex-end", justifyContent: "center", minHeight: 0 }}>
               <img
                 src="/src/assets/welcomeback.svg"
@@ -193,27 +194,27 @@ const Dashboard = () => {
         {/* ── Row 2: Daily Overview ── */}
         <div style={{ flexShrink: 0, minWidth: 0 }}>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 5 }}>
-            <div style={{ fontSize: 12, fontWeight: 600, color: "#1a1a2e" }}>Daily Overview</div>
+            <div style={{ fontSize: 14, fontWeight: 700, color: "#10050f" }}>Daily Overview</div>
             <button onClick={() => navigate("/Time_table")} style={{
-              display: "flex", alignItems: "center", gap: 2,
+              display: "flex", alignItems: "center", gap: 3,
               background: "none", border: "none", cursor: "pointer",
-              padding: 0, fontSize: 11, fontWeight: 500, color: "#701366",
+              padding: 0, fontSize: 15, fontWeight: 500, color: "#0e030c",
               flexShrink: 0,
             }}>
-              View Timetable <ChevronRight size={11} />
+              View Timetable <ChevronRight size={17} />
             </button>
           </div>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 8 }}>
             {todayClasses.map((cls, i) => (
               <div key={i} style={{
                 borderRadius: 10, background: cls.bg,
-                padding: "8px 10px", border: "1px solid rgba(0,0,0,0.04)",
+                padding: "10px 12px", border: "1px solid rgba(0,0,0,0.04)",
                 boxSizing: "border-box", minWidth: 0,
               }}>
-                <div style={{ fontSize: 10, fontWeight: 600, color: cls.sc, marginBottom: 5 }}>{cls.subject}</div>
-                <div style={{ display: "flex", flexDirection: "column", gap: 2.5, fontSize: 9 }}>
+                <div style={{ fontSize: 12, fontWeight: 600, color: cls.sc, marginBottom: 6 }}>{cls.subject}</div>
+                <div style={{ display: "flex", flexDirection: "column", gap: 3, fontSize: 11 }}>
                   <div style={{ display: "flex", alignItems: "center", gap: 3, color: cls.mc, fontWeight: 500 }}>
-                    <GraduationCap size={9} strokeWidth={2} /> {cls.teacher}
+                    <GraduationCap size={10} strokeWidth={2} /> {cls.teacher}
                   </div>
                   <div style={{ color: cls.mc, fontWeight: 400 }}>{cls.days}</div>
                   <div style={{ color: "#374151", fontWeight: 600 }}>{cls.time}</div>
@@ -230,14 +231,14 @@ const Dashboard = () => {
           {/* Attendance */}
           <div style={{ ...card, padding: "10px 12px", display: "flex", flexDirection: "column", height: 200 }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4, flexShrink: 0 }}>
-              <div style={{ fontSize: 12, fontWeight: 600, color: "#1a1a2e" }}>Attendance</div>
-              <div style={{ fontSize: 9, color: "#9e9eb8" }}>Apr 2025</div>
+              <div style={{ fontSize: 14, fontWeight: 600, color: "#1a1a2e" }}>Attendance</div>
+              <div style={{ fontSize: 11, color: "#9e9eb8" }}>Apr 2025</div>
             </div>
             <AttendanceDonut pct={80} />
             <div style={{ display: "flex", justifyContent: "center", gap: 12, marginTop: 8, flexShrink: 0 }}>
               {[["#701366", "Present"], ["#fde68a", "Absent"]].map(([bg, lbl]) => (
-                <div key={lbl} style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 9, color: "#701366" }}>
-                  <span style={{ width: 7, height: 7, borderRadius: "50%", background: bg, display: "inline-block", flexShrink: 0 }} />
+                <div key={lbl} style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 11, color: "#701366" }}>
+                  <span style={{ width: 8, height: 8, borderRadius: "50%", background: bg, display: "inline-block", flexShrink: 0 }} />
                   {lbl}
                 </div>
               ))}
@@ -247,8 +248,8 @@ const Dashboard = () => {
           {/* Student Growth */}
           <div style={{ ...card, padding: "10px 12px", display: "flex", flexDirection: "column", height: 200 }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 2, flexShrink: 0 }}>
-              <div style={{ fontSize: 12, fontWeight: 600, color: "#1a1a2e" }}>Student Growth</div>
-              <div style={{ fontSize: 8, color: "#9e9eb8", background: "#f5f5f9", padding: "1px 5px", borderRadius: 4 }}>Monthly</div>
+              <div style={{ fontSize: 14, fontWeight: 600, color: "#1a1a2e" }}>Student Growth</div>
+              <div style={{ fontSize: 10, color: "#9e9eb8", background: "#f5f5f9", padding: "2px 6px", borderRadius: 4 }}>Monthly</div>
             </div>
             <div style={{ flex: 1, minHeight: 0 }}>
               <ResponsiveContainer width="100%" height="100%">
@@ -259,28 +260,28 @@ const Dashboard = () => {
                       <stop offset="95%" stopColor="#a855f7" stopOpacity={0} />
                     </linearGradient>
                   </defs>
-                  <XAxis dataKey="month" tick={{ fontSize: 7, fill: "#9ca3af" }} axisLine={false} tickLine={false} />
+                  <XAxis dataKey="month" tick={{ fontSize: 9, fill: "#9ca3af" }} axisLine={false} tickLine={false} />
                   <YAxis hide />
-                  <Tooltip contentStyle={{ fontSize: 9, borderRadius: 6, border: "none", boxShadow: "0 2px 8px rgba(0,0,0,0.08)", padding: "3px 7px" }} />
+                  <Tooltip contentStyle={{ fontSize: 10, borderRadius: 6, border: "none", boxShadow: "0 2px 8px rgba(0,0,0,0.08)", padding: "3px 7px" }} />
                   <Area type="monotone" dataKey="students" stroke="#a855f7" strokeWidth={2}
                     fill="url(#gGrad)" dot={false} activeDot={{ r: 3, fill: "#a855f7", strokeWidth: 0 }} />
                 </AreaChart>
               </ResponsiveContainer>
             </div>
-            <div style={{ display: "flex", alignItems: "center", gap: 3, fontSize: 10, fontWeight: 500, color: "#16a34a", marginTop: 3, flexShrink: 0 }}>
-              <TrendingUp size={10} /> +19% this month
+            <div style={{ display: "flex", alignItems: "center", gap: 3, fontSize: 11, fontWeight: 500, color: "#16a34a", marginTop: 3, flexShrink: 0 }}>
+              <TrendingUp size={11} /> +19% this month
             </div>
           </div>
 
           {/* Distribution */}
           <div style={{ ...card, padding: "10px 12px", display: "flex", flexDirection: "column", height: 200 }}>
-            <div style={{ fontSize: 12, fontWeight: 600, color: "#1a1a2e", marginBottom: 2, flexShrink: 0 }}>Distribution by language</div>
+            <div style={{ fontSize: 14, fontWeight: 600, color: "#1a1a2e", marginBottom: 2, flexShrink: 0 }}>Distribution by language</div>
             <div style={{ flex: 1, minHeight: 0 }}>
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={distributionData} barSize={10} barCategoryGap="35%" margin={{ top: 4, right: 2, left: 2, bottom: 0 }}>
-                  <XAxis dataKey="lang" tick={{ fontSize: 7, fill: "#9ca3af" }} axisLine={false} tickLine={false} />
+                  <XAxis dataKey="lang" tick={{ fontSize: 9, fill: "#9ca3af" }} axisLine={false} tickLine={false} />
                   <YAxis hide />
-                  <Tooltip contentStyle={{ fontSize: 9, borderRadius: 6, border: "none", boxShadow: "0 2px 8px rgba(0,0,0,0.08)", padding: "3px 7px" }} />
+                  <Tooltip contentStyle={{ fontSize: 10, borderRadius: 6, border: "none", boxShadow: "0 2px 8px rgba(0,0,0,0.08)", padding: "3px 7px" }} />
                   <Bar dataKey="count" radius={[3, 3, 0, 0]}>
                     {distributionData.map((_, i) => <Cell key={i} fill={DIST_COLORS[i % DIST_COLORS.length]} />)}
                   </Bar>

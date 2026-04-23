@@ -30,36 +30,35 @@ function Sidebar() {
       style={{ width: "160px", minWidth: "160px", maxWidth: "160px" }}
     >
 
-      <div className="flex flex-col gap-4 mt-10 ml-6">
-        {/* Logo */}
-        <div className="flex flex-col items-start">
-          <span className="text-4xl text-[#701366] font-item leading-none">A to Z</span>
-          <span className="text-[11px] text-[#701366] font-item tracking-widest">LINGUA</span>
-        </div>
-
+      <div className="flex flex-col gap-8 mt-10">
+  {/* Logo */}
+<div className="flex flex-col items-center" gap-0 style={{fontFamily: "'Montserrat', sans-serif" , paddingTop: "16px" , paddingRight: "7px"}}>
+  <span style={{ fontFamily: "'Montserrat', sans-serif" }} className="text-3xl text-[#701366] font-bold leading-none">A to Z</span>
+  <span style={{ fontFamily: "'Montserrat', sans-serif" , paddingRight: "8px"}} className="text-l text-[#701366] font-semibold tracking-widest self-end">LINGUA</span>
+</div>
         {/* Navigation */}
-        <nav className="flex flex-col items-center gap-2">
+        <nav className="flex flex-col items-center gap-2" style={{fontFamily: "'Inter', sans-serif"}}>
           {[
-            { to: "/Dashboard",     icon: <LayoutDashboard className="w-4 h-4 shrink-0" />, label: "Dashboard"     },
-            { to: "/Teachers",      icon: <GraduationCap   className="w-4 h-4 shrink-0" />, label: "Teachers"      },
-            { to: "/Students",      icon: <Users           className="w-4 h-4 shrink-0" />, label: "Students"      },
-            { to: "/Employees",     icon: <Briefcase       className="w-4 h-4 shrink-0" />, label: "Employees"     },
-            { to: "/Classes",       icon: <BookOpen        className="w-4 h-4 shrink-0" />, label: "School Config"       },
-            { to: "/Fees",          icon: <CreditCard      className="w-4 h-4 shrink-0" />, label: "Fees"          },
-            { to: "/Time_table",    icon: <Calendar        className="w-4 h-4 shrink-0" />, label: "Time Table"    },
-            { to: "/Notifications", icon: <Bell            className="w-4 h-4 shrink-0" />, label: "Notifications" },
-            { to: "/Inscriptions",       icon: <BarChart3       className="w-4 h-4 shrink-0" />, label: "Inscriptions"       },
-            { to: "/Settings",      icon: <Settings        className="w-4 h-4 shrink-0" />, label: "Settings"      },
+            { to: "/Dashboard",     icon: <LayoutDashboard className="w-5 h-5 shrink-0" />, label: "Dashboard"     },
+            { to: "/Teachers",      icon: <GraduationCap   className="w-5 h-5 shrink-0" />, label: "Teachers"      },
+            { to: "/Students",      icon: <Users           className="w-5 h-5 shrink-0" />, label: "Students"      },
+            { to: "/Employees",     icon: <Briefcase       className="w-5 h-5 shrink-0" />, label: "Employees"     },
+            { to: "/Classes",       icon: <BookOpen        className="w-5 h-5 shrink-0" />, label: "School Config"       },
+            { to: "/Fees",          icon: <CreditCard      className="w-5 h-5 shrink-0" />, label: "Fees"          },
+            { to: "/Time_table",    icon: <Calendar        className="w-5 h-5 shrink-0" />, label: "Time Table"    },
+            { to: "/Notifications", icon: <Bell            className="w-5 h-5 shrink-0" />, label: "Notifications" },
+            { to: "/Inscriptions",       icon: <BarChart3       className="w-5 h-5 shrink-0" />, label: "Inscriptions"       },
+            { to: "/Settings",      icon: <Settings        className="w-5 h-5 shrink-0" />, label: "Settings"      },
           ].map(({ to, icon, label }) => (
             <Link
-              key={to}
-              to={to}
-              className={`flex items-center gap-2 px-2 py-1.5 w-[85%] text-[13px] rounded-lg transition-all duration-150 whitespace-nowrap
-                ${location.pathname === to
-                  ? "bg-white text-[#701366] font-item"
-                  : "text-[#701366] hover:bg-white/50"
-                }`}
-            >
+  key={to}
+  to={to}
+  className={`flex items-center gap-2 w-[85%] text-[15px] rounded-lg transition-all duration-150 whitespace-nowrap 
+    ${location.pathname === to
+      ? "bg-white text-[#701366]  px-10 py-5 scale-[1.03]"
+      : "text-[#701366] hover:bg-white/50 px-6 py-3"
+    }`}
+>
               {icon}
               {label}
             </Link>
@@ -72,13 +71,13 @@ function Sidebar() {
 
       {/* Bottom */}
       <div className="flex flex-col items-center gap-2 pb-2">
-        <img src="/src/assets/Support.svg" className="w-24" alt="Support" />
+        <img src="/src/assets/Support.svg" className="w-40" alt="Support" />
         <button
           onClick={handleLogout}
-          className="flex items-center justify-center gap-2 bg-[#701366] text-white text-[12px] hover:bg-[#f8b2ea] rounded-lg whitespace-nowrap transition-all duration-150"
-          style={{ width: "120px", height: "34px", flexShrink: 0 }}
+          className="flex items-center justify-center gap-2 bg-[#701366] text-white text-[15px] hover:bg-[#f8b2ea] rounded-lg whitespace-nowrap transition-all duration-150"
+          style={{ width: "155px", height: "34px", flexShrink: 0 }}
         >
-          <LogOut className="w-4 h-4 shrink-0" />
+          <LogOut className="w-5 h-5 shrink-0" />
           Log Out
         </button>
       </div>

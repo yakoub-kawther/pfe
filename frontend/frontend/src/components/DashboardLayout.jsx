@@ -21,8 +21,8 @@ const DashboardLayout = ({ children }) => {
         <Navbar />
 
         <main
-          className="flex-1 flex flex-col gap-6"
-          style={{ padding: "24px" }}
+          className="flex-1 flex flex-col gap-0"
+          style={{ padding: "5px 20px" }}
         >
           {children}
         </main>
