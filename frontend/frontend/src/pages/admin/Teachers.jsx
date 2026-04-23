@@ -43,45 +43,34 @@ const Teachers = () => {
     return params.toString();
   }, []);
 
-  const fetchTeachers = useCallback(
-    async (searchVal, filterVal) => {
-      setLoading(true);
-      setError(null);
-      try {
-        const qs  = buildParams(searchVal, filterVal);
-        const url = `${API_BASE}/persons/teachers/${qs ? `?${qs}` : ""}`;
+  const fetchTeachers = useCallback(async (searchVal, filterVal) => {
+  setLoading(true);
+  setError(null);
+  try {
+    const qs  = buildParams(searchVal, filterVal);
+    const url = `${API_BASE}/persons/teachers/${qs ? `?${qs}` : ""}`;
 
-        const res = await fetch(url, {
-          headers: {
-            "Content-Type": "application/json",
-            // Authorization: `Bearer ${localStorage.getItem("access_token")}`,
-          },
-        });
+    const res = await fetch(url); // ✅ no Content-Type header
 
-        if (!res.ok) throw new Error(`Server error: ${res.status}`);
+    if (!res.ok) throw new Error(`Server error: ${res.status}`);
 
-        const data = await res.json();
-        setTeachers(Array.isArray(data) ? data : (data.results ?? []));
-      } catch (err) {
-        setError(err.message || "Failed to load teachers.");
-      } finally {
-        setLoading(false);
-      }
-    },
-    [buildParams]
-  );
+    const data = await res.json();
+    setTeachers(Array.isArray(data) ? data : (data.results ?? []));
+  } catch (err) {
+    setError(err.message || "Failed to load teachers.");
+  } finally {
+    setLoading(false);
+  }
+}, [buildParams]);
 
-  // initial load
-  useEffect(() => {
-    fetchTeachers("", "All");
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+// ✅ single useEffect only
+useEffect(() => {
+  const timer = setTimeout(() => fetchTeachers(search, filter), 300);
+  return () => clearTimeout(timer);
+}, [search, filter, fetchTeachers]);
+  
+  
 
-  // re-fetch on search / filter change (debounced 300 ms)
-  useEffect(() => {
-    const timer = setTimeout(() => fetchTeachers(search, filter), 300);
-    return () => clearTimeout(timer);
-  }, [search, filter, fetchTeachers]);
 
   return (
     <DashboardLayout>
