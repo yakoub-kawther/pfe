@@ -2,16 +2,14 @@ import DashboardLayout from "../../components/DashboardLayout";
 import Tabs from "../../components/Tabs";
 import { useLocation } from "react-router-dom";
 
-const statusStyles = {
-  "In Progress": "bg-[#F8E0F8] text-[#701366]",
-  Completed: "bg-[#701366] text-white",
-};
-
 const classesData = [
   { language: "English", level: "B2", group: "Group A", schedule: "Mon / Wed", students: 12, status: "In Progress" },
   { language: "French",  level: "A1", group: "Group B", schedule: "Tue / Thu", students: 10, status: "Completed"   },
   { language: "Arabic",  level: "C1", group: "Group C", schedule: "Sat",       students: 8,  status: "In Progress" },
 ];
+
+const thStyle = { padding: "12px 16px", fontSize: "14px", fontWeight: 500, textAlign: "left", whiteSpace: "nowrap", color: "#701366" };
+const tdStyle = { padding: "12px 16px", fontSize: "14px", color: "#701366", whiteSpace: "nowrap" };
 
 export default function Classes_teacher() {
   const { state } = useLocation();
@@ -25,34 +23,45 @@ export default function Classes_teacher() {
 
   return (
     <DashboardLayout>
-      <div className="flex flex-col gap-6">
+      <div style={{ display: "flex", flexDirection: "column", gap: "24px", width: "100%", minWidth: 0, boxSizing: "border-box" }}>
 
-        <h2 className="text-2xl text-[#701366]">Classes</h2>
+        <h2 style={{ fontSize: "24px", color: "#701366", margin: 0, flexShrink: 0 }}>Classes</h2>
 
         <Tabs tabs={teacherTabs} />
 
-        <div className="max-w-6xl w-full px-6 bg-white rounded-2xl shadow-sm overflow-hidden">
-          <table className="w-full text-sm">
+        <div style={{ width: "100%", background: "white", borderRadius: "16px", boxShadow: "0 1px 4px rgba(0,0,0,0.06)", overflow: "hidden", boxSizing: "border-box" }}>
+          <table style={{ width: "100%", borderCollapse: "collapse", tableLayout: "fixed" }}>
             <thead>
-              <tr className="bg-[#F8E0F8] h-12 text-[#701366] text-left">
-                <th className="py-3 text-sm" style={{ paddingLeft: "30px" }}>Language</th>
-                <th className="px-4 py-3 text-sm">Level</th>
-                <th className="px-4 py-3 text-sm">Group</th>
-                <th className="px-4 py-3 text-sm">Schedule</th>
-                <th className="px-4 py-3 text-sm">Students</th>
-                <th className="px-4 py-3 text-sm">Status</th>
+              <tr style={{ background: "#F8E0F8", height: "48px" }}>
+                <th style={{ ...thStyle, paddingLeft: "30px", width: "20%" }}>Language</th>
+                <th style={{ ...thStyle, width: "12%" }}>Level</th>
+                <th style={{ ...thStyle, width: "15%" }}>Group</th>
+                <th style={{ ...thStyle, width: "18%" }}>Schedule</th>
+                <th style={{ ...thStyle, width: "15%" }}>Students</th>
+                <th style={{ ...thStyle, width: "20%" }}>Status</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-[#f8e0f8]">
+            <tbody>
               {classesData.map((row, idx) => (
-                <tr key={idx} className="hover:bg-[#fffafe] transition-colors duration-100 h-12">
-                  <td className="py-3 text-[#701366]" style={{ paddingLeft: "30px" }}>{row.language}</td>
-                  <td className="px-4 py-3 text-[#701366]">{row.level}</td>
-                  <td className="px-4 py-3 text-[#701366]">{row.group}</td>
-                  <td className="px-4 py-3 text-[#701366]">{row.schedule}</td>
-                  <td className="px-4 py-3 text-[#701366]">{row.students}</td>
-                  <td className="px-4 py-3">
-                    <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${statusStyles[row.status]}`}>
+                <tr
+                  key={idx}
+                  style={{ height: "48px", borderBottom: "1px solid #f8e0f8", transition: "background 0.1s" }}
+                  onMouseEnter={e => e.currentTarget.style.background = "#fffafe"}
+                  onMouseLeave={e => e.currentTarget.style.background = "white"}
+                >
+                  <td style={{ ...tdStyle, paddingLeft: "30px" }}>{row.language}</td>
+                  <td style={tdStyle}>{row.level}</td>
+                  <td style={tdStyle}>{row.group}</td>
+                  <td style={tdStyle}>{row.schedule}</td>
+                  <td style={tdStyle}>{row.students}</td>
+                  <td style={tdStyle}>
+                    <span style={{
+                      display: "inline-flex", alignItems: "center",
+                      padding: "3px 12px", borderRadius: "9999px",
+                      fontSize: "12px", fontWeight: 500, whiteSpace: "nowrap",
+                      background: row.status === "In Progress" ? "#F8E0F8" : "#701366",
+                      color:      row.status === "In Progress" ? "#701366"  : "white",
+                    }}>
                       {row.status}
                     </span>
                   </td>

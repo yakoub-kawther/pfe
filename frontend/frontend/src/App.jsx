@@ -29,6 +29,12 @@ import Add_classrooms from "./pages/admin/Add_classrooms";
 import Settings  from "./pages/admin/Settings";
 import Fees from "./pages/admin/Fees";
 import Dashboard_secretary from "./pages/secretary/Dashboard_secretary";
+import  Languages  from "./pages/admin/Languages";
+import Add_language from "./pages/admin/Add_language";
+import Inscriptions from "./pages/admin/Inscriptions"
+import Add_student_payment from "./pages/admin/Add_student_payment";
+import Add_employees_fees from "./pages/admin/Add_employees_fees"
+
 
 const isLoggedIn = localStorage.getItem("user");
 
@@ -75,7 +81,11 @@ function App() {
         <Route path="/Settings" element={<Settings/>}/>
         <Route path="/Fees" element={<Fees/>} />
         <Route path="/Dashboard_secretary" element={<Dashboard_secretary/>} />
-
+        <Route path="/Languages" element={<Languages/>} />
+        <Route path="/Add_language" element={<Add_language/>} />
+        <Route path="/Inscriptions" element={<Inscriptions/>} />
+        <Route path="/Add_student_payment" element={<Add_student_payment/>} />
+        <Route path="/Add_employees_fees" element={<Add_employees_fees/>} />
 
 
       </Routes>

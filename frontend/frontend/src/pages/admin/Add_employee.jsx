@@ -37,8 +37,8 @@ const Card = ({ title, children }) => (
 );
 
 const btnBase    = "inline-flex items-center justify-center px-5 py-1.5 text-sm rounded-lg border transition-colors font-Inter";
-const btnOutline = `${btnBase} border-[#701366] text-[#701366]  h-7 w-12 bg-white hover:bg-[#701366] hover:text-white`;
-const btnGhost   = `${btnBase} border-[#701366] text-[#701366] bg-white hover:bg-[#701366] hover:text-white `;
+const btnOutline = `${btnBase} border-[#701366] text-[#701366] h-7 w-12 bg-white hover:bg-[#701366] hover:text-white`;
+const btnGhost   = `${btnBase} border-[#701366] text-[#701366] bg-white hover:bg-[#701366] hover:text-white`;
 const btnFilled  = `${btnBase} border-[#701366] text-white bg-[#701366] hover:text-[#701366] hover:bg-white`;
 
 const emptyForm = {
@@ -49,11 +49,11 @@ const emptyForm = {
 export default function Add_employee() {
   const navigate = useNavigate();
   const [gender, setGender] = useState("Male");
-  const [form, setForm]     = useState(emptyForm);
+  const [form,   setForm]   = useState(emptyForm);
 
-  const handle = (field) => (e) => setForm((prev) => ({ ...prev, [field]: e.target.value }));
+  const handle      = (field) => (e) => setForm((prev) => ({ ...prev, [field]: e.target.value }));
   const handleReset = () => { setForm(emptyForm); setGender("Male"); };
-  const handleSave = () => {
+  const handleSave  = () => {
     const fullName = `${form.firstName} ${form.lastName}`.trim();
     if (!fullName) { alert("Please enter at least a first name."); return; }
     console.log("New employee:", { ...form, gender });
@@ -62,20 +62,26 @@ export default function Add_employee() {
 
   return (
     <DashboardLayout>
-      <div className="max-w-5xl mx-auto pb-10" style={{ padding: "30px 16px" }}>
+      <div className="w-full pb-10" style={{ padding: "30px clamp(12px, 2vw, 32px)" }}>
 
         {/* Header */}
-        <div className="flex items-center justify-between " style={{ marginBottom: "30px" }}>
+        <div className="flex items-center justify-between flex-wrap gap-3" style={{ marginBottom: "30px" }}>
           <h1 className="text-2xl text-[#701366] font-Inter">Add New Employee</h1>
-          <div className="flex gap-2 ">
+          <div className="flex gap-2 flex-wrap">
             <button onClick={() => navigate("/Employees")} className={btnOutline}>Cancel</button>
-            <button onClick={handleReset} className={btnGhost}>Reset</button>
-            <button onClick={handleSave} className={btnFilled}>Save</button>
+            <button onClick={handleReset}                  className={btnGhost}>Reset</button>
+            <button onClick={handleSave}                   className={btnFilled}>Save</button>
           </div>
         </div>
 
-        <div className="grid grid-cols-2" style={{ gap: "24px", alignItems: "start" }}>
-
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 380px), 1fr))",
+            gap: "24px",
+            alignItems: "start",
+          }}
+        >
           {/* LEFT — Basic Information */}
           <Card title="Basic Information">
             <div className="grid grid-cols-2" style={{ gap: "18px" }}>
@@ -137,7 +143,6 @@ export default function Add_employee() {
               </Field>
             </div>
           </Card>
-
         </div>
       </div>
     </DashboardLayout>

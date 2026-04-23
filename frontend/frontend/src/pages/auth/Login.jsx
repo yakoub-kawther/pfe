@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Eye, EyeOff, LogIn } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
@@ -51,7 +51,7 @@ function Field({ id, label, type = "text", value, onChange, placeholder, right, 
   );
 }
 
-// ─── LEFT PANEL ──────────────────────────────────────────────
+// ─── LEFT PANEL ───────────────────────────────────────────────
 function LeftPanel() {
   return (
     <div style={{
@@ -66,7 +66,6 @@ function LeftPanel() {
 
       <div style={{ display: "flex", flexDirection: "column", alignItems: "center", paddingTop: "48px", gap: "0", position: "relative", zIndex: 1, width: "100%" }}>
 
-        {/* SVG illustration */}
         <svg viewBox="0 0 220 180" style={{ width: "62%", maxWidth: "220px", opacity: .9 }} fill="none">
           <rect x="8" y="18" width="110" height="54" rx="14" fill="white" fillOpacity=".13"/>
           <rect x="8" y="18" width="110" height="54" rx="14" stroke="white" strokeOpacity=".35" strokeWidth="1.5"/>
@@ -85,7 +84,6 @@ function LeftPanel() {
           <circle cx="16" cy="134" r="2.5" fill="#f8b2ea" fillOpacity=".45"/>
         </svg>
 
-        {/* ── ZKY LINGUA — between the SVG and the subtitle block ── */}
         <div style={{
           display: "flex", flexDirection: "column", alignItems: "center",
           position: "relative", zIndex: 1,
@@ -95,11 +93,10 @@ function LeftPanel() {
           borderBottom: "1px solid rgba(255,255,255,.12)",
           width: "62%",
         }}>
-          <span style={{ fontFamily: F, fontSize: "3.2rem", fontWeight: 200, letterSpacing: "-0.02em", lineHeight: 1 }}>ZKY</span>
+          <span style={{ fontFamily: F, fontSize: "3.2rem", fontWeight: 200, letterSpacing: "-0.02em", lineHeight: 1 }}>A to Z</span>
           <span style={{ fontFamily: F, fontSize: "10px", fontWeight: 600, letterSpacing: "0.42em", color: "#f8b2ea", marginTop: "4px" }}>LINGUA</span>
         </div>
 
-        {/* Subtitle block */}
         <div style={{ textAlign: "center", padding: "0 40px" }}>
           <h2 style={{ fontFamily: F, fontSize: "1.6rem", fontWeight: 350, margin: 0, lineHeight: 1.25 }}>
             Zeal Knowledge Youth
@@ -120,153 +117,14 @@ function LeftPanel() {
 
 // ─── BUTTON STYLES ────────────────────────────────────────────
 const btnStyle = {
-  marginTop: "4px", width: "100%", display: "flex", alignItems: "center", justifyContent: "center", gap: "8px",
+  marginTop: "4px", width: "100%",
+  display: "flex", alignItems: "center", justifyContent: "center", gap: "8px",
   background: "linear-gradient(135deg,#8a1a7e 0%,#701366 100%)",
   boxShadow: "0 6px 22px rgba(112,19,102,.32)", color: "white",
   fontFamily: F, fontSize: "14px", fontWeight: 400, letterSpacing: ".02em",
   padding: "14px", borderRadius: "12px", border: "none", cursor: "pointer",
-  transition: "background .2s, color .2s",
+  transition: "background .2s",
 };
-
-const smallBtnStyle = {
-  ...btnStyle,
-  marginTop: 0,
-  padding: "10px 20px",
-  fontSize: "13px",
-  boxShadow: "0 4px 14px rgba(112,19,102,.25)",
-};
-
-const backBtnStyle = {
-  ...smallBtnStyle,
-  background: "#fff",
-  color: "#701366",
-  border: "1.5px solid #701366",
-  boxShadow: "none",
-  flex: 1,
-  padding: "10px 18px",
-};
-
-// ─── HOVER HELPERS ────────────────────────────────────────────
-const onBackEnter = (e) => {
-  e.currentTarget.style.background = "#701366";
-  e.currentTarget.style.color = "#fff";
-};
-const onBackLeave = (e) => {
-  e.currentTarget.style.background = "#fff";
-  e.currentTarget.style.color = "#701366";
-};
-const onActionEnter = (e) => {
-  e.currentTarget.style.background = "linear-gradient(135deg,#701366 0%,#4a0d45 100%)";
-};
-const onActionLeave = (e) => {
-  e.currentTarget.style.background = "linear-gradient(135deg,#8a1a7e 0%,#701366 100%)";
-};
-
-// ─── FORGOT PASSWORD ──────────────────────────────────────────
-function ForgotPassword({ onBack }) {
-  const [step, setStep]         = useState(1);
-  const [email, setEmail]       = useState("");
-  const [code, setCode]         = useState("");
-  const [newPass, setNewPass]   = useState("");
-  const [showPass, setShowPass] = useState(false);
-  const [emailError, setEmailError] = useState("");
-  const [codeError, setCodeError]   = useState("");
-
-  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-
-  const handleBack = () => {
-    if (step === 1) onBack();
-    else if (step === 2) setStep(1);
-    else if (step === 3) setStep(2);
-  };
-
-  const handleSendCode = () => {
-    if (!emailRegex.test(email)) { setEmailError("Please enter a valid email."); return; }
-    setEmailError("");
-    setStep(2);
-  };
-
-  const handleVerify = () => {
-    if (code.length < 4) { setCodeError("Code must be at least 4 digits."); return; }
-    setCodeError("");
-    setStep(3);
-  };
-
-  const handleReset = () => { alert("Password reset successfully!"); onBack(); };
-
-  const rowStyle = { display: "flex", gap: "10px", alignItems: "center" };
-
-  return (
-    <div style={{ width: "100%", maxWidth: "420px", padding: "48px 40px", position: "relative", zIndex: 1 }}>
-
-      <div style={{ marginBottom: "8px" }}>
-        <h1 style={{ fontFamily: F, fontSize: "1.8rem", fontWeight: 300, color: "#2d0828", margin: 0 }}>
-          Reset Password
-        </h1>
-      </div>
-
-      <p style={{ fontFamily: F, fontSize: "14px", color: "#9c5094", fontWeight: 500, marginBottom: "28px" }}>
-        {step === 1 && "Enter your email to receive a reset code."}
-        {step === 2 && "Enter the code sent to your email."}
-        {step === 3 && "Enter your new password."}
-      </p>
-
-      <div style={{ display: "flex", flexDirection: "column", gap: "18px" }}>
-
-        {step === 1 && (
-          <>
-            <Field
-              label="Email" value={email}
-              onChange={(e) => { setEmail(e.target.value); setEmailError(""); }}
-              placeholder="you@example.com" hasError={!!emailError}
-            />
-            {emailError && <p style={{ color: "#dc2626", fontSize: "12px", marginTop: "-10px", fontFamily: F }}>{emailError}</p>}
-            <div style={rowStyle}>
-              <button onClick={handleBack} style={{ ...backBtnStyle }} onMouseEnter={onBackEnter} onMouseLeave={onBackLeave}>← Back</button>
-              <button onClick={handleSendCode} style={{ ...smallBtnStyle, flex: 1 }} onMouseEnter={onActionEnter} onMouseLeave={onActionLeave}>Send Code</button>
-            </div>
-          </>
-        )}
-
-        {step === 2 && (
-          <>
-            <Field
-              label="Verification Code" value={code}
-              onChange={(e) => { setCode(e.target.value); setCodeError(""); }}
-              placeholder="Enter 4-digit code"
-              hasError={!!codeError}
-            />
-            {codeError && <p style={{ color: "#dc2626", fontSize: "12px", marginTop: "-10px", fontFamily: F }}>{codeError}</p>}
-            <div style={rowStyle}>
-              <button onClick={handleBack} style={{ ...backBtnStyle }} onMouseEnter={onBackEnter} onMouseLeave={onBackLeave}>← Back</button>
-              <button onClick={handleVerify} style={{ ...smallBtnStyle, flex: 1 }} onMouseEnter={onActionEnter} onMouseLeave={onActionLeave}>Verify Code</button>
-            </div>
-          </>
-        )}
-
-        {step === 3 && (
-          <>
-            <Field
-              label="New Password" type={showPass ? "text" : "password"} value={newPass}
-              onChange={(e) => setNewPass(e.target.value)} placeholder="••••••••"
-              right={
-                <button type="button" onClick={() => setShowPass(v => !v)}
-                  style={{ background: "none", border: "none", cursor: "pointer", color: "#c87dbe", padding: 0, display: "flex" }}>
-                  {showPass ? <EyeOff size={17} /> : <Eye size={17} />}
-                </button>
-              }
-            />
-            <div style={rowStyle}>
-              <button onClick={handleBack} style={{ ...backBtnStyle }} onMouseEnter={onBackEnter} onMouseLeave={onBackLeave}>← Back</button>
-              <button onClick={handleReset} style={{ ...smallBtnStyle, flex: 1 }} onMouseEnter={onActionEnter} onMouseLeave={onActionLeave}>Reset Password</button>
-            </div>
-          </>
-        )}
-
-      </div>
-    </div>
-  );
-}
 
 // ─── ROLE → ROUTE MAP ─────────────────────────────────────────
 const roleRoutes = {
@@ -276,31 +134,37 @@ const roleRoutes = {
   secretariat: "/Dashboard_secretary",
 };
 
+const USERS = [
+  { email: "admin@zkyli.com",       password: "admin123",       role: "admin"       },
+  { email: "teacher@zkyli.com",     password: "teacher123",     role: "teacher"     },
+  { email: "student@zkyli.com",     password: "student123",     role: "student"     },
+  { email: "secretariat@zkyli.com", password: "secretariat123", role: "secretariat" },
+];
+
+// Gmail compose URL
+const GMAIL_COMPOSE = "https://mail.google.com/mail/?view=cm&fs=1&to=yousraztn.contact@gmail.com";
+
 // ─── MAIN LOGIN ───────────────────────────────────────────────
 export default function LoginPage() {
   const [showSuggestions, setShowSuggestions] = useState(false);
-  const [email, setEmail]           = useState("");
-  const [password, setPassword]     = useState("");
-  const [show, setShow]             = useState(false);
-  const [remember, setRemember]     = useState(false);
-  const [emailError, setEmailError] = useState("");
+  const [email, setEmail]               = useState("");
+  const [password, setPassword]         = useState("");
+  const [show, setShow]                 = useState(false);
+  const [remember, setRemember]         = useState(false);
+  const [emailError, setEmailError]     = useState("");
   const [passwordError, setPasswordError] = useState("");
-  const [showForgot, setShowForgot] = useState(false);
   const navigate = useNavigate();
+
+  // ✅ Always clear session when landing on login page
+  useEffect(() => {
+    localStorage.removeItem("user");
+  }, []);
 
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-  const USERS = [
-    { email: "admin@zkyli.com",       password: "admin123",       role: "admin"       },
-    { email: "teacher@zkyli.com",     password: "teacher123",     role: "teacher"     },
-    { email: "student@zkyli.com",     password: "student123",     role: "student"     },
-    { email: "secretariat@zkyli.com", password: "secretariat123", role: "secretariat" },
-  ];
-
   const validateEmail = (val) => {
     if (!emailRegex.test(val)) { setEmailError("Please enter a valid email address."); return false; }
-    setEmailError("");
-    return true;
+    setEmailError(""); return true;
   };
 
   const submit = (e) => {
@@ -310,14 +174,10 @@ export default function LoginPage() {
     if (!password) { setPasswordError("Please enter your password."); return; }
 
     const user = USERS.find((u) => u.email === email && u.password === password);
-
     if (!user) {
       const emailExists = USERS.find((u) => u.email === email);
-      if (emailExists) {
-        setPasswordError("Incorrect password. Please try again.");
-      } else {
-        setEmailError("No account found with this email.");
-      }
+      if (emailExists) setPasswordError("Incorrect password. Please try again.");
+      else setEmailError("No account found with this email.");
       return;
     }
 
@@ -326,25 +186,104 @@ export default function LoginPage() {
   };
 
   return (
-    <div style={{ display: "flex", width: "100vw", height: "100vh", overflow: "hidden", background: "#faf0fa", fontFamily: F }}>
+    <>
+      {/* ── Responsive styles ── */}
+      <style>{`
+        * { box-sizing: border-box; }
 
-      <div style={{ width: "44%", height: "100%", flexShrink: 0, display: "none" }} className="lg-panel">
-        <LeftPanel />
-      </div>
-      <style>{`.lg-panel { display: none; } @media(min-width:1024px){ .lg-panel { display: block !important; } }`}</style>
-      <div style={{ width: "1px", height: "100%", background: "rgba(248,178,234,.3)", flexShrink: 0 }} className="lg-panel" />
+        .login-wrapper {
+          display: flex;
+          width: 100vw;
+          height: 100vh;
+          overflow: hidden;
+          background: #faf0fa;
+          font-family: ${F};
+        }
 
-      <div style={{ flex: 1, height: "100%", display: "flex", flexDirection: "column", justifyContent: "center", alignItems: "center", overflowY: "auto", background: "rgba(253,244,253,.5)", position: "relative" }}>
-        <div style={{ position: "fixed", top: "-60px", right: "-60px", width: "280px", height: "280px", borderRadius: "50%", background: "#f8b2ea", opacity: .15, filter: "blur(60px)", pointerEvents: "none" }} />
+        /* Left panel: visible on large screens */
+        .login-left {
+          width: 42%;
+          min-width: 320px;
+          max-width: 520px;
+          height: 100%;
+          flex-shrink: 0;
+          display: none;
+        }
+        .login-divider {
+          width: 1px;
+          height: 100%;
+          background: rgba(248,178,234,.3);
+          flex-shrink: 0;
+          display: none;
+        }
+        @media (min-width: 900px) {
+          .login-left    { display: block; }
+          .login-divider { display: block; }
+        }
 
-        {showForgot ? (
-          <ForgotPassword onBack={() => setShowForgot(false)} />
-        ) : (
-          <div style={{ width: "100%", maxWidth: "420px", padding: "48px 40px", position: "relative", zIndex: 1 }}>
+        /* Right panel */
+        .login-right {
+          flex: 1;
+          height: 100%;
+          display: flex;
+          flex-direction: column;
+          justify-content: center;
+          align-items: center;
+          overflow-y: auto;
+          background: rgba(253,244,253,.5);
+          position: relative;
+          padding: 24px 16px;
+        }
 
+        /* Form card */
+        .login-card {
+          width: 100%;
+          max-width: 420px;
+          padding: 48px 40px;
+          position: relative;
+          z-index: 1;
+        }
+
+        @media (max-width: 500px) {
+          .login-card {
+            padding: 32px 20px;
+          }
+        }
+
+        /* Suggestion dropdown item hover */
+        .suggestion-item:hover {
+          background: #fdf0fc;
+        }
+      `}</style>
+
+      <div className="login-wrapper">
+
+        {/* Left panel */}
+        <div className="login-left">
+          <LeftPanel />
+        </div>
+        <div className="login-divider" />
+
+        {/* Right panel */}
+        <div className="login-right">
+
+          {/* Decorative blur */}
+          <div style={{
+            position: "fixed", top: "-60px", right: "-60px",
+            width: "280px", height: "280px", borderRadius: "50%",
+            background: "#f8b2ea", opacity: .15, filter: "blur(60px)", pointerEvents: "none",
+          }} />
+
+          <div className="login-card">
+
+            {/* Heading */}
             <div style={{ marginBottom: "32px" }}>
-              <p style={{ fontFamily: F, fontSize: "32px", fontWeight: 450, color: "#701366", margin: 0, lineHeight: 1.2 }}>Log in to your account</p>
-              <p style={{ fontFamily: F, fontSize: "14px", color: "#9c5094", fontWeight: 350, marginTop: "6px" }}>Welcome back! Please enter your details</p>
+              <p style={{ fontFamily: F, fontSize: "32px", fontWeight: 450, color: "#701366", margin: 0, lineHeight: 1.2 }}>
+                Log in to your account
+              </p>
+              <p style={{ fontFamily: F, fontSize: "14px", color: "#9c5094", fontWeight: 350, marginTop: "6px" }}>
+                Welcome back! Please enter your details
+              </p>
             </div>
 
             <form onSubmit={submit} style={{ display: "flex", flexDirection: "column", gap: "18px" }}>
@@ -358,13 +297,29 @@ export default function LoginPage() {
                   onFocus={() => setShowSuggestions(true)}
                   onBlur={() => setTimeout(() => setShowSuggestions(false), 150)}
                 />
-                {emailError && <p style={{ color: "#dc2626", fontSize: "12px", marginTop: "4px", fontFamily: F, fontWeight: 500 }}>{emailError}</p>}
+                {emailError && (
+                  <p style={{ color: "#dc2626", fontSize: "12px", marginTop: "4px", fontFamily: F, fontWeight: 500 }}>
+                    {emailError}
+                  </p>
+                )}
                 {showSuggestions && (
-                  <div style={{ position: "absolute", top: "100%", left: 0, width: "100%", background: "#fff", border: "1px solid #ddd", borderRadius: 8, marginTop: 5, zIndex: 1000 }}>
+                  <div style={{
+                    position: "absolute", top: "100%", left: 0, width: "100%",
+                    background: "#fff", border: "1px solid #ddd",
+                    borderRadius: 8, marginTop: 5, zIndex: 1000,
+                    boxShadow: "0 8px 24px rgba(0,0,0,.08)",
+                  }}>
                     {USERS.map((user) => (
-                      <div key={user.role}
+                      <div
+                        key={user.role}
+                        className="suggestion-item"
                         onMouseDown={() => { setEmail(user.email); setPassword(user.password); setShowSuggestions(false); }}
-                        style={{ padding: 10, cursor: "pointer", borderBottom: "1px solid #eee", fontFamily: F, fontSize: "13px" }}
+                        style={{
+                          padding: "10px 14px", cursor: "pointer",
+                          borderBottom: "1px solid #eee",
+                          fontFamily: F, fontSize: "13px",
+                          transition: "background .12s",
+                        }}
                       >
                         <strong style={{ color: "#701366" }}>{user.role}</strong> — {user.email}
                       </div>
@@ -381,45 +336,58 @@ export default function LoginPage() {
                   onChange={(e) => { setPassword(e.target.value); setPasswordError(""); }}
                   placeholder="••••••••" hasError={!!passwordError}
                   right={
-                    <button type="button" onClick={() => setShow(v => !v)}
-                      style={{ background: "none", border: "none", cursor: "pointer", color: "#c87dbe", padding: 0, display: "flex" }} tabIndex={-1}>
+                    <button
+                      type="button" onClick={() => setShow(v => !v)}
+                      style={{ background: "none", border: "none", cursor: "pointer", color: "#c87dbe", padding: 0, display: "flex" }}
+                      tabIndex={-1}
+                    >
                       {show ? <EyeOff size={17} /> : <Eye size={17} />}
                     </button>
                   }
                 />
-                {passwordError && <p style={{ color: "#dc2626", fontSize: "12px", marginTop: "4px", fontFamily: F, fontWeight: 500 }}>{passwordError}</p>}
+                {passwordError && (
+                  <p style={{ color: "#dc2626", fontSize: "12px", marginTop: "4px", fontFamily: F, fontWeight: 500 }}>
+                    {passwordError}
+                  </p>
+                )}
               </div>
 
-              {/* Remember + Forgot */}
-              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+              {/* Remember me */}
+              <div style={{ display: "flex", alignItems: "center" }}>
                 <label style={{ display: "flex", alignItems: "center", gap: "8px", cursor: "pointer", userSelect: "none" }}>
-                  <div onClick={() => setRemember(v => !v)} style={{
-                    width: "18px", height: "18px", borderRadius: "5px",
-                    border: `1.5px solid ${remember ? "#701366" : "#dda8d8"}`,
-                    background: remember ? "#701366" : "white",
-                    display: "flex", alignItems: "center", justifyContent: "center", transition: "all .2s", flexShrink: 0,
-                  }}>
-                    {remember && <svg width="10" height="10" viewBox="0 0 10 10" fill="none"><path d="M1.5 5l2.5 2.8L8.5 2" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/></svg>}
+                  <div
+                    onClick={() => setRemember(v => !v)}
+                    style={{
+                      width: "18px", height: "18px", borderRadius: "5px",
+                      border: `1.5px solid ${remember ? "#701366" : "#dda8d8"}`,
+                      background: remember ? "#701366" : "white",
+                      display: "flex", alignItems: "center", justifyContent: "center",
+                      transition: "all .2s", flexShrink: 0,
+                    }}
+                  >
+                    {remember && (
+                      <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
+                        <path d="M1.5 5l2.5 2.8L8.5 2" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
+                      </svg>
+                    )}
                   </div>
                   <span style={{ fontFamily: F, fontSize: "13px", fontWeight: 500, color: "#9c5094" }}>Remember me</span>
                 </label>
-                <button type="button" onClick={() => setShowForgot(true)}
-                  style={{ fontFamily: F, fontSize: "13px", fontWeight: 600, color: "#701366", background: "none", border: "none", cursor: "pointer", padding: 0 }}>
-                  Forgot password?
-                </button>
               </div>
 
               {/* Submit */}
               <button
                 type="submit"
-                style={{ ...btnStyle }}
+                style={btnStyle}
                 onMouseEnter={e => e.currentTarget.style.background = "linear-gradient(135deg,#701366 0%,#4a0d45 100%)"}
                 onMouseLeave={e => e.currentTarget.style.background = "linear-gradient(135deg,#8a1a7e 0%,#701366 100%)"}
               >
                 <LogIn size={16} /> Sign In
               </button>
+
             </form>
 
+            {/* Divider */}
             <div style={{ display: "flex", alignItems: "center", gap: "10px", margin: "24px 0" }}>
               <div style={{ flex: 1, height: "1px", background: "rgba(248,178,234,.5)" }} />
               <span style={{ fontFamily: F, fontSize: "11px", color: "#c87dbe", fontWeight: 500 }}>or</span>
@@ -428,13 +396,20 @@ export default function LoginPage() {
 
             <p style={{ textAlign: "center", fontFamily: F, fontSize: "13px", color: "#9c5094" }}>
               Don't have an account?{" "}
-              <a href="mailto:uyousraztn.contact@gmail.com" style={{ color: "#701366", fontWeight: 700, textDecoration: "none" }}>
+              {/* ✅ Opens Gmail compose window directly */}
+              <a
+                href={GMAIL_COMPOSE}
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{ color: "#701366", fontWeight: 700, textDecoration: "none" }}
+              >
                 Contact admin
               </a>
             </p>
+
           </div>
-        )}
+        </div>
       </div>
-    </div>
+    </>
   );
 }

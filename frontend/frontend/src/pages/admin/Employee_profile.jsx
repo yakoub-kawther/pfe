@@ -30,7 +30,7 @@ const ReadField = ({ label, value, full = false }) => (
 
 const Card = ({ title, children }) => (
   <div
-    className="bg-white rounded-2xl border border-gray-100"
+    className="bg-white rounded-2xl border border-gray-100 min-w-0"
     style={{ padding: "24px 28px", boxShadow: "0 1px 6px rgba(0,0,0,0.05)" }}
   >
     <h3 className="text-[#701366] font-Inter" style={{ fontSize: "16px", marginBottom: "20px" }}>
@@ -41,7 +41,7 @@ const Card = ({ title, children }) => (
 );
 
 const btnBase    = "inline-flex items-center justify-center px-5 py-1.5 text-sm h-7 w-12 rounded-lg border transition-colors font-Inter";
-const btnOutline = `${btnBase} border-[#701366] text-[#701366] bg-white h-7 w-12 hover:bg-[#701366] hover:text-white`;
+const btnOutline = `${btnBase} border-[#701366] text-[#701366] bg-white hover:bg-[#701366] hover:text-white`;
 const btnFilled  = `${btnBase} border-[#701366] text-white bg-[#701366] hover:text-[#701366] hover:bg-white`;
 
 export default function Employee_profile() {
@@ -55,23 +55,31 @@ export default function Employee_profile() {
 
   return (
     <DashboardLayout>
-      <div className="max-w-5xl mx-auto pb-10" style={{ padding: "30px 16px" }}>
+      {/* ↓ only change: w-full + clamp padding instead of fixed max-w-5xl */}
+      <div className="w-full mx-auto pb-10" style={{ maxWidth: "min(1100px, 100%)", padding: "30px clamp(12px, 2vw, 32px)" }}>
 
-        {/* Header */}
-        <div className="flex items-center justify-between mb-8" >
+        {/* Header — unchanged */}
+        <div className="flex items-center justify-between mb-8">
           <h1 className="text-2xl text-[#701366] font-Inter">Employee Profile</h1>
           <div className="flex gap-2">
-            <button onClick={() => navigate("/Employees")} className={btnOutline} >Back</button>
+            <button onClick={() => navigate("/Employees")} className={btnOutline}>Back</button>
             <button onClick={() => navigate("/Edit_employee", { state: { employee } })} className={btnFilled}>Edit</button>
           </div>
         </div>
 
-        <div className="grid grid-cols-2" style={{ gap: "24px", alignItems: "start", marginTop: "30px"  }}>
+        {/* ↓ only change: grid auto-fits so cards never overflow on any desktop width */}
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "repeat(auto-fit, minmax(340px, 1fr))",
+            gap: "24px",
+            alignItems: "start",
+            marginTop: "30px",
+          }}
+        >
 
-          {/* LEFT — Basic Information */}
+          {/* LEFT — Basic Information — unchanged */}
           <Card title="Basic Information">
-
-            {/* Avatar + status */}
             <div className="flex items-center gap-4 mb-5">
               <div
                 className="flex items-center justify-center rounded-full bg-[#f8e0f8] text-[#701366] font-bold text-xl"
@@ -97,7 +105,7 @@ export default function Employee_profile() {
             </div>
           </Card>
 
-          {/* RIGHT — Contact only */}
+          {/* RIGHT — Contact Information — unchanged */}
           <Card title="Contact Information">
             <div className="grid grid-cols-2" style={{ gap: "18px" }}>
               <ReadField label="Phone"   value={employee?.phone} />

@@ -19,20 +19,34 @@ const sel = {
 };
 
 const Field = ({ label, children }) => (
-  <div className="flex flex-col gap-1.5">
-    <label className="text-[13px] text-gray-400">{label}</label>
+  <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+    <label style={{ fontSize: "13px", color: "#9ca3af" }}>{label}</label>
     {children}
   </div>
 );
 
 const Card = ({ title, children }) => (
   <div
-    className="bg-white rounded-2xl border border-gray-200"
-    style={{ padding: "28px 32px", boxShadow: "0 1px 4px rgba(0,0,0,0.06)" }}
+    style={{
+      background: "white",
+      borderRadius: "16px",
+      border: "1px solid #e5e7eb",
+      padding: "28px 32px",
+      boxShadow: "0 1px 4px rgba(0,0,0,0.06)",
+      boxSizing: "border-box",
+      width: "100%",
+    }}
   >
     <h3
-      className="text-[#701366] font-medium border-b border-[#f0e0ee]"
-      style={{ fontSize: "17px", marginBottom: "20px", paddingBottom: "12px" }}
+      style={{
+        fontSize: "17px",
+        fontWeight: 500,
+        color: "#701366",
+        borderBottom: "1px solid #f0e0ee",
+        marginBottom: "20px",
+        paddingBottom: "12px",
+        margin: "0 0 20px 0",
+      }}
     >
       {title}
     </h3>
@@ -42,19 +56,29 @@ const Card = ({ title, children }) => (
 
 const Form = () => {
   const [gender, setGender] = useState("");
+  const [parentType, setParentType] = useState("");
+  const [customType, setCustomType] = useState("");
 
   return (
     <div
-      className="grid grid-cols-2 mx-auto"
-      style={{ gap: "28px", padding: "10px 16px", maxWidth: "1700px" }}
+      style={{
+        display: "grid",
+        gridTemplateColumns: "1fr 1fr",
+        gap: "28px",
+        padding: "10px 16px",
+        width: "100%",
+        maxWidth: "1700px",
+        margin: "0 auto",
+        boxSizing: "border-box",
+      }}
     >
 
       {/* LEFT */}
-      <div className="flex flex-col" style={{ gap: "28px" }}>
+      <div style={{ display: "flex", flexDirection: "column", gap: "28px", minWidth: 0 }}>
 
         {/* BASIC INFO */}
         <Card title="Basic Information">
-          <div className="grid grid-cols-2" style={{ gap: "20px" }}>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "20px" }}>
 
             <Field label="First Name">
               <input style={inp} placeholder="First Name" />
@@ -65,11 +89,8 @@ const Form = () => {
             </Field>
 
             <Field label="Gender">
-              <div
-                className="flex items-center text-[#701366]"
-                style={{ gap: "24px", padding: "8px 0", fontSize: "14px" }}
-              >
-                <label className="flex items-center gap-2 cursor-pointer">
+              <div style={{ display: "flex", alignItems: "center", gap: "24px", padding: "8px 0", fontSize: "14px", color: "#701366" }}>
+                <label style={{ display: "flex", alignItems: "center", gap: "8px", cursor: "pointer" }}>
                   <input
                     type="radio"
                     name="gender"
@@ -79,7 +100,7 @@ const Form = () => {
                   />
                   Male
                 </label>
-                <label className="flex items-center gap-2 cursor-pointer">
+                <label style={{ display: "flex", alignItems: "center", gap: "8px", cursor: "pointer" }}>
                   <input
                     type="radio"
                     name="gender"
@@ -115,25 +136,53 @@ const Form = () => {
           </div>
         </Card>
 
-        {/* PARENT */}
+        {/* PARENT DETAILS */}
         <Card title="Parent Details">
-          <div className="grid grid-cols-2" style={{ gap: "20px" }}>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "20px" }}>
 
-            <Field label="Father Name">
-              <input style={inp} placeholder="Father Name" />
+            <Field label="Parent First Name">
+              <input style={inp} placeholder="First Name" />
             </Field>
 
-            <Field label="Mother Name">
-              <input style={inp} placeholder="Mother Name" />
+            <Field label="Parent Last Name">
+              <input style={inp} placeholder="Last Name" />
             </Field>
 
-            <Field label="Father Contact">
-              <input style={inp} placeholder="Father Contact" />
-            </Field>
+            {/* Relationship Type — full width */}
+            <div style={{ gridColumn: "1 / -1" }}>
+              <Field label="Relationship Type">
+                <div style={{ display: "flex", alignItems: "center", flexWrap: "wrap", gap: "20px", padding: "8px 0", fontSize: "14px", color: "#701366" }}>
+                  {["Father", "Mother", "Other"].map((type) => (
+                    <label key={type} style={{ display: "flex", alignItems: "center", gap: "8px", cursor: "pointer" }}>
+                      <input
+                        type="radio"
+                        name="parentType"
+                        value={type}
+                        checked={parentType === type}
+                        onChange={() => setParentType(type)}
+                        style={{ accentColor: "#701366" }}
+                      />
+                      {type}
+                    </label>
+                  ))}
+                  {parentType === "Other" && (
+                    <input
+                      style={{ ...inp, width: "200px" }}
+                      placeholder="Please specify..."
+                      value={customType}
+                      onChange={(e) => setCustomType(e.target.value)}
+                    />
+                  )}
+                </div>
+              </Field>
+            </div>
 
-            <Field label="Mother Contact">
-              <input style={inp} placeholder="Mother Contact" />
-            </Field>
+            {/* Contact — full width */}
+            <div style={{ gridColumn: "1 / -1" }}>
+              <Field label="Parent Contact">
+                <input style={inp} placeholder="Phone number" />
+              </Field>
+            </div>
 
           </div>
         </Card>
@@ -141,11 +190,11 @@ const Form = () => {
       </div>
 
       {/* RIGHT */}
-      <div className="flex flex-col" style={{ gap: "28px" }}>
+      <div style={{ display: "flex", flexDirection: "column", gap: "28px", minWidth: 0 }}>
 
         {/* ACCOUNT */}
         <Card title="Account Information">
-          <div className="grid grid-cols-2" style={{ gap: "20px" }}>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "20px" }}>
 
             <Field label="User Name">
               <input style={inp} placeholder="Username" />
@@ -160,7 +209,7 @@ const Form = () => {
 
         {/* CONTACT */}
         <Card title="Contact Details">
-          <div className="grid grid-cols-2" style={{ gap: "20px" }}>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "20px" }}>
 
             <Field label="Phone">
               <input style={inp} placeholder="Phone" />

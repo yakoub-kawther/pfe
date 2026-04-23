@@ -152,18 +152,38 @@ function Navbar() {
   }, [dropdownOpen]);
 
   return (
-    <header className="flex items-center justify-end mb-8" style={{ paddingTop: "16px" }}>
-      <div className="flex items-center gap-3">
+    <header
+      style={{
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "flex-end",
+        paddingTop: "16px",
+        marginBottom: "32px",
+        width: "100%",
+        minWidth: 0,
+        flexShrink: 0,
+      }}
+    >
+      <div style={{ display: "flex", alignItems: "center", gap: "12px", flexShrink: 0 }}>
 
-        {/* Notification Bell → opens dropdown */}
-        <div ref={bellRef} style={{ position: "relative" }}>
+        {/* Notification Bell */}
+        <div ref={bellRef} style={{ position: "relative", flexShrink: 0 }}>
           <button
             aria-label="Notifications"
             onClick={() => setDropdownOpen((o) => !o)}
-            className="w-9 h-9 flex items-center justify-center rounded-full bg-white shadow-sm text-[#701366] hover:bg-[#701366] hover:text-white transition-all duration-150 hover:scale-105"
-            style={{ position: "relative" }}
+            style={{
+              width: "36px", height: "36px",
+              display: "flex", alignItems: "center", justifyContent: "center",
+              borderRadius: "50%", border: "none", cursor: "pointer",
+              background: "white", color: "#701366",
+              boxShadow: "0 1px 4px rgba(0,0,0,0.10)",
+              transition: "background 0.15s, color 0.15s, transform 0.15s",
+              position: "relative", flexShrink: 0,
+            }}
+            onMouseEnter={e => { e.currentTarget.style.background = "#701366"; e.currentTarget.style.color = "white"; e.currentTarget.style.transform = "scale(1.05)"; }}
+            onMouseLeave={e => { e.currentTarget.style.background = "white"; e.currentTarget.style.color = "#701366"; e.currentTarget.style.transform = "scale(1)"; }}
           >
-            <Bell className="w-5 h-5" />
+            <Bell size={20} />
             {unread > 0 && (
               <span style={{
                 position: "absolute", top: "-3px", right: "-3px",
@@ -176,16 +196,32 @@ function Navbar() {
             )}
           </button>
 
-          {dropdownOpen && <NotifDropdown notifications={notifications} setNotifications={setNotifications} onClose={() => setDropdownOpen(false)} />}
+          {dropdownOpen && (
+            <NotifDropdown
+              notifications={notifications}
+              setNotifications={setNotifications}
+              onClose={() => setDropdownOpen(false)}
+            />
+          )}
         </div>
 
-        {/* Settings → navigates to /Settings */}
+        {/* Settings */}
         <button
           aria-label="Settings"
           onClick={() => navigate("/Settings")}
-          className="w-9 h-9 flex items-center justify-center rounded-full bg-white shadow-sm text-[#701366] hover:bg-[#701366] hover:text-white transition-all duration-150 hover:scale-105"
+          style={{
+            width: "36px", height: "36px",
+            display: "flex", alignItems: "center", justifyContent: "center",
+            borderRadius: "50%", border: "none", cursor: "pointer",
+            background: "white", color: "#701366",
+            boxShadow: "0 1px 4px rgba(0,0,0,0.10)",
+            transition: "background 0.15s, color 0.15s, transform 0.15s",
+            flexShrink: 0,
+          }}
+          onMouseEnter={e => { e.currentTarget.style.background = "#701366"; e.currentTarget.style.color = "white"; e.currentTarget.style.transform = "scale(1.05)"; }}
+          onMouseLeave={e => { e.currentTarget.style.background = "white"; e.currentTarget.style.color = "#701366"; e.currentTarget.style.transform = "scale(1)"; }}
         >
-          <Settings className="w-5 h-5" />
+          <Settings size={20} />
         </button>
 
       </div>

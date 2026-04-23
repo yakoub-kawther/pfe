@@ -1,6 +1,7 @@
 import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Link } from "react-router-dom";
-import { Search, SlidersHorizontal, Plus, ChevronDown } from "lucide-react";
+import { Search, SlidersHorizontal, Plus } from "lucide-react";
 
 const Searchbar = ({
   placeholder = "Search...",
@@ -10,52 +11,84 @@ const Searchbar = ({
   onSearchChange,
   onFilterChange,
 }) => {
-  const [dropdownOpen, setDropdownOpen] = useState(false);
+  const [dropdownOpen, setDropdownOpen]   = useState(false);
   const [selectedFilter, setSelectedFilter] = useState("All");
 
+  const navigate = useNavigate();
+  
   const handleFilterSelect = (option) => {
     setSelectedFilter(option);
     setDropdownOpen(false);
     if (onFilterChange) onFilterChange(option);
   };
 
+  const iconBtn = {
+    width: "36px", height: "36px", flexShrink: 0,
+    display: "flex", alignItems: "center", justifyContent: "center",
+    borderRadius: "12px", border: "1px solid #701366",
+    background: "white", color: "#701366",
+    cursor: "pointer", transition: "background 0.15s, color 0.15s",
+  };
+
   return (
-    <div className="flex items-center justify-end w-full flex-wrap gap-3">
-      <div className="flex items-center gap-2">
+    <div style={{ display: "flex", alignItems: "center", justifyContent: "flex-end", width: "100%" }}>
+      <div style={{ display: "flex", alignItems: "center", gap: "8px", flexShrink: 0 }}>
 
         {/* Search */}
-        <div className="relative flex  items-center">
-          <Search className="absolute left-3 w-4 h-4 text-[#701366] pointer-events-none" />
+        <div style={{ position: "relative", display: "flex", alignItems: "center", flexShrink: 0 }}>
+          <Search style={{ position: "absolute", left: "12px", width: "16px", height: "16px", color: "#701366", pointerEvents: "none", flexShrink: 0 }} />
           <input
             type="text"
             placeholder={placeholder}
             onChange={(e) => onSearchChange && onSearchChange(e.target.value)}
-            className="pl-9 pr-4 py-2 rounded-full text-center border border-[#701366] bg-white text-sm w-64 h-9 outline-none focus:ring-2 focus:ring-purple-100 transition-all placeholder:text-gray-300"
+            style={{
+              paddingLeft: "36px", paddingRight: "16px",
+              height: "36px", width: "256px",
+              borderRadius: "9999px", border: "1px solid #701366",
+              background: "white", fontSize: "14px",
+              outline: "none", boxSizing: "border-box",
+              flexShrink: 0, textAlign: "center",
+            }}
+            onFocus={e => e.target.style.boxShadow = "0 0 0 2px #f3e8ff"}
+            onBlur={e  => e.target.style.boxShadow = "none"}
           />
         </div>
 
-        {/* Filter Button with Dropdown */}
+        {/* Filter */}
         {filterOptions.length > 0 && (
-          <div className="relative">
+          <div style={{ position: "relative", flexShrink: 0 }}>
             <button
-              onClick={() => setDropdownOpen((prev) => !prev)}
+              onClick={() => setDropdownOpen((p) => !p)}
               aria-label="Filter"
-              className="w-9 h-9 flex items-center justify-center rounded-xl border border-[#701366] bg-white text-[#701366] hover:bg-[#701366] hover:text-white transition-all"
+              style={iconBtn}
+              onMouseEnter={e => { e.currentTarget.style.background = "#701366"; e.currentTarget.style.color = "white"; }}
+              onMouseLeave={e => { e.currentTarget.style.background = "white";   e.currentTarget.style.color = "#701366"; }}
             >
-              <SlidersHorizontal className="w-4 h-4" />
+              <SlidersHorizontal style={{ width: "16px", height: "16px", flexShrink: 0 }} />
             </button>
 
             {dropdownOpen && (
-              <div className="absolute right-0 mt-2 w-44 bg-white border border-[#f0c0f0] rounded-xl shadow-md z-50 overflow-hidden">
+              <div style={{
+                position: "absolute", right: 0, top: "calc(100% + 8px)",
+                width: "176px", background: "white",
+                border: "1px solid #f0c0f0", borderRadius: "12px",
+                boxShadow: "0 4px 12px rgba(0,0,0,0.08)",
+                zIndex: 50, overflow: "hidden",
+              }}>
                 {["All", ...filterOptions].map((option) => (
                   <button
                     key={option}
                     onClick={() => handleFilterSelect(option)}
-                    className={`w-full text-left px-4 py-2 text-sm transition-colors ${
-                      selectedFilter === option
-                        ? "bg-[#701366] text-white"
-                        : "text-[#701366] hover:bg-[#f8e0f8]"
-                    }`}
+                    style={{
+                      width: "100%", textAlign: "left",
+                      padding: "8px 16px", fontSize: "14px",
+                      border: "none", cursor: "pointer",
+                      background: selectedFilter === option ? "#701366" : "white",
+                      color:      selectedFilter === option ? "white"    : "#701366",
+                      transition: "background 0.15s",
+                    }}
+                    onMouseEnter={e => { if (selectedFilter !== option) e.currentTarget.style.background = "#f8e0f8"; }}
+                    onMouseLeave={e => { if (selectedFilter !== option) e.currentTarget.style.background = "white"; }}
                   >
                     {option}
                   </button>
@@ -65,13 +98,20 @@ const Searchbar = ({
           </div>
         )}
 
-        {/* Add Button */}
+        {/* Add */}
         {showAdd && (
           <Link
             to={addPath}
-            className="w-9 h-9 flex items-center justify-center rounded-xl bg-[#701366] text-white hover:bg-white hover:text-[#701366] hover:border-[#701366] border border-[#701366] transition-all hover:scale-110"
+            style={{
+              ...iconBtn,
+              background: "#701366", color: "white",
+              borderRadius: "12px", textDecoration: "none",
+              transition: "background 0.15s, color 0.15s, transform 0.15s",
+            }}
+            onMouseEnter={e => { e.currentTarget.style.background = "white"; e.currentTarget.style.color = "#701366"; e.currentTarget.style.transform = "scale(1.1)"; }}
+            onMouseLeave={e => { e.currentTarget.style.background = "#701366"; e.currentTarget.style.color = "white"; e.currentTarget.style.transform = "scale(1)"; }}
           >
-            <Plus className="w-4 h-4" />
+            <Plus style={{ width: "16px", height: "16px", flexShrink: 0 }} />
           </Link>
         )}
 

@@ -5,16 +5,24 @@ const Tabs = ({ tabs }) => {
   const location = useLocation();
 
   return (
- <div className="flex gap-2 mb-5">
+    <div style={{ display: "flex", gap: "8px", marginBottom: "20px", flexShrink: 0 }}>
       {tabs.map((tab) => (
         <button
           key={tab.name}
           onClick={() => navigate(tab.path)}
-          className={`px-4 py-2 rounded-lg text-sm h-8 transition ${
-            location.pathname === tab.path
-              ? "bg-[#F8E0F8] text-[#701366]"
-              : "bg-white text-[#701366]"
-          }`}
+          style={{
+            padding: "0 16px",
+            height: "32px",
+            borderRadius: "8px",
+            fontSize: "14px",
+            border: "none",
+            cursor: "pointer",
+            flexShrink: 0,
+            whiteSpace: "nowrap",
+            transition: "background 0.15s",
+            background: location.pathname === tab.path ? "#F8E0F8" : "white",
+            color: "#701366",
+          }}
         >
           {tab.name}
         </button>
@@ -22,4 +30,5 @@ const Tabs = ({ tabs }) => {
     </div>
   );
 };
+
 export default Tabs;

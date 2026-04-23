@@ -4,15 +4,12 @@ import Form from "../../components/Form";
 
 function AddStudent() {
   return (
-    
     <DashboardLayout>
-      <section className="flex items-center  justify-between mb-6">
-       <h1 className="text-2xl  text-[#701366]">Add Student</h1>
-        
+      <section className="flex items-center justify-between mb-6 flex-wrap gap-3">
+        <h1 className="text-2xl text-[#701366]">Add Student</h1>
         <Buttons />
       </section>
-        <Form />
-
+      <Form />
     </DashboardLayout>
   );
 }

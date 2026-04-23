@@ -2,27 +2,30 @@ import React from "react";
 import Sidebar from "./Sidebar";
 import Navbar from "./Navbar";
 
-
 const DashboardLayout = ({ children }) => {
   return (
-    <div className="flex min-h-screen bg-[#fffafe] text-[#701366]">
-      
-      {/* Sidebar */}
-      <div className="w-45">
+    <div
+      className="flex min-h-screen bg-[#fffafe] text-[#701366]"
+      style={{ minWidth: 0 }}
+    >
+      {/* Sidebar — fixed width, never shrinks */}
+      <div style={{ width: "160px", minWidth: "160px", flexShrink: 0 }}>
         <Sidebar />
       </div>
 
       {/* Main content */}
-      <div className="px-6 py-6 flex-1 flex flex-col gap-6">
-        
-        {/* Navbar */}
-        <Navbar /> 
+      <div
+        className="flex flex-col flex-1"
+        style={{ minWidth: 0, overflow: "hidden" }}
+      >
+        <Navbar />
 
-        {/* Page content */}
-       <main className="px-6 py-6 flex-1 flex flex-col gap-6">
+        <main
+          className="flex-1 flex flex-col gap-6"
+          style={{ padding: "24px" }}
+        >
           {children}
         </main>
-
       </div>
     </div>
   );

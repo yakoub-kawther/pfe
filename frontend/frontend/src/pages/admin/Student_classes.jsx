@@ -42,7 +42,6 @@ export default function Studentclasses() {
 
       <div className="flex justify-between items-center mb-6">
         <Tabs tabs={studentTabs} />
-        <Searchbar onAdd={false} />
       </div>
 
       <div className="p-6">

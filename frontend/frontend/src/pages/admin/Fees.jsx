@@ -1,9 +1,10 @@
 import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import DashboardLayout from "../../components/DashboardLayout";
 import Searchbar from "../../components/Searchbar";
-import { Wallet, TrendingUp, TrendingDown, Users } from "lucide-react";
+import { Wallet, TrendingUp, TrendingDown, Users, GraduationCap, Plus } from "lucide-react";
 
-// ─── DATA ───────────────────────────────────────────────────
+// ─── STAFF DATA ────────────────────────────────────────────────
 const feesData = [
   { id: 1, name: "Benahmed Ahmed", role: "Teacher",     month: "April 2026", salary: "45,000 DA", status: { text: "Paid",   color: "green" } },
   { id: 2, name: "Benali Ali",     role: "Teacher",     month: "April 2026", salary: "45,000 DA", status: { text: "Unpaid", color: "red"   } },
@@ -12,38 +13,72 @@ const feesData = [
   { id: 5, name: "test3",          role: "Agent",       month: "April 2026", salary: "28,000 DA", status: { text: "Paid",   color: "green" } },
 ];
 
-const statusStyles = {
-  green: "bg-green-100 text-green-600",
-  red:   "bg-red-100 text-red-600",
+// ─── STUDENT PAYMENTS DATA ─────────────────────────────────────
+const studentPaymentsData = [
+  { id: 1, name: "Amira Bouzid",    level: "Beginner A1", month: "April 2026", amount: "3,500 DA", status: { text: "Paid",    color: "green"  } },
+  { id: 2, name: "Yacine Khaldi",   level: "Pre-Inter B1",month: "April 2026", amount: "4,000 DA", status: { text: "Unpaid",  color: "red"    } },
+  { id: 3, name: "Sara Mansouri",   level: "Advanced C1", month: "April 2026", amount: "4,500 DA", status: { text: "Paid",    color: "green"  } },
+  { id: 4, name: "Riad Ferhat",     level: "Beginner A2", month: "April 2026", amount: "3,500 DA", status: { text: "Partial", color: "orange" } },
+  { id: 5, name: "Nadia Tlemcani",  level: "Inter B2",    month: "April 2026", amount: "4,000 DA", status: { text: "Unpaid",  color: "red"    } },
+  { id: 6, name: "Karim Bouras",    level: "Advanced C2", month: "April 2026", amount: "4,500 DA", status: { text: "Paid",    color: "green"  } },
+];
+
+// ─── SHARED STYLES ─────────────────────────────────────────────
+const F = "'Inter', sans-serif";
+
+const statusColor = {
+  green:  { background: "#dcfce7", color: "#16a34a" },
+  red:    { background: "#fee2e2", color: "#dc2626" },
+  orange: { background: "#fff7ed", color: "#ea580c" },
 };
 
-// Purple for Teacher, blue for ANY other role
-const getRoleBadge = (role) =>
-  role === "Teacher"
-    ? "bg-[#f8e0f8] text-[#701366]"
-    : "bg-blue-50 text-blue-600";
+const getRoleBadge = (role) => role === "Teacher"
+  ? { background: "#f8e0f8", color: "#701366" }
+  : { background: "#eff6ff", color: "#2563eb" };
 
-// ─── SUMMARY CARD ────────────────────────────────────────────
-const SummaryCard = ({ icon: Icon, label, value, color }) => (
-  <div
-    className="bg-white rounded-2xl flex items-center gap-4"
-    style={{ padding: "20px 24px", boxShadow: "0 1px 6px rgba(0,0,0,0.05)" }}
-  >
-    <div
-      className={`flex items-center justify-center rounded-xl ${color}`}
-      style={{ width: "44px", height: "44px", flexShrink: 0 }}
+const getLevelBadge = () => ({ background: "#f0f9ff", color: "#0369a1" });
+
+const thStyle = { padding: "12px 16px", fontSize: "14px", fontWeight: 500, textAlign: "left", whiteSpace: "nowrap", color: "#701366" };
+const tdStyle = { padding: "12px 16px", fontSize: "14px", color: "#701366", whiteSpace: "nowrap" };
+
+// ─── ADD BUTTON ────────────────────────────────────────────────
+function AddButton({ onClick, label }) {
+  return (
+    <button
+      onClick={onClick}
+      style={{
+        display: "flex", alignItems: "center", gap: "6px",
+        background: "linear-gradient(135deg,#8a1a7e 0%,#701366 100%)",
+        color: "white", border: "none", borderRadius: "12px",
+        padding: "10px 18px", fontSize: "14px", fontFamily: F,
+        fontWeight: 500, cursor: "pointer", whiteSpace: "nowrap",
+        boxShadow: "0 4px 14px rgba(112,19,102,.28)",
+        transition: "background .2s",
+      }}
+      onMouseEnter={e => e.currentTarget.style.background = "linear-gradient(135deg,#701366 0%,#4a0d45 100%)"}
+      onMouseLeave={e => e.currentTarget.style.background = "linear-gradient(135deg,#8a1a7e 0%,#701366 100%)"}
     >
-      <Icon className="w-5 h-5" />
+      <Plus size={15} /> {label}
+    </button>
+  );
+}
+
+// ─── SUMMARY CARD ──────────────────────────────────────────────
+const SummaryCard = ({ icon: Icon, label, value, iconBg, iconColor }) => (
+  <div style={{ background: "white", borderRadius: "16px", display: "flex", alignItems: "center", gap: "16px", padding: "20px 24px", boxShadow: "0 1px 6px rgba(0,0,0,0.05)", boxSizing: "border-box", minWidth: 0 }}>
+    <div style={{ width: "44px", height: "40px", borderRadius: "12px", background: iconBg, color: iconColor, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+      <Icon style={{ width: "20px", height: "20px" }} />
     </div>
-    <div>
-      <p className="text-xs text-gray-400 mb-0.5">{label}</p>
-      <p className="text-[#701366] font-Inter text-base">{value}</p>
+    <div style={{ minWidth: 0 }}>
+      <p style={{ fontSize: "12px", color: "#9ca3af", margin: "0 0 2px 0" }}>{label}</p>
+      <p style={{ fontSize: "16px", color: "#701366", fontFamily: F, margin: 0 }}>{value}</p>
     </div>
   </div>
 );
 
-// ─── COMPONENT ───────────────────────────────────────────────
-export default function Fees() {
+// ─── STAFF TAB CONTENT ─────────────────────────────────────────
+function StaffTab() {
+  const navigate = useNavigate();
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState("All");
 
@@ -53,88 +88,208 @@ export default function Fees() {
 
   const filtered = feesData.filter((f) => {
     const q = search.toLowerCase();
-    const matchSearch =
-      f.name.toLowerCase().includes(q) ||
-      f.role.toLowerCase().includes(q) ||
-      f.month.toLowerCase().includes(q) ||
-      f.status.text.toLowerCase().includes(q);
-    const matchFilter =
-      filter === "All" ||
-      f.status.text === filter ||
-      f.role === filter ||
-      (filter === "Employee" && f.role !== "Teacher");
+    const matchSearch = f.name.toLowerCase().includes(q) || f.role.toLowerCase().includes(q) || f.month.toLowerCase().includes(q) || f.status.text.toLowerCase().includes(q);
+    const matchFilter = filter === "All" || f.status.text === filter || f.role === filter || (filter === "Employee" && f.role !== "Teacher");
     return matchSearch && matchFilter;
   });
 
   return (
-    <DashboardLayout>
-      <div className="max-w-6xl mx-auto flex flex-col gap-8 pt-6" style={{ marginTop: "30px" }}>
+    <>
+      {/* Searchbar + Add button */}
+      <div style={{ display: "flex", justifyContent: "flex-end", alignItems: "center", gap: "12px" }}>
+        <Searchbar
+          placeholder="Search by name, role, status..."
+          filterOptions={["Paid", "Unpaid", "Teacher", "Employee"]}
+          showAdd={false}
+          onSearchChange={(val) => setSearch(val)}
+          onFilterChange={(val) => setFilter(val)}
+        />
+        <AddButton onClick={() => navigate("/Add_employees_fees")} label="Add Fees" />
+      </div>
 
-        {/* Header */}
-        <div className="flex items-center justify-between flex-nowrap gap-4">
-          <h2 className="text-2xl font-Inter text-[#701366] whitespace-nowrap">Fees & Salaries</h2>
-          <div className="flex-shrink-0">
-           <Searchbar
-            placeholder="Search by name, role, status..."
-            filterOptions={["Paid", "Unpaid", "Teacher", "Employee"]}
-            showAdd={false}
-            onSearchChange={(val) => setSearch(val)}
-            onFilterChange={(val) => setFilter(val)}
-            />
-         </div>
-        </div>
+      {/* Summary Cards */}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "16px" }}>
+        <SummaryCard icon={Users}        label="Total Staff"    value={`${totalStaff} people`}           iconBg="#f8e0f8" iconColor="#701366" />
+        <SummaryCard icon={Wallet}       label="Total Salaries" value="176,000 DA"                       iconBg="#eff6ff" iconColor="#2563eb" />
+        <SummaryCard icon={TrendingUp}   label="Paid"           value={`${totalPaid} / ${totalStaff}`}   iconBg="#dcfce7" iconColor="#16a34a" />
+        <SummaryCard icon={TrendingDown} label="Unpaid"         value={`${totalUnpaid} / ${totalStaff}`} iconBg="#fee2e2" iconColor="#dc2626" />
+      </div>
 
-        {/* Summary Cards */}
-        <div className="grid grid-cols-4" style={{ gap: "16px" }}>
-          <SummaryCard icon={Users}       label="Total Staff"     value={`${totalStaff} people`} color="bg-[#f8e0f8] text-[#701366]" />
-          <SummaryCard icon={Wallet}      label="Total Salaries"  value="176,000 DA"              color="bg-blue-50 text-blue-600"    />
-          <SummaryCard icon={TrendingUp}  label="Paid"            value={`${totalPaid} / ${totalStaff}`}   color="bg-green-100 text-green-600" />
-          <SummaryCard icon={TrendingDown} label="Unpaid"         value={`${totalUnpaid} / ${totalStaff}`} color="bg-red-100 text-red-600"     />
-        </div>
-
-        {/* Table */}
-        <div className="w-full px-6 bg-white rounded-2xl shadow-sm overflow-hidden">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="bg-[#F8E0F8] h-12 text-[#701366] text-left">
-                <th className="py-3 text-sm" style={{ paddingLeft: "20px" }}>Name</th>
-                <th className="px-4 py-3 text-sm">Role</th>
-                <th className="px-4 py-3 text-sm">Month</th>
-                <th className="px-4 py-3 text-sm">Salary</th>
-                <th className="px-4 py-3 text-sm">Status</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-[#f8e0f8]">
-              {filtered.length === 0 ? (
-                <tr>
-                  <td colSpan={5} className="text-center py-8 text-[#701366] opacity-50 text-sm">
-                    No records found.
+      {/* Table */}
+      <div style={{ width: "100%", background: "white", borderRadius: "16px", boxShadow: "0 1px 4px rgba(0,0,0,0.06)", overflow: "hidden" }}>
+        <table style={{ width: "100%", borderCollapse: "collapse", tableLayout: "fixed" }}>
+          <thead>
+            <tr style={{ background: "#F8E0F8", height: "48px" }}>
+              <th style={{ ...thStyle, paddingLeft: "20px", width: "25%" }}>Name</th>
+              <th style={{ ...thStyle, width: "18%" }}>Role</th>
+              <th style={{ ...thStyle, width: "20%" }}>Month</th>
+              <th style={{ ...thStyle, width: "18%" }}>Salary</th>
+              <th style={{ ...thStyle, width: "19%" }}>Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            {filtered.length === 0 ? (
+              <tr><td colSpan={5} style={{ textAlign: "center", padding: "32px", color: "#701366", opacity: 0.5, fontSize: "14px" }}>No records found.</td></tr>
+            ) : (
+              filtered.map((f) => (
+                <tr key={f.id} style={{ height: "48px", borderBottom: "1px solid #f8e0f8", transition: "background 0.1s" }}
+                  onMouseEnter={e => e.currentTarget.style.background = "#fffafe"}
+                  onMouseLeave={e => e.currentTarget.style.background = "white"}
+                >
+                  <td style={{ ...tdStyle, paddingLeft: "20px" }}>{f.name}</td>
+                  <td style={tdStyle}>
+                    <span style={{ display: "inline-flex", alignItems: "center", padding: "3px 12px", borderRadius: "9999px", fontSize: "12px", fontFamily: F, whiteSpace: "nowrap", ...getRoleBadge(f.role) }}>
+                      {f.role}
+                    </span>
+                  </td>
+                  <td style={tdStyle}>{f.month}</td>
+                  <td style={{ ...tdStyle, fontFamily: F }}>{f.salary}</td>
+                  <td style={tdStyle}>
+                    <span style={{ display: "inline-flex", alignItems: "center", gap: "4px", padding: "3px 12px", borderRadius: "9999px", fontSize: "12px", fontFamily: F, whiteSpace: "nowrap", ...statusColor[f.status.color] }}>
+                      ● {f.status.text}
+                    </span>
                   </td>
                 </tr>
-              ) : (
-                filtered.map((f) => (
-                  <tr key={f.id} className="hover:bg-[#fffafe] transition-colors duration-100 h-12">
-                    <td className="py-3 text-[#701366]" style={{ paddingLeft: "20px" }}>{f.name}</td>
-                    <td className="px-4 py-3">
+              ))
+            )}
+          </tbody>
+        </table>
+      </div>
+    </>
+  );
+}
 
-                      {/* Purple for Teacher, blue for Secretariat / Housemaid / Agent / any other role */}
-                      <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-Inter ${getRoleBadge(f.role)}`}>
-                        {f.role}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3 text-[#701366]">{f.month}</td>
-                    <td className="px-4 py-3 text-[#701366] font-Inter">{f.salary}</td>
-                    <td className="px-4 py-3">
-                      <span className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-Inter ${statusStyles[f.status.color]}`}>
-                        ● {f.status.text}
-                      </span>
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
+// ─── STUDENTS TAB CONTENT ──────────────────────────────────────
+function StudentsTab() {
+  const navigate = useNavigate();
+  const [search, setSearch] = useState("");
+  const [filter, setFilter] = useState("All");
+
+  const totalPaid    = studentPaymentsData.filter((s) => s.status.text === "Paid").length;
+  const totalUnpaid  = studentPaymentsData.filter((s) => s.status.text === "Unpaid").length;
+  const totalPartial = studentPaymentsData.filter((s) => s.status.text === "Partial").length;
+  const total        = studentPaymentsData.length;
+
+  const filtered = studentPaymentsData.filter((s) => {
+    const q = search.toLowerCase();
+    const matchSearch =
+      s.name.toLowerCase().includes(q) ||
+      s.level.toLowerCase().includes(q) ||
+      s.month.toLowerCase().includes(q) ||
+      s.status.text.toLowerCase().includes(q);
+    const matchFilter =
+      filter === "All" ||
+      s.status.text === filter ||
+      s.level.toLowerCase().includes(filter.toLowerCase());
+    return matchSearch && matchFilter;
+  });
+
+  return (
+    <>
+      {/* Searchbar + Add button */}
+      <div style={{ display: "flex", justifyContent: "flex-end", alignItems: "center", gap: "12px" }}>
+        <Searchbar
+          placeholder="Search by name, level, status..."
+          filterOptions={["Paid", "Unpaid", "Partial"]}
+          showAdd={false}
+          onSearchChange={(val) => setSearch(val)}
+          onFilterChange={(val) => setFilter(val)}
+        />
+        <AddButton onClick={() => navigate("/Add_student_payment")} label="Add Payment" />
+      </div>
+
+      {/* Summary Cards */}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "16px" }}>
+        <SummaryCard icon={GraduationCap} label="Total Students"  value={`${total} students`}         iconBg="#f8e0f8" iconColor="#701366" />
+        <SummaryCard icon={Wallet}        label="Total Collected"  value="21,500 DA"                   iconBg="#eff6ff" iconColor="#2563eb" />
+        <SummaryCard icon={TrendingUp}    label="Paid"             value={`${totalPaid} / ${total}`}   iconBg="#dcfce7" iconColor="#16a34a" />
+        <SummaryCard icon={TrendingDown}  label="Unpaid / Partial" value={`${totalUnpaid + totalPartial} / ${total}`} iconBg="#fee2e2" iconColor="#dc2626" />
+      </div>
+
+      {/* Table */}
+      <div style={{ width: "100%", background: "white", borderRadius: "16px", boxShadow: "0 1px 4px rgba(0,0,0,0.06)", overflow: "hidden" }}>
+        <table style={{ width: "100%", borderCollapse: "collapse", tableLayout: "fixed" }}>
+          <thead>
+            <tr style={{ background: "#F8E0F8", height: "48px" }}>
+              <th style={{ ...thStyle, paddingLeft: "20px", width: "24%" }}>Student Name</th>
+              <th style={{ ...thStyle, width: "20%" }}>Level</th>
+              <th style={{ ...thStyle, width: "20%" }}>Month</th>
+              <th style={{ ...thStyle, width: "18%" }}>Amount</th>
+              <th style={{ ...thStyle, width: "18%" }}>Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            {filtered.length === 0 ? (
+              <tr><td colSpan={5} style={{ textAlign: "center", padding: "32px", color: "#701366", opacity: 0.5, fontSize: "14px" }}>No records found.</td></tr>
+            ) : (
+              filtered.map((s) => (
+                <tr key={s.id} style={{ height: "48px", borderBottom: "1px solid #f8e0f8", transition: "background 0.1s" }}
+                  onMouseEnter={e => e.currentTarget.style.background = "#fffafe"}
+                  onMouseLeave={e => e.currentTarget.style.background = "white"}
+                >
+                  <td style={{ ...tdStyle, paddingLeft: "20px" }}>{s.name}</td>
+                  <td style={tdStyle}>
+                    <span style={{ display: "inline-flex", alignItems: "center", padding: "3px 12px", borderRadius: "9999px", fontSize: "12px", fontFamily: F, whiteSpace: "nowrap", ...getLevelBadge() }}>
+                      {s.level}
+                    </span>
+                  </td>
+                  <td style={tdStyle}>{s.month}</td>
+                  <td style={{ ...tdStyle, fontFamily: F }}>{s.amount}</td>
+                  <td style={tdStyle}>
+                    <span style={{ display: "inline-flex", alignItems: "center", gap: "4px", padding: "3px 12px", borderRadius: "9999px", fontSize: "12px", fontFamily: F, whiteSpace: "nowrap", ...statusColor[s.status.color] }}>
+                      ● {s.status.text}
+                    </span>
+                  </td>
+                </tr>
+              ))
+            )}
+          </tbody>
+        </table>
+      </div>
+    </>
+  );
+}
+
+// ─── MAIN FEES PAGE ────────────────────────────────────────────
+export default function Fees() {
+  const [activeTab, setActiveTab] = useState("staff");
+
+  const tabs = [
+    { key: "staff",    label: "Staff & Teachers" },
+    { key: "students", label: "Students"          },
+  ];
+
+  return (
+    <DashboardLayout>
+      <div style={{ width: "100%", display: "flex", flexDirection: "column", gap: "24px", paddingTop: "6px", boxSizing: "border-box", minWidth: 0, marginTop: "30px" }}>
+
+        <h2 style={{ fontSize: "24px", color: "#701366", fontFamily: F, margin: 0, whiteSpace: "nowrap" }}>
+          Fees & Salaries
+        </h2>
+
+        {/* Tabs */}
+        <div style={{ display: "flex", gap: "4px", background: "#f8e0f8", borderRadius: "14px", padding: "4px", width: "fit-content" }}>
+          {tabs.map((tab) => (
+            <button
+              key={tab.key}
+              onClick={() => setActiveTab(tab.key)}
+              style={{
+                padding: "9px 24px", borderRadius: "10px", border: "none", cursor: "pointer",
+                fontFamily: F, fontSize: "14px",
+                fontWeight: activeTab === tab.key ? 600 : 400,
+                color: activeTab === tab.key ? "#701366" : "#9c5094",
+                background: activeTab === tab.key ? "white" : "transparent",
+                boxShadow: activeTab === tab.key ? "0 2px 8px rgba(112,19,102,.12)" : "none",
+                transition: "all .2s",
+              }}
+            >
+              {tab.label}
+            </button>
+          ))}
         </div>
+
+        {activeTab === "staff"    && <StaffTab />}
+        {activeTab === "students" && <StudentsTab />}
 
       </div>
     </DashboardLayout>

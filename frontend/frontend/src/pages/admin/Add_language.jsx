@@ -15,8 +15,6 @@ const inp = {
   backgroundColor: "#fff",
 };
 
-const sel = { ...inp, cursor: "pointer" };
-
 const Field = ({ label, children, full = false }) => (
   <div className="flex flex-col gap-1.5" style={full ? { gridColumn: "1 / -1" } : {}}>
     {label ? <label className="text-[13px] text-gray-500 font-Inter">{label}</label> : null}
@@ -41,11 +39,9 @@ const btnOutline = `${btnBase} border-[#701366] text-[#701366] bg-white hover:bg
 const btnGhost   = `${btnBase} border-[#701366] text-[#701366] bg-white hover:bg-[#701366] hover:text-white`;
 const btnFilled  = `${btnBase} border-[#701366] text-white bg-[#701366] hover:bg-white hover:text-[#701366]`;
 
-const emptyForm = {
-  id: "", capacity: "", status: "Available", floor: "",
-};
+const emptyForm = { id: "", language: "", shortcut: "" };
 
-export default function Add_classrooms() {
+export default function Add_language() {
   const navigate = useNavigate();
   const [form, setForm] = useState(emptyForm);
 
@@ -55,9 +51,9 @@ export default function Add_classrooms() {
   const handleReset = () => setForm(emptyForm);
 
   const handleSave = () => {
-    if (!form.id) { alert("Please enter a classroom ID."); return; }
-    console.log("New classroom:", form);
-    navigate("/Classrooms");
+    if (!form.language) { alert("Please enter a language name."); return; }
+    console.log("New language:", form);
+    navigate("/Languages");
   };
 
   return (
@@ -66,40 +62,50 @@ export default function Add_classrooms() {
 
         {/* Header */}
         <div className="flex items-center justify-between mb-8 flex-wrap gap-3">
-          <h1 className="text-2xl text-[#701366] font-Inter">Add New Classroom</h1>
+          <h1 className="text-2xl text-[#701366] font-Inter">Add New Language</h1>
           <div className="flex gap-2 flex-wrap">
-            <button onClick={() => navigate("/Classrooms")} className={btnOutline}>cancel</button>
-            <button onClick={handleReset}                   className={btnGhost}>reset</button>
-            <button onClick={handleSave}                    className={btnFilled}>save</button>
+            <button onClick={() => navigate("/Languages")} className={btnOutline}>cancel</button>
+            <button onClick={handleReset}                  className={btnGhost}>reset</button>
+            <button onClick={handleSave}                   className={btnFilled}>save</button>
           </div>
         </div>
 
         <div style={{ marginTop: "30px" }}>
-          <Card title="Classroom Information">
+          <Card title="Language Information">
             <div className="grid grid-cols-2" style={{ gap: "18px" }}>
 
-              <Field label="Classroom ID">
-                <input style={inp} value={form.id} onChange={handle("id")} placeholder="e.g. Room 3" />
+              <Field label="ID" full>
+                <input
+                  style={inp}
+                  value={form.id}
+                  onChange={handle("id")}
+                  placeholder="e.g. LNG-006"
+                />
               </Field>
 
-              <Field label="Capacity">
-                <input type="number" min="1" style={inp} value={form.capacity} onChange={handle("capacity")} placeholder="e.g. 20" />
+              <Field label="Language">
+                <input
+                  style={inp}
+                  value={form.language}
+                  onChange={handle("language")}
+                  placeholder="e.g. German"
+                />
               </Field>
 
-              <Field label="Floor">
-                <input style={inp} value={form.floor} onChange={handle("floor")} placeholder="e.g. Ground floor" />
-              </Field>
-
-              <Field label="Status">
-                <select style={sel} value={form.status} onChange={handle("status")}>
-                  <option>Available</option>
-                  <option>Occupied</option>
-                </select>
+              <Field label="Shortcut">
+                <input
+                  style={inp}
+                  value={form.shortcut}
+                  onChange={handle("shortcut")}
+                  placeholder="e.g. DE"
+                  maxLength={5}
+                />
               </Field>
 
             </div>
           </Card>
         </div>
+
       </div>
     </DashboardLayout>
   );

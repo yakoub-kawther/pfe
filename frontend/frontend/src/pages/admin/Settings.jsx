@@ -39,16 +39,16 @@ const ReadField = ({ label, value }) => (
 );
 
 const btnBase    = "inline-flex items-center justify-center px-5 py-1.5 text-sm rounded-lg border transition-colors font-Inter";
-const btnOutline = `${btnBase} border-[#701366] text-[#701366] bg-white h-8 w-12  hover:bg-[#701366] hover:text-white`;
+const btnOutline = `${btnBase} border-[#701366] text-[#701366] bg-white h-8 w-12 hover:bg-[#701366] hover:text-white`;
 const btnFilled  = `${btnBase} border-[#701366] text-white bg-[#701366] hover:bg-white hover:text-[#701366]`;
 
 function getStrength(pw) {
   if (!pw) return null;
   let score = 0;
-  if (pw.length >= 8) score++;
-  if (/[A-Z]/.test(pw)) score++;
-  if (/[0-9]/.test(pw)) score++;
-  if (/[^A-Za-z0-9]/.test(pw)) score++;
+  if (pw.length >= 8)            score++;
+  if (/[A-Z]/.test(pw))         score++;
+  if (/[0-9]/.test(pw))         score++;
+  if (/[^A-Za-z0-9]/.test(pw))  score++;
   if (score <= 1) return { label: "Weak",   color: "#ef4444", width: "25%" };
   if (score === 2) return { label: "Fair",   color: "#f97316", width: "50%" };
   if (score === 3) return { label: "Good",   color: "#eab308", width: "75%" };
@@ -57,7 +57,6 @@ function getStrength(pw) {
 
 const DIRECTOR_EMAIL = "yousraztn.contact@gmail.com";
 
-// ── Eye icon  ───────────────────────
 const Eye = ({ visible }) =>
   visible ? (
     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
@@ -71,7 +70,6 @@ const Eye = ({ visible }) =>
     </svg>
   );
 
-// ── Password field  ─────────────────
 const PwField = ({ label, field, form, setForm, show, onToggle }) => (
   <div className="flex flex-col gap-1.5">
     <label className="text-[13px] text-gray-500 font-Inter">{label}</label>
@@ -120,8 +118,8 @@ export default function Settings() {
     role:  "Head Manager",
   };
 
-  const [form, setForm] = useState({ current: "", next: "", confirm: "" });
-  const [show, setShow] = useState({ current: false, next: false, confirm: false });
+  const [form,    setForm]    = useState({ current: "", next: "", confirm: "" });
+  const [show,    setShow]    = useState({ current: false, next: false, confirm: false });
   const [success, setSuccess] = useState("");
   const [error,   setError]   = useState("");
 
@@ -139,21 +137,30 @@ export default function Settings() {
 
   return (
     <DashboardLayout>
-      <div className="max-w-5xl mx-auto pb-10" style={{ padding: "30px 16px" }}>
+      {/* w-full + clamp padding replaces max-w-5xl mx-auto */}
+      <div className="w-full pb-10" style={{ padding: "30px clamp(12px, 2vw, 32px)" }}>
 
         {/* Header */}
         <div className="flex items-center justify-between mb-8">
           <h1 className="text-2xl text-[#701366] font-Inter">Settings</h1>
         </div>
 
-        <div className="grid grid-cols-2" style={{ gap: "24px", alignItems: "start" , marginTop: "30px"}}>
-
+        {/* Two-column grid → single column on narrow */}
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 380px), 1fr))",
+            gap: "24px",
+            alignItems: "start",
+            marginTop: "30px",
+          }}
+        >
           {/* LEFT column */}
           <div className="flex flex-col" style={{ gap: "24px" }}>
 
-            {/* Account Info*/}
+            {/* Account Info */}
             <Card title="Account Information">
-              <div className="grid grid-cols-1" style={{ gap: "16px" , marginTop: "20px" }}>
+              <div className="grid grid-cols-1" style={{ gap: "16px", marginTop: "20px" }}>
                 <ReadField label="Full Name" value={manager.name} />
                 <ReadField label="Email"     value={manager.email} />
                 <ReadField label="Role"      value={manager.role} />
@@ -163,11 +170,12 @@ export default function Settings() {
               </p>
             </Card>
 
-            {/* Support  */}
-            <Card title="Support" >
+            {/* Support */}
+            <Card title="Support">
               <a
-                href={`https://mail.google.com/mail/?view=cm&to=${DIRECTOR_EMAIL}&subject=Support%20Request`} target="_blank" rel="noreferrer"
-                style={{ textDecoration: "none", display: "block", marginBottom: "14px" , marginTop: "10px"}}
+                href={`https://mail.google.com/mail/?view=cm&to=${DIRECTOR_EMAIL}&subject=Support%20Request`}
+                target="_blank" rel="noreferrer"
+                style={{ textDecoration: "none", display: "block", marginBottom: "14px", marginTop: "10px" }}
               >
                 <div
                   style={{
@@ -180,19 +188,12 @@ export default function Settings() {
                     cursor: "pointer",
                     transition: "opacity 0.2s, transform 0.2s",
                   }}
-                  onMouseEnter={e => {
-                    e.currentTarget.style.opacity = "0.9";
-                    e.currentTarget.style.transform = "translateY(-2px)";
-                  }}
-                  onMouseLeave={e => {
-                    e.currentTarget.style.opacity = "1";
-                    e.currentTarget.style.transform = "translateY(0)";
-                  }}
+                  onMouseEnter={e => { e.currentTarget.style.opacity = "0.9"; e.currentTarget.style.transform = "translateY(-2px)"; }}
+                  onMouseLeave={e => { e.currentTarget.style.opacity = "1";   e.currentTarget.style.transform = "translateY(0)"; }}
                 >
-                  {/* icon bubble */}
                   <div style={{
                     width: "42px", height: "42px", borderRadius: "50%",
-                    background: "rgba(255,255,255,0.18)", 
+                    background: "rgba(255,255,255,0.18)",
                     display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0,
                   }}>
                     <svg xmlns="http://www.w3.org/2000/svg" width="19" height="19" fill="none" viewBox="0 0 24 24" stroke="white" strokeWidth="2">
@@ -200,8 +201,6 @@ export default function Settings() {
                       <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/>
                     </svg>
                   </div>
-
-                  {/* label + email */}
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <p style={{ color: "rgba(255,255,255,0.7)", fontSize: "12px", fontFamily: "Inter, sans-serif", marginBottom: "3px" }}>
                       Contact Director
@@ -213,14 +212,11 @@ export default function Settings() {
                       {DIRECTOR_EMAIL}
                     </p>
                   </div>
-
-                  {/* arrow */}
                   <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" fill="none" viewBox="0 0 24 24" stroke="rgba(255,255,255,0.6)" strokeWidth="2.5" style={{ flexShrink: 0 }}>
                     <path d="M5 12h14M12 5l7 7-7 7"/>
                   </svg>
                 </div>
               </a>
-
               <p className="text-[11px] text-gray-400 font-Inter leading-relaxed">
                 Click above to open your email app and write to the director directly. We typically respond within one business day.
               </p>
@@ -232,7 +228,6 @@ export default function Settings() {
             <p className="text-[11px] text-[#c192c1] font-Inter mb-6 leading-relaxed">
               Choose a strong password you haven't used before.
             </p>
-
             <div className="grid grid-cols-1" style={{ gap: "18px", marginTop: "20px" }}>
               <PwField label="Current Password"     field="current" form={form} setForm={setForm} show={show} onToggle={toggle} />
               <PwField label="New Password"         field="next"    form={form} setForm={setForm} show={show} onToggle={toggle} />
@@ -245,9 +240,7 @@ export default function Settings() {
                       borderRadius: "99px", transition: "width 0.35s ease, background 0.35s ease",
                     }} />
                   </div>
-                  <p className="text-[11px] font-Inter mt-1" style={{ color: strength.color }}>
-                    {strength.label}
-                  </p>
+                  <p className="text-[11px] font-Inter mt-1" style={{ color: strength.color }}>{strength.label}</p>
                 </div>
               )}
 
@@ -255,16 +248,14 @@ export default function Settings() {
 
               <ul className="text-[11px] text-gray-400 font-Inter space-y-0.5 list-none" style={{ paddingLeft: "0", margin: "0" }}>
                 {[
-                  ["At least 8 characters",   form.next.length >= 8],
-                  ["One uppercase letter",     /[A-Z]/.test(form.next)],
-                  ["One number",               /[0-9]/.test(form.next)],
-                  ["One special character",    /[^A-Za-z0-9]/.test(form.next)],
-                  ["Passwords match",          form.next && form.next === form.confirm],
+                  ["At least 8 characters",  form.next.length >= 8],
+                  ["One uppercase letter",    /[A-Z]/.test(form.next)],
+                  ["One number",              /[0-9]/.test(form.next)],
+                  ["One special character",   /[^A-Za-z0-9]/.test(form.next)],
+                  ["Passwords match",         form.next && form.next === form.confirm],
                 ].map(([rule, ok]) => (
                   <li key={rule} className="flex items-center gap-1.5">
-                    <span style={{ color: ok ? "#22c55e" : "#d1b3d1", fontSize: "12px" }}>
-                      {ok ? "✓" : "○"}
-                    </span>
+                    <span style={{ color: ok ? "#22c55e" : "#d1b3d1", fontSize: "12px" }}>{ok ? "✓" : "○"}</span>
                     <span style={{ color: ok ? "#22c55e" : undefined }}>{rule}</span>
                   </li>
                 ))}
@@ -276,22 +267,14 @@ export default function Settings() {
               <div className="flex gap-3 pt-1">
                 <button
                   onClick={() => { setForm({ current: "", next: "", confirm: "" }); setError(""); setSuccess(""); }}
-                  className={btnOutline}
-                  style={{ flex: 1 }}
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={handleSave}
-                  className={btnFilled}
-                  style={{ flex: 1 }}
-                >
+                  className={btnOutline} style={{ flex: 1 }}
+                >Cancel</button>
+                <button onClick={handleSave} className={btnFilled} style={{ flex: 1 }}>
                   Save Password
                 </button>
               </div>
             </div>
           </Card>
-
         </div>
       </div>
     </DashboardLayout>

@@ -2,53 +2,33 @@ import { useLocation, useNavigate } from "react-router-dom";
 import DashboardLayout from "../../components/DashboardLayout";
 import Tabs from "../../components/Tabs";
 
-const statusStyles = {
-  Active: "bg-green-100 text-green-700",
-  Inactive: "bg-red-100 text-red-700",
-};
-
 const ReadField = ({ label, value, full = false }) => (
-  <div className="flex flex-col gap-1.5" style={full ? { gridColumn: "1 / -1" } : {}}>
-    {label ? <label className="text-[13px] text-gray-500 font-Inter">{label}</label> : null}
-    <div
-      style={{
-        width: "100%",
-        border: "1px solid #e2d0e2",
-        borderRadius: "8px",
-        padding: "10px 14px",
-        fontSize: "14px",
-        color: "#701366",
-        boxSizing: "border-box",
-        fontFamily: "Inter, sans-serif",
-        backgroundColor: "#faf5fa",
-        minHeight: "40px",
-      }}
-    >
+  <div style={{ display: "flex", flexDirection: "column", gap: "6px", ...(full ? { gridColumn: "1 / -1" } : {}), minWidth: 0 }}>
+    {label ? <label style={{ fontSize: "13px", color: "#6b7280", fontFamily: "Inter, sans-serif" }}>{label}</label> : null}
+    <div style={{
+      width: "100%", border: "1px solid #e2d0e2", borderRadius: "8px",
+      padding: "10px 14px", fontSize: "14px", color: "#701366",
+      boxSizing: "border-box", fontFamily: "Inter, sans-serif",
+      backgroundColor: "#faf5fa", minHeight: "40px",
+    }}>
       {value || <span style={{ color: "#c9a8c9" }}>—</span>}
     </div>
   </div>
 );
 
 const Card = ({ title, children }) => (
-  <div
-    className="bg-white rounded-2xl border border-gray-100"
-    style={{ padding: "24px 28px", boxShadow: "0 1px 6px rgba(0,0,0,0.05)" }}
-  >
-    <h3 className="text-[#701366] font-Inter" style={{ fontSize: "16px", marginBottom: "20px" }}>
-      {title}
-    </h3>
+  <div style={{ background: "white", borderRadius: "16px", border: "1px solid #f3f4f6", padding: "24px 28px", boxShadow: "0 1px 6px rgba(0,0,0,0.05)", boxSizing: "border-box", width: "100%", minWidth: 0 }}>
+    <h3 style={{ fontSize: "16px", color: "#701366", fontFamily: "Inter, sans-serif", marginBottom: "20px", margin: "0 0 20px 0" }}>{title}</h3>
     {children}
   </div>
 );
 
-const btnBase    = "inline-flex items-center justify-center px-5 py-1.5 text-sm w-12 h-7 rounded-lg border transition-colors font-Inter";
-const btnOutline = `${btnBase} border-[#701366] text-[#701366] bg-white hover:bg-[#701366] hover:text-white`;
-const btnFilled  = `${btnBase} border-[#701366] text-white bg-[#701366] hover:bg-white hover:text-[#701366]`;
+const btnStyle = { width: "80px", height: "32px", flexShrink: 0, display: "inline-flex", alignItems: "center", justifyContent: "center", fontSize: "14px", borderRadius: "8px", cursor: "pointer", border: "1px solid #701366", transition: "background 0.15s, color 0.15s", fontFamily: "Inter, sans-serif" };
 
 const Teacher_profile = () => {
-  const { state }  = useLocation();
-  const navigate   = useNavigate();
-  const teacher    = state?.teacher;
+  const { state } = useLocation();
+  const navigate  = useNavigate();
+  const teacher   = state?.teacher;
 
   const teacherTabs = [
     { name: "Profile", path: "/Teacher_profile", state: { teacher } },
@@ -62,65 +42,64 @@ const Teacher_profile = () => {
 
   return (
     <DashboardLayout>
-      <div className="flex flex-col gap-6">
+      <div style={{ display: "flex", flexDirection: "column", gap: "24px", width: "100%", minWidth: 0, boxSizing: "border-box" }}>
 
         {/* Header */}
-        <div className="flex items-center justify-between mb-6">
-          <h2 className="text-2xl text-[#701366] font-Inter">Teacher Profile</h2>
-       </div>
-         
-         
-         {/* Tabs + Actions */}
-         <div className="flex items-center justify-between w-full">
-          
-           {/* Tabs */}
-            <div className="flex-1 flex justify-start">
-             <Tabs tabs={teacherTabs} />
-           </div>
+        <h2 style={{ fontSize: "24px", color: "#701366", fontFamily: "Inter, sans-serif", margin: 0, flexShrink: 0 }}>Teacher Profile</h2>
 
-           {/* Action Buttons */}
-             <div className="flex gap-2  justify-end">
-               <button onClick={() => navigate("/Teachers")} className={btnOutline} >Back</button>
-                <button onClick={() => navigate("/Edit_teacher", { state: { teacher } })} className={btnFilled}>Edit</button>
-            </div>
+        {/* Tabs + Actions */}
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", width: "100%", flexShrink: 0, minWidth: 0 }}>
+          <Tabs tabs={teacherTabs} />
+          <div style={{ display: "flex", gap: "8px", flexShrink: 0 }}>
+            <button
+              onClick={() => navigate("/Teachers")}
+              style={{ ...btnStyle, background: "white", color: "#701366" }}
+              onMouseEnter={e => { e.currentTarget.style.background = "#701366"; e.currentTarget.style.color = "white"; }}
+              onMouseLeave={e => { e.currentTarget.style.background = "white";   e.currentTarget.style.color = "#701366"; }}
+            >Back</button>
+            <button
+              onClick={() => navigate("/Edit_teacher", { state: { teacher } })}
+              style={{ ...btnStyle, background: "#701366", color: "white" }}
+              onMouseEnter={e => { e.currentTarget.style.background = "white";   e.currentTarget.style.color = "#701366"; }}
+              onMouseLeave={e => { e.currentTarget.style.background = "#701366"; e.currentTarget.style.color = "white"; }}
+            >Edit</button>
+          </div>
+        </div>
 
-      </div>
-        
-        <div className="grid grid-cols-2" style={{ gap: "24px", alignItems: "start" }}>
+        {/* Cards grid */}
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "24px", alignItems: "start", minWidth: 0 }}>
 
           {/* LEFT */}
           <Card title="Basic Information">
-
-            {/* Avatar + status */}
-            <div className="flex items-center gap-4 mb-5">
-              <div
-                className="flex items-center justify-center rounded-full bg-[#f8e0f8] text-[#701366] font-Inter text-xl"
-                style={{ width: "52px", height: "52px", flexShrink: 0 }}
-              >
+            <div style={{ display: "flex", alignItems: "center", gap: "16px", marginBottom: "20px" }}>
+              <div style={{ width: "52px", height: "52px", borderRadius: "50%", background: "#f8e0f8", color: "#701366", fontFamily: "Inter, sans-serif", fontSize: "20px", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
                 {teacher?.name?.charAt(0) || "T"}
               </div>
               <div>
-                <p className="text-[#701366] font-Inter text-base leading-tight">{teacher?.name || "—"}</p>
-                <span className={`inline-flex items-center px-3 py-0.5 rounded-full text-xs mt-1 ${statusStyles[teacher?.status] || "bg-gray-100 text-gray-600"}`}>
+                <p style={{ color: "#701366", fontFamily: "Inter, sans-serif", fontSize: "16px", margin: "0 0 4px 0" }}>{teacher?.name || "—"}</p>
+                <span style={{
+                  display: "inline-flex", alignItems: "center", padding: "2px 12px", borderRadius: "9999px", fontSize: "12px",
+                  background: teacher?.status === "Active" ? "#dcfce7" : "#fee2e2",
+                  color:      teacher?.status === "Active" ? "#15803d"  : "#dc2626",
+                }}>
                   {teacher?.status || "Unknown"}
                 </span>
               </div>
             </div>
-
-            <div className="grid grid-cols-2" style={{ gap: "18px" }}>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "18px" }}>
               <ReadField label="First Name"    value={firstName} />
               <ReadField label="Last Name"     value={lastName} />
               <ReadField label="Gender"        value={teacher?.gender} />
               <ReadField label="Date of Birth" value={teacher?.dob} />
               <ReadField label="Language"      value={teacher?.language} />
-
-              {/* Head Teacher badge */}
-              <div className="flex flex-col gap-1.5">
-                <label className="text-[13px] text-gray-500 font-Inter">Head Teacher</label>
+              <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+                <label style={{ fontSize: "13px", color: "#6b7280", fontFamily: "Inter, sans-serif" }}>Head Teacher</label>
                 <div style={{ padding: "6px 0" }}>
-                  <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-Inter ${
-                    teacher?.head_teacher ? "bg-[#f8e0f8] text-[#701366]" : "bg-gray-200 text-gray-600"
-                  }`}>
+                  <span style={{
+                    display: "inline-flex", alignItems: "center", padding: "4px 12px", borderRadius: "9999px", fontSize: "12px", fontFamily: "Inter, sans-serif",
+                    background: teacher?.head_teacher ? "#f8e0f8" : "#e5e7eb",
+                    color:      teacher?.head_teacher ? "#701366"  : "#4b5563",
+                  }}>
                     {teacher?.head_teacher ? "Yes" : "No"}
                   </span>
                 </div>
@@ -129,16 +108,15 @@ const Teacher_profile = () => {
           </Card>
 
           {/* RIGHT */}
-          <div className="flex flex-col" style={{ gap: "24px" }}>
+          <div style={{ display: "flex", flexDirection: "column", gap: "24px", minWidth: 0 }}>
             <Card title="Login/Account Details">
-              <div className="grid grid-cols-2" style={{ gap: "18px" }}>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "18px" }}>
                 <ReadField value={teacher?.username} />
                 <ReadField value="••••••••" />
               </div>
             </Card>
-
             <Card title="Contact Information">
-              <div className="grid grid-cols-2" style={{ gap: "18px" }}>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "18px" }}>
                 <ReadField label="Phone"   value={teacher?.phone} />
                 <ReadField label="Email"   value={teacher?.email} />
                 <ReadField label="Address" value={teacher?.address} full />

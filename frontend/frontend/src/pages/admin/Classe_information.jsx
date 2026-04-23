@@ -6,28 +6,27 @@ import {
   BookOpen, Clock, CheckCircle, Users, GraduationCap,
 } from "lucide-react";
 
-
 /* ─── Design tokens ───────────────────────────────────────────────────────── */
 const T = {
-  purple:     "#701366",
-  purpleLight:"#701366",
-  purplePale: "#F7EFF6",
+  purple:      "#701366",
+  purpleLight: "#701366",
+  purplePale:  "#F7EFF6",
   purpleBorder:"#E8D0E4",
-  text:       "#2D1028",
-  textMid:    "#7A4F74",
-  textMuted:  "#B08DAA",
-  surface:    "#FFFFFF",
-  bg:         "#FAF5F9",
-  border:     "#EDE0EB",
-  green:      "#14794A",
-  greenBg:    "#EAF7F0",
-  greenBorder:"#C2EDD9",
-  amber:      "#A06B00",
-  amberBg:    "#FFF7E6",
-  amberBorder:"#F5D9A0",
-  radius:     "14px",
-  radiusSm:   "9px",
-  shadow:     "0 1px 4px rgba(107,31,94,0.07), 0 4px 16px rgba(107,31,94,0.04)",
+  text:        "#2D1028",
+  textMid:     "#7A4F74",
+  textMuted:   "#B08DAA",
+  surface:     "#FFFFFF",
+  bg:          "#FAF5F9",
+  border:      "#EDE0EB",
+  green:       "#14794A",
+  greenBg:     "#EAF7F0",
+  greenBorder: "#C2EDD9",
+  amber:       "#A06B00",
+  amberBg:     "#FFF7E6",
+  amberBorder: "#F5D9A0",
+  radius:      "14px",
+  radiusSm:    "9px",
+  shadow:      "0 1px 4px rgba(107,31,94,0.07), 0 4px 16px rgba(107,31,94,0.04)",
 };
 
 /* ─── Shared micro-components ─────────────────────────────────────────────── */
@@ -109,6 +108,7 @@ const StatCard = ({ icon: Icon, label, value, colors }) => (
     borderRadius: T.radius, padding: "18px 20px",
     display: "flex", alignItems: "center", gap: "14px",
     boxShadow: T.shadow,
+    minWidth: 0, /* prevent flex overflow */
   }}>
     <div style={{
       width: "42px", height: "42px", borderRadius: "12px",
@@ -117,7 +117,7 @@ const StatCard = ({ icon: Icon, label, value, colors }) => (
     }}>
       <Icon style={{ width: "19px", height: "19px", color: colors.iconColor }} />
     </div>
-    <div>
+    <div style={{ minWidth: 0 }}>
       <div style={{ fontSize: "11px", color: T.textMuted, fontWeight: 500, letterSpacing: "0.05em", textTransform: "uppercase", marginBottom: "3px" }}>{label}</div>
       <div style={{ fontSize: "24px", fontWeight: 400, color: colors.textColor, lineHeight: 1 }}>{value}</div>
     </div>
@@ -127,30 +127,30 @@ const StatCard = ({ icon: Icon, label, value, colors }) => (
 /* ─── Data ─────────────────────────────────────────────────────────────────── */
 
 const allStudents = [
-  { firstName: "Yousra", lastName: "Zt" },
-  { firstName: "Liam", lastName: "Smith" },
-  { firstName: "Emma", lastName: "Brown" },
-  { firstName: "Noah", lastName: "Martin" },
-  { firstName: "Olivia", lastName: "Davis" },
-  { firstName: "James", lastName: "Lee" },
-  { firstName: "Ava", lastName: "Johnson" },
-  { firstName: "Sophia", lastName: "Wilson" },
-  { firstName: "Lucas", lastName: "Taylor" },
-  { firstName: "Mia", lastName: "Anderson" },
+  { firstName: "Yousra",  lastName: "Zt" },
+  { firstName: "Liam",    lastName: "Smith" },
+  { firstName: "Emma",    lastName: "Brown" },
+  { firstName: "Noah",    lastName: "Martin" },
+  { firstName: "Olivia",  lastName: "Davis" },
+  { firstName: "James",   lastName: "Lee" },
+  { firstName: "Ava",     lastName: "Johnson" },
+  { firstName: "Sophia",  lastName: "Wilson" },
+  { firstName: "Lucas",   lastName: "Taylor" },
+  { firstName: "Mia",     lastName: "Anderson" },
 ];
 
 const mockSessions = [
-  { session: "Session 1",  date: "2024-01-10", status: "Completed" },
-  { session: "Session 2",  date: "2024-01-17", status: "Completed" },
-  { session: "Session 3",  date: "2024-01-24", status: "Completed" },
-  { session: "Session 4",  date: "2024-01-31", status: "Not Completed" },
-  { session: "Session 5",  date: "2024-02-07", status: "Not Completed" },
-  { session: "Session 6",  date: "2024-02-14", status: "Not Completed" },
+  { session: "Session 1", date: "2024-01-10", status: "Completed" },
+  { session: "Session 2", date: "2024-01-17", status: "Completed" },
+  { session: "Session 3", date: "2024-01-24", status: "Completed" },
+  { session: "Session 4", date: "2024-01-31", status: "Not Completed" },
+  { session: "Session 5", date: "2024-02-07", status: "Not Completed" },
+  { session: "Session 6", date: "2024-02-14", status: "Not Completed" },
 ];
 
-const TOTAL_SESSIONS  = 6;
-const completedCount  = mockSessions.filter(s => s.status === "Completed").length;
-const remainingCount  = TOTAL_SESSIONS - completedCount;
+const TOTAL_SESSIONS = 6;
+const completedCount = mockSessions.filter(s => s.status === "Completed").length;
+const remainingCount = TOTAL_SESSIONS - completedCount;
 
 /* ─── Table shell ─────────────────────────────────────────────────────────── */
 
@@ -159,8 +159,9 @@ const TableShell = ({ headers, children, empty }) => (
     background: "#fff", borderRadius: T.radius,
     border: `1px solid ${T.border}`,
     overflow: "hidden", boxShadow: T.shadow,
+    overflowX: "auto", /* scroll on narrow viewports */
   }}>
-    <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "13px" }}>
+    <table style={{ width: "100%", minWidth: "400px", borderCollapse: "collapse", fontSize: "13px" }}>
       <thead>
         <tr style={{ background: T.purplePale, borderBottom: `1px solid ${T.purpleBorder}` }}>
           {headers.map((h, i) => (
@@ -168,6 +169,7 @@ const TableShell = ({ headers, children, empty }) => (
               padding: "12px 20px", textAlign: "left",
               color: T.purple, fontWeight: 500, fontSize: "11.5px",
               letterSpacing: "0.05em", textTransform: "uppercase",
+              whiteSpace: "nowrap",
             }}>{h}</th>
           ))}
         </tr>
@@ -205,6 +207,7 @@ const Td = ({ children, muted, mono }) => (
     color: muted ? T.textMid : T.text,
     fontFamily: mono ? "'DM Sans', sans-serif" : "'Inter', sans-serif",
     fontSize: mono ? "12.5px" : "13.5px",
+    whiteSpace: "nowrap",
   }}>{children}</td>
 );
 
@@ -223,6 +226,7 @@ const TabBar = ({ active, onChange }) => (
     borderRadius: "12px", padding: "4px",
     border: `1px solid ${T.purpleBorder}`,
     width: "fit-content",
+    flexWrap: "wrap", /* wrap on very narrow screens */
   }}>
     {TABS.map(({ key, label, icon: Icon }) => {
       const on = active === key;
@@ -239,6 +243,7 @@ const TabBar = ({ active, onChange }) => (
             fontSize: "13px", fontWeight: on ? 400 : 400,
             fontFamily: "'Inter', sans-serif",
             transition: "all 0.18s",
+            whiteSpace: "nowrap",
           }}
         >
           <Icon style={{ width: "14px", height: "14px" }} />
@@ -264,6 +269,7 @@ const Btn = ({ onClick, icon: Icon, children, filled, small }) => (
       fontSize: "13px", fontWeight: 350,
       fontFamily: "'Inter', sans-serif",
       cursor: "pointer", transition: "all 0.16s",
+      whiteSpace: "nowrap",
     }}
   >
     {Icon && <Icon style={{ width: "14px", height: "14px" }} />}
@@ -278,19 +284,19 @@ const Classe_information = () => {
   const navigate  = useNavigate();
   const cls       = state?.cls;
 
-  const [tab,         setTab]         = useState("details");
-  const [isEditing,   setIsEditing]   = useState(false);
-  const [search,      setSearch]      = useState("");
-  const [sessionSearch, setSesSearch] = useState("");
+  const [tab,           setTab]         = useState("details");
+  const [isEditing,     setIsEditing]   = useState(false);
+  const [search,        setSearch]      = useState("");
+  const [sessionSearch, setSesSearch]   = useState("");
 
   const [form, setForm] = useState({
-    classId:      cls?.name        || "C-001",
-    className:    cls?.name        || "Advanced B2",
+    classId:      cls?.name         || "C-001",
+    className:    cls?.name         || "Advanced B2",
     status:       cls?.status?.text || "Active",
     startingDate: cls?.startingDate || "",
-    language:     cls?.language    || "English",
-    level:        cls?.level       || "B2",
-    teacher:      cls?.teacher     || "Mr Ahmed",
+    language:     cls?.language     || "English",
+    level:        cls?.level        || "B2",
+    teacher:      cls?.teacher      || "Mr Ahmed",
   });
 
   const handle = (f) => (e) => setForm(p => ({ ...p, [f]: e.target.value }));
@@ -307,7 +313,7 @@ const Classe_information = () => {
   /* ── layout constants */
   const wrap = {
     width: "100%", boxSizing: "border-box",
-    padding: "32px 36px 60px",
+    padding: "32px clamp(12px, 2.5vw, 36px) 60px",
     fontFamily: "'Inter', sans-serif",
   };
 
@@ -325,8 +331,8 @@ const Classe_information = () => {
         <div style={{
           display: "flex", alignItems: "center",
           justifyContent: "space-between", marginBottom: "28px",
+          flexWrap: "wrap", gap: "12px",
         }}>
-          {/* Left: back + title */}
           <div style={{ display: "flex", alignItems: "center", gap: "14px" }}>
             <button
               onClick={() => navigate(-1)}
@@ -349,30 +355,20 @@ const Classe_information = () => {
             </div>
           </div>
 
-          {/* Right: action buttons */}
-          <div style={{ display: "flex", gap: "8px" }}>
+          <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
             {isEditing ? (
               <>
-                <Btn
-                  onClick={() => setIsEditing(false)}
-                  icon={ArrowLeft}
-                >Discard</Btn>
-                <Btn
-                  onClick={() => { setIsEditing(false); console.log("Saved:", form); }}
-                  icon={Check}
-                  filled
-                >Save Changes</Btn>
+                <Btn onClick={() => setIsEditing(false)} icon={ArrowLeft}>Discard</Btn>
+                <Btn onClick={() => { setIsEditing(false); console.log("Saved:", form); }} icon={Check} filled>Save Changes</Btn>
               </>
             ) : (
-              <Btn onClick={() => setIsEditing(true)} icon={SquarePen} filled>
-                Edit Class
-              </Btn>
+              <Btn onClick={() => setIsEditing(true)} icon={SquarePen} filled>Edit Class</Btn>
             )}
           </div>
         </div>
 
         {/* ── Tab bar ───────────────────────────────────────────────────── */}
-        <div style={{ marginBottom: "24px" }}>
+        <div style={{ marginBottom: "24px", overflowX: "auto" }}>
           <TabBar active={tab} onChange={setTab} />
         </div>
 
@@ -380,7 +376,6 @@ const Classe_information = () => {
         {tab === "details" && (
           <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
 
-            {/* ── General Info card ── */}
             <div style={card}>
               <div style={{
                 display: "flex", alignItems: "center", gap: "10px",
@@ -398,30 +393,30 @@ const Classe_information = () => {
                   General Information
                 </h2>
               </div>
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr 1fr", gap: "24px" }}>
+              {/* responsive grid: 4 cols on wide, 2 on medium, 1 on narrow */}
+              <div style={{
+                display: "grid",
+                gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 180px), 1fr))",
+                gap: "24px",
+              }}>
                 <Field label="Class ID">
-                  <input style={inputStyle(!isEditing)} value={form.classId}
-                    onChange={handle("classId")} disabled={!isEditing} placeholder="C-001" />
+                  <input style={inputStyle(!isEditing)} value={form.classId} onChange={handle("classId")} disabled={!isEditing} placeholder="C-001" />
                 </Field>
                 <Field label="Class Name">
-                  <input style={inputStyle(!isEditing)} value={form.className}
-                    onChange={handle("className")} disabled={!isEditing} placeholder="Advanced B2" />
+                  <input style={inputStyle(!isEditing)} value={form.className} onChange={handle("className")} disabled={!isEditing} placeholder="Advanced B2" />
                 </Field>
                 <Field label="Status">
-                  <select style={{ ...inputStyle(!isEditing), cursor: isEditing ? "pointer" : "default" }}
-                    value={form.status} onChange={handle("status")} disabled={!isEditing}>
+                  <select style={{ ...inputStyle(!isEditing), cursor: isEditing ? "pointer" : "default" }} value={form.status} onChange={handle("status")} disabled={!isEditing}>
                     <option>Active</option>
                     <option>Inactive</option>
                   </select>
                 </Field>
                 <Field label="Starting Date">
-                  <input type="date" style={inputStyle(!isEditing)} value={form.startingDate}
-                    onChange={handle("startingDate")} disabled={!isEditing} />
+                  <input type="date" style={inputStyle(!isEditing)} value={form.startingDate} onChange={handle("startingDate")} disabled={!isEditing} />
                 </Field>
               </div>
             </div>
 
-            {/* ── Academic Settings card ── */}
             <div style={card}>
               <div style={{
                 display: "flex", alignItems: "center", gap: "10px",
@@ -439,34 +434,29 @@ const Classe_information = () => {
                   Academic Settings
                 </h2>
               </div>
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "24px" }}>
+              <div style={{
+                display: "grid",
+                gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 180px), 1fr))",
+                gap: "24px",
+              }}>
                 <Field label="Language">
-                  <select style={{ ...inputStyle(!isEditing), cursor: isEditing ? "pointer" : "default" }}
-                    value={form.language} onChange={handle("language")} disabled={!isEditing}>
-                    <option>English</option>
-                    <option>French</option>
-                    <option>Arabic</option>
-                    <option>Spanish</option>
+                  <select style={{ ...inputStyle(!isEditing), cursor: isEditing ? "pointer" : "default" }} value={form.language} onChange={handle("language")} disabled={!isEditing}>
+                    <option>English</option><option>French</option><option>Arabic</option><option>Spanish</option>
                   </select>
                 </Field>
                 <Field label="Level">
-                  <select style={{ ...inputStyle(!isEditing), cursor: isEditing ? "pointer" : "default" }}
-                    value={form.level} onChange={handle("level")} disabled={!isEditing}>
+                  <select style={{ ...inputStyle(!isEditing), cursor: isEditing ? "pointer" : "default" }} value={form.level} onChange={handle("level")} disabled={!isEditing}>
                     {["A1","A2","B1","B2","C1","C2"].map(l => <option key={l}>{l}</option>)}
                   </select>
                 </Field>
                 <Field label="Teacher">
-                  <select style={{ ...inputStyle(!isEditing), cursor: isEditing ? "pointer" : "default" }}
-                    value={form.teacher} onChange={handle("teacher")} disabled={!isEditing}>
-                    <option>Mr Ahmed</option>
-                    <option>Mme Sara</option>
-                    <option>Mr Karim</option>
+                  <select style={{ ...inputStyle(!isEditing), cursor: isEditing ? "pointer" : "default" }} value={form.teacher} onChange={handle("teacher")} disabled={!isEditing}>
+                    <option>Mr Ahmed</option><option>Mme Sara</option><option>Mr Karim</option>
                   </select>
                 </Field>
               </div>
             </div>
 
-            {/* Edit hint */}
             {!isEditing && (
               <p style={{
                 margin: 0, fontSize: "12px", color: T.textMuted,
@@ -483,9 +473,7 @@ const Classe_information = () => {
         {/* ══ TAB: Students ════════════════════════════════════════════ */}
         {tab === "students" && (
           <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
-
-            {/* Toolbar */}
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: "10px" }}>
               <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
                 <div style={{
                   width: "32px", height: "32px", borderRadius: "8px",
@@ -494,9 +482,7 @@ const Classe_information = () => {
                 }}>
                   <Users style={{ width: "15px", height: "15px", color: T.purple }} />
                 </div>
-                <span style={{ fontSize: "16px", fontWeight: 450, color: T.text }}>
-                  Students
-                </span>
+                <span style={{ fontSize: "16px", fontWeight: 450, color: T.text }}>Students</span>
                 <span style={{
                   fontSize: "12px", fontWeight: 400, color: T.purple,
                   background: T.purplePale, border: `1px solid ${T.purpleBorder}`,
@@ -505,19 +491,9 @@ const Classe_information = () => {
                   {filteredStudents.length}
                 </span>
               </div>
-              <SearchInput
-                value={search}
-                onChange={e => setSearch(e.target.value)}
-                placeholder="Search student…"
-              />
+              <SearchInput value={search} onChange={e => setSearch(e.target.value)} placeholder="Search student…" />
             </div>
-
-            {/* Table */}
-            <TableShell
-              headers={["#", "First Name", "Last Name"]}
-              empty="No students found."
-              fontFamily="'Inter', sans-serif"
-            >
+            <TableShell headers={["#", "First Name", "Last Name"]} empty="No students found.">
               {filteredStudents.length > 0 && filteredStudents.map((s, i) => (
                 <Tr key={i}>
                   <Td muted mono>{String(i + 1).padStart(2, "0")}</Td>
@@ -532,31 +508,14 @@ const Classe_information = () => {
         {/* ══ TAB: Sessions ════════════════════════════════════════════ */}
         {tab === "sessions" && (
           <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
-
-            {/* Stats */}
-            <div style={{ display: "flex", gap: "12px" }}>
-              <StatCard
-                icon={BookOpen}
-                label="Total Sessions"
-                value={TOTAL_SESSIONS}
-                colors={{ iconBg: "#F0E8F7", iconColor: T.purple, textColor: T.purple }}
-              />
-              <StatCard
-                icon={CheckCircle}
-                label="Completed"
-                value={completedCount}
-                colors={{ iconBg: T.greenBg, iconColor: "#1A9E5E", textColor: T.green }}
-              />
-              <StatCard
-                icon={Clock}
-                label="Remaining"
-                value={remainingCount}
-                colors={{ iconBg: T.amberBg, iconColor: "#D48C00", textColor: T.amber }}
-              />
+            {/* Stats — flex wrap so cards stack on narrow */}
+            <div style={{ display: "flex", gap: "12px", flexWrap: "wrap" }}>
+              <StatCard icon={BookOpen}     label="Total Sessions" value={TOTAL_SESSIONS} colors={{ iconBg: "#F0E8F7", iconColor: T.purple, textColor: T.purple }} />
+              <StatCard icon={CheckCircle}  label="Completed"      value={completedCount} colors={{ iconBg: T.greenBg, iconColor: "#1A9E5E", textColor: T.green }} />
+              <StatCard icon={Clock}        label="Remaining"      value={remainingCount} colors={{ iconBg: T.amberBg, iconColor: "#D48C00", textColor: T.amber }} />
             </div>
 
-            {/* Toolbar */}
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: "10px" }}>
               <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
                 <div style={{
                   width: "32px", height: "32px", borderRadius: "8px",
@@ -565,22 +524,12 @@ const Classe_information = () => {
                 }}>
                   <BookOpen style={{ width: "15px", height: "15px", color: T.purple }} />
                 </div>
-                <span style={{ fontSize: "16px", fontWeight: 450, color: T.text }}>
-                  Session List
-                </span>
+                <span style={{ fontSize: "16px", fontWeight: 450, color: T.text }}>Session List</span>
               </div>
-              <SearchInput
-                value={sessionSearch}
-                onChange={e => setSesSearch(e.target.value)}
-                placeholder="Search sessions…"
-              />
+              <SearchInput value={sessionSearch} onChange={e => setSesSearch(e.target.value)} placeholder="Search sessions…" />
             </div>
 
-            {/* Table */}
-            <TableShell
-              headers={["Session", "Date", "Status"]}
-              empty="No sessions found."
-            >
+            <TableShell headers={["Session", "Date", "Status"]} empty="No sessions found.">
               {filteredSessions.length > 0 && filteredSessions.map((s, i) => (
                 <Tr key={i}>
                   <Td>{s.session}</Td>

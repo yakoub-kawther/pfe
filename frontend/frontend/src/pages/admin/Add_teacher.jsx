@@ -44,8 +44,8 @@ const Card = ({ title, children }) => (
   </div>
 );
 
-const btnBase = "inline-flex items-center justify-center px-5 py-1.5 text-sm rounded-lg border transition-colors font-Inter";
-const btnOutline = `${btnBase} border-[#701366] text-[#701366] bg-white h-7 w-12  hover:bg-[#701366] hover:text-white`;
+const btnBase    = "inline-flex items-center justify-center px-5 py-1.5 text-sm rounded-lg border transition-colors font-Inter";
+const btnOutline = `${btnBase} border-[#701366] text-[#701366] bg-white h-7 w-12 hover:bg-[#701366] hover:text-white`;
 const btnGhost   = `${btnBase} border-[#701366] text-[#701366] bg-white hover:bg-[#701366] hover:text-white`;
 const btnFilled  = `${btnBase} border-[#701366] text-white bg-[#701366] hover:text-[#701366] hover:bg-white`;
 
@@ -56,9 +56,9 @@ const emptyForm = {
 
 const Add_teacher = () => {
   const navigate = useNavigate();
-  const [gender, setGender]           = useState("Male");
+  const [gender,      setGender]      = useState("Male");
   const [headTeacher, setHeadTeacher] = useState(true);
-  const [form, setForm]               = useState(emptyForm);
+  const [form,        setForm]        = useState(emptyForm);
 
   const handle = (field) => (e) =>
     setForm((prev) => ({ ...prev, [field]: e.target.value }));
@@ -78,20 +78,29 @@ const Add_teacher = () => {
 
   return (
     <DashboardLayout>
-      <div className="max-w-5xl mx-auto pb-10" style={{ padding: "30px 16px" }}>
+      {/* w-full + clamp padding replaces max-w-5xl mx-auto */}
+      <div className="w-full pb-10" style={{ padding: "30px clamp(12px, 2vw, 32px)" }}>
 
         {/* Header */}
-        <div className="flex items-center justify-between mb-12">
+        <div className="flex items-center justify-between mb-12 flex-wrap gap-3">
           <h1 className="text-2xl text-[#701366] font-Inter">Add New Teacher</h1>
-          <div className="flex gap-2">
+          <div className="flex gap-2 flex-wrap">
             <button onClick={() => navigate("/Teachers")} className={btnOutline}>Cancel</button>
-            <button onClick={handleReset} className={btnGhost}>Reset</button>
-            <button onClick={handleSave} className={btnFilled}>Save</button>
+            <button onClick={handleReset}                 className={btnGhost}>Reset</button>
+            <button onClick={handleSave}                  className={btnFilled}>Save</button>
           </div>
         </div>
 
-        <div className="grid grid-cols-2" style={{ gap: "24px", alignItems: "start", marginTop: "30px"  }}>
-
+        {/* Two-column grid → single column on narrow */}
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 380px), 1fr))",
+            gap: "24px",
+            alignItems: "start",
+            marginTop: "30px",
+          }}
+        >
           {/* LEFT */}
           <Card title="Basic Information">
             <div className="grid grid-cols-2" style={{ gap: "18px" }}>
@@ -133,9 +142,7 @@ const Add_teacher = () => {
               <Field label="Head Teacher ?">
                 <div className="flex items-center gap-2 text-[14px] text-[#701366]" style={{ padding: "6px 0" }}>
                   <input
-                    type="checkbox"
-                    id="headTeacher"
-                    checked={headTeacher}
+                    type="checkbox" id="headTeacher" checked={headTeacher}
                     onChange={(e) => setHeadTeacher(e.target.checked)}
                     style={{ accentColor: "#701366", width: "15px", height: "15px" }}
                   />
@@ -180,7 +187,6 @@ const Add_teacher = () => {
               </div>
             </Card>
           </div>
-
         </div>
       </div>
     </DashboardLayout>

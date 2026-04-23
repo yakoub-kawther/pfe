@@ -30,14 +30,14 @@ export default function Notifications() {
 
   const handleSend = () => {
     if (!form.title && !form.message) return;
-    //  call API here to persist the notification
-
+    // call API here to persist the notification
     setForm({ type: "", recipients: "", title: "", message: "" });
   };
 
   return (
     <DashboardLayout>
-      <div style={{ padding: "10px 4px 40px", maxWidth: "560px" }}>
+      {/* ↓ was fixed maxWidth: 560px, now fluid with clamp so it fills any desktop */}
+      <div style={{ padding: "10px clamp(12px, 2vw, 32px) 40px", width: "100%", maxWidth: "680px" }}>
 
         {/* header */}
         <div style={{ marginBottom: "28px" }}>
@@ -66,43 +66,34 @@ export default function Notifications() {
         }}>
 
           {/* type + recipients */}
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: "16px" }}>
             <Field label="Notification Type">
-              <input
-                list="notif-types" placeholder="e.g. Announcement"
+              <input list="notif-types" placeholder="e.g. Announcement"
                 value={form.type} onChange={(e) => setForm({ ...form, type: e.target.value })}
-                style={inputCls} onFocus={focus} onBlur={blur}
-              />
+                style={inputCls} onFocus={focus} onBlur={blur} />
               <datalist id="notif-types">{NOTIFICATION_TYPES.map((t) => <option key={t} value={t} />)}</datalist>
             </Field>
             <Field label="Recipients">
-              <input
-                list="notif-recipients" placeholder="e.g. All Users"
+              <input list="notif-recipients" placeholder="e.g. All Users"
                 value={form.recipients} onChange={(e) => setForm({ ...form, recipients: e.target.value })}
-                style={inputCls} onFocus={focus} onBlur={blur}
-              />
+                style={inputCls} onFocus={focus} onBlur={blur} />
               <datalist id="notif-recipients">{RECIPIENTS.map((r) => <option key={r} value={r} />)}</datalist>
             </Field>
           </div>
 
           {/* title */}
           <Field label="Title">
-            <input
-              type="text" placeholder="Enter notification title"
+            <input type="text" placeholder="Enter notification title"
               value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })}
-              style={inputCls} onFocus={focus} onBlur={blur}
-            />
+              style={inputCls} onFocus={focus} onBlur={blur} />
           </Field>
 
           {/* message */}
           <Field label="Message">
-            <textarea
-              placeholder="Write your message here…"
+            <textarea placeholder="Write your message here…"
               value={form.message} onChange={(e) => setForm({ ...form, message: e.target.value })}
-              rows={5}
-              style={{ ...inputCls, resize: "none", lineHeight: "1.55" }}
-              onFocus={focus} onBlur={blur}
-            />
+              rows={5} style={{ ...inputCls, resize: "none", lineHeight: "1.55" }}
+              onFocus={focus} onBlur={blur} />
           </Field>
 
           <p style={{ fontSize: "11px", color: "#c9a8c9", fontFamily: "Inter, sans-serif", marginTop: "-12px", textAlign: "right" }}>

@@ -7,6 +7,7 @@ export default function Classrooms() {
   const classTabs = [
     { name: "Classes",    path: "/Classes"    },
     { name: "Classrooms", path: "/Classrooms" },
+        { name: "Language",   path: "/Languages"  },
   ];
 
   const [search, setSearch] = useState("");
@@ -36,12 +37,11 @@ export default function Classrooms() {
 
   return (
     <DashboardLayout>
-      <div className="max-w-6xl mx-auto flex flex-col gap-6 pt-6">
+      {/* Only change: was max-w-6xl mx-auto, now w-full with fluid padding */}
+      <div className="w-full flex flex-col gap-6" style={{ padding: "24px 16px 40px" }}>
 
-        {/* Header */}
-        <h2 className="text-2xl mt-6 text-[#701366]">Classes</h2>
+        <h2 className="text-2xl mt-6 text-[#701366]">Classrooms</h2>
 
-        {/* Tabs + Searchbar */}
         <div className="flex items-center justify-between">
           <Tabs tabs={classTabs} />
           <Searchbar
@@ -54,23 +54,22 @@ export default function Classrooms() {
           />
         </div>
 
-        {/* Table */}
         <div className="w-full px-6 bg-white rounded-2xl shadow-sm overflow-hidden">
           <table className="w-full text-sm">
             <thead>
               <tr className="bg-[#F8E0F8] h-12 text-[#701366] text-left">
-                <th className="py-3 " style={{ paddingLeft: "50px" }}>ID</th>
-                <th className="px-4 py-3 ">Capacity</th>
-                <th className="px-4 py-3 ">Status</th>
+                <th className="py-3" style={{ paddingLeft: "50px" }}>ID</th>
+                <th className="px-4 py-3">Capacity</th>
+                <th className="px-4 py-3">Status</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-[#f8e0f8]">
               {filtered.length > 0 ? (
                 filtered.map((cls) => (
                   <tr key={cls.id} className="hover:bg-[#fffafe] transition h-12">
-                    <td className="py-3  text-[#701366]" style={{ paddingLeft: "50px" }}>{cls.id}</td>
-                    <td className="px-4 py-3  text-[#701366]">{cls.capacity}</td>
-                    <td className="px-4 py-3 ">
+                    <td className="py-3 text-[#701366]" style={{ paddingLeft: "50px" }}>{cls.id}</td>
+                    <td className="px-4 py-3 text-[#701366]">{cls.capacity}</td>
+                    <td className="px-4 py-3">
                       <span className={`inline-flex items-center justify-center px-3 py-1 rounded-lg text-xs font-medium ${statusStyles[cls.status.color]}`}>
                         {cls.status.text}
                       </span>

@@ -51,7 +51,8 @@ export default function Classes_information() {
 
   return (
     <DashboardLayout>
-      <div className="max-w-5xl mx-auto pb-10" style={{ padding: "30px 16px" }}>
+      {/* only change: max-w-5xl → w-full, padding uses clamp so it never overflows */}
+      <div className="w-full pb-10" style={{ padding: "30px clamp(12px, 2vw, 32px)" }}>
 
         {/* Header */}
         <div className="flex items-center justify-between mb-8">
@@ -62,12 +63,10 @@ export default function Classes_information() {
           </div>
         </div>
 
-        <div className="grid grid-cols-2" style={{ gap: "24px", alignItems: "start", marginTop: "30px"  }}>
-
-          {/* LEFT — Class Details */}
+        {/* single card — no grid needed anymore */}
+        <div style={{ marginTop: "30px" }}>
+          {/* Class Details */}
           <Card title="Class Details">
-
-            {/* Class name + status badge */}
             <div className="flex items-center gap-4 mb-5">
               <div
                 className="flex items-center justify-center rounded-full bg-[#f8e0f8] text-[#701366] font-Inter text-xl"
@@ -92,16 +91,6 @@ export default function Classes_information() {
               <ReadField label="Academic Year" value={cls?.year} />
             </div>
           </Card>
-
-          {/* RIGHT — Schedule & Notes */}
-          <Card title="Schedule & Notes">
-            <div className="grid grid-cols-1" style={{ gap: "18px" }}>
-              <ReadField label="Classroom"   value={cls?.classroom} />
-              <ReadField label="Schedule"    value={cls?.schedule} />
-              <ReadField label="Description" value={cls?.description} />
-            </div>
-          </Card>
-
         </div>
       </div>
     </DashboardLayout>

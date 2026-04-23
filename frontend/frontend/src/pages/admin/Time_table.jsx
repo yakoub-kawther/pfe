@@ -551,69 +551,74 @@ export default function Time_table() {
 
   return (
     <DashboardLayout>
-      <h1 style={{ fontSize: "1.6rem", color: "#701366", marginBottom: 16 }}>
-        Timetable
-      </h1>
+      {/* ↓ only change: w-full with fluid padding instead of a fixed max-width */}
+      <div className="w-full" style={{ padding: "0 clamp(12px, 2vw, 32px) 40px" }}>
 
-      {/* Top bar */}
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16, flexWrap: "wrap", gap: 10 }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
-          <button
-            onClick={() => setCursor(new Date(today))}
-            style={{ fontSize: "0.78rem", color: "#701366", cursor: "pointer", border: "1.5px solid #e0d6f0", background: "white", borderRadius: 8, padding: "3px 10px", fontWeight: 400 }}
-          >
-            Today
-          </button>
-          <button onClick={() => navigate(-1)} style={{ border: "1.5px solid #e0d6f0", background: "white", borderRadius: 8, padding: "2px 10px", fontSize: "1rem", color: "#701366", cursor: "pointer" }}>‹</button>
-          <span style={{ fontSize: "0.85rem", fontWeight: 500, color: "#333", minWidth: 200, textAlign: "center" }}>{getNavLabel()}</span>
-          <button onClick={() => navigate(1)}  style={{ border: "1.5px solid #e0d6f0", background: "white", borderRadius: 8, padding: "2px 10px", fontSize: "1rem", color: "#701366", cursor: "pointer" }}>›</button>
-        </div>
+        <h1 style={{ fontSize: "1.6rem", color: "#701366", marginBottom: 16 }}>
+          Timetable
+        </h1>
 
-        <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
-          <div style={{ display: "flex", gap: 4, background: "white", borderRadius: 10, padding: 3, border: "1.5px solid #e0d6f0" }}>
-            {["Week", "Day", "Month"].map((v) => (
-              <button
-                key={v}
-                onClick={() => setView(v)}
-                style={{ ...btnBase, background: view === v ? "#701366" : "transparent", color: view === v ? "white" : "#888" }}
-              >
-                {v}
-              </button>
-            ))}
+        {/* Top bar */}
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16, flexWrap: "wrap", gap: 10 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+            <button
+              onClick={() => setCursor(new Date(today))}
+              style={{ fontSize: "0.78rem", color: "#701366", cursor: "pointer", border: "1.5px solid #e0d6f0", background: "white", borderRadius: 8, padding: "3px 10px", fontWeight: 400 }}
+            >
+              Today
+            </button>
+            <button onClick={() => navigate(-1)} style={{ border: "1.5px solid #e0d6f0", background: "white", borderRadius: 8, padding: "2px 10px", fontSize: "1rem", color: "#701366", cursor: "pointer" }}>‹</button>
+            <span style={{ fontSize: "0.85rem", fontWeight: 500, color: "#333", minWidth: 200, textAlign: "center" }}>{getNavLabel()}</span>
+            <button onClick={() => navigate(1)}  style={{ border: "1.5px solid #e0d6f0", background: "white", borderRadius: 8, padding: "2px 10px", fontSize: "1rem", color: "#701366", cursor: "pointer" }}>›</button>
           </div>
-          <button
-            onClick={() => { setEditingEvent(null); setShowModal(true); }}
-            style={{ background: "#701366", color: "white", font: "item", border: "1.5px solid #701366", borderRadius: 10, padding: "7px 16px", fontSize: "0.82rem", fontWeight: 400, cursor: "pointer" }}
-          >
-            + Add Event
-          </button>
+
+          <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+            <div style={{ display: "flex", gap: 4, background: "white", borderRadius: 10, padding: 3, border: "1.5px solid #e0d6f0" }}>
+              {["Week", "Day", "Month"].map((v) => (
+                <button
+                  key={v}
+                  onClick={() => setView(v)}
+                  style={{ ...btnBase, background: view === v ? "#701366" : "transparent", color: view === v ? "white" : "#888" }}
+                >
+                  {v}
+                </button>
+              ))}
+            </div>
+            <button
+              onClick={() => { setEditingEvent(null); setShowModal(true); }}
+              style={{ background: "#701366", color: "white", font: "item", border: "1.5px solid #701366", borderRadius: 10, padding: "7px 16px", fontSize: "0.82rem", fontWeight: 400, cursor: "pointer" }}
+            >
+              + Add Event
+            </button>
+          </div>
         </div>
+
+        {/* Calendar card */}
+        <div style={{ background: "white", borderRadius: 16, boxShadow: "0 2px 16px rgba(112,19,102,0.07)", padding: 16, overflow: "hidden" }}>
+          {view === "Week"  && <WeekView  cursor={cursor} events={events} today={today} onEventClick={handleEventClick} />}
+          {view === "Day"   && <DayView   cursor={cursor} events={events} today={today} onEventClick={handleEventClick} />}
+          {view === "Month" && <MonthView cursor={cursor} events={events} today={today} onEventClick={handleEventClick} />}
+        </div>
+
+        {popup && (
+          <EventPopup
+            ev={popup.ev}
+            anchorRect={popup.rect}
+            onClose={() => setPopup(null)}
+            onDelete={handleDelete}
+            onEdit={handleEditRequest}
+          />
+        )}
+
+        {showModal && (
+          <EventModal
+            initial={editingEvent}
+            onClose={() => { setShowModal(false); setEditingEvent(null); }}
+            onSave={handleSave}
+          />
+        )}
+
       </div>
-
-      {/* Calendar card */}
-      <div style={{ background: "white", borderRadius: 16, boxShadow: "0 2px 16px rgba(112,19,102,0.07)", padding: 16, overflow: "hidden" }}>
-        {view === "Week"  && <WeekView  cursor={cursor} events={events} today={today} onEventClick={handleEventClick} />}
-        {view === "Day"   && <DayView   cursor={cursor} events={events} today={today} onEventClick={handleEventClick} />}
-        {view === "Month" && <MonthView cursor={cursor} events={events} today={today} onEventClick={handleEventClick} />}
-      </div>
-
-      {popup && (
-        <EventPopup
-          ev={popup.ev}
-          anchorRect={popup.rect}
-          onClose={() => setPopup(null)}
-          onDelete={handleDelete}
-          onEdit={handleEditRequest}
-        />
-      )}
-
-      {showModal && (
-        <EventModal
-          initial={editingEvent}
-          onClose={() => { setShowModal(false); setEditingEvent(null); }}
-          onSave={handleSave}
-        />
-      )}
     </DashboardLayout>
   );
 }
