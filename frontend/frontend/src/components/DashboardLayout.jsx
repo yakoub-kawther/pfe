@@ -1,29 +1,28 @@
 import React from "react";
 import Sidebar from "./Sidebar";
+import { SIDEBAR_W } from "./Sidebar";
 import Navbar from "./Navbar";
 
 const DashboardLayout = ({ children }) => {
   return (
-    <div
-      className="flex min-h-screen bg-[#fffafe] text-[#701366]"
-      style={{ minWidth: 0 }}
-    >
-      {/* Sidebar — fixed width, never shrinks */}
-      <div style={{ width: "160px", minWidth: "160px", flexShrink: 0 }}>
-        <Sidebar />
-      </div>
+    <div style={{ display: "flex", minHeight: "100vh", background: "#fffafe", color: "#701366" }}>
 
-      {/* Main content */}
+      {/* Sidebar — fixed, always exactly SIDEBAR_W wide */}
+      <Sidebar />
+
+      {/* Main area — pushed right by exactly SIDEBAR_W so it never overlaps */}
       <div
-        className="flex flex-col flex-1"
-        style={{ minWidth: 0, overflow: "hidden" }}
+        style={{
+          marginLeft: SIDEBAR_W,
+          flex: 1,
+          display: "flex",
+          flexDirection: "column",
+          minWidth: 0,
+          overflow: "hidden",
+        }}
       >
         <Navbar />
-
-        <main
-          className="flex-1 flex flex-col gap-6"
-          style={{ padding: "24px" }}
-        >
+        <main style={{ flex: 1, padding: "24px" }}>
           {children}
         </main>
       </div>
