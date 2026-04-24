@@ -1,94 +1,116 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import DashboardLayout from "../../components/DashboardLayout";
 import Tabs from "../../components/Tabs";
 import Searchbar from "../../components/Searchbar";
 
+const BASE_URL = 'http://127.0.0.1:8000/api/academic';
+
 export default function Classrooms() {
-  const classTabs = [
-    { name: "Classes",    path: "/Classes"    },
-    { name: "Classrooms", path: "/Classrooms" },
-  ];
+    const classTabs = [
+        { name: "Classes",    path: "/Classes"    },
+        { name: "Classrooms", path: "/Classrooms" },
+    ];
 
-  const [search, setSearch] = useState("");
-  const [filter, setFilter] = useState("All");
+    const [classrooms, setClassrooms] = useState([]);
+    const [loading,    setLoading]    = useState(true);
+    const [error,      setError]      = useState(null);
+    const [search,     setSearch]     = useState('');
 
-  const classroomsData = [
-    { id: "Room 1", capacity: 15, status: { text: "Available", color: "green" } },
-    { id: "Room 2", capacity: 20, status: { text: "Occupied",  color: "red"   } },
-    { id: "Room 3", capacity: 18, status: { text: "Available", color: "green" } },
-  ];
+    const fetchClassrooms = useCallback(async () => {
+        try {
+            setLoading(true);
+            setError(null);
 
-  const statusStyles = {
-    green: "bg-green-100 text-green-600",
-    red:   "bg-red-100 text-red-600",
-  };
+            const params = new URLSearchParams();
+            if (search.trim()) params.append('search', search.trim());
 
-  const filtered = classroomsData.filter((cls) => {
-    const q = search.toLowerCase();
-    const matchSearch =
-      !q ||
-      cls.id.toLowerCase().includes(q) ||
-      cls.capacity.toString().includes(q) ||
-      cls.status.text.toLowerCase().includes(q);
-    const matchFilter = filter === "All" || cls.status.text === filter;
-    return matchSearch && matchFilter;
-  });
+            const res  = await fetch(`${BASE_URL}/classrooms/?${params.toString()}`);
+            if (!res.ok) throw new Error('Failed to fetch classrooms');
+            const data = await res.json();
+            setClassrooms(data.results ?? data);
+        } catch (err) {
+            setError(err.message);
+        } finally {
+            setLoading(false);
+        }
+    }, [search]);
 
-  return (
-    <DashboardLayout>
-      <div className="max-w-6xl mx-auto flex flex-col gap-6 pt-6">
+    useEffect(() => {
+        const delay = setTimeout(fetchClassrooms, 300);
+        return () => clearTimeout(delay);
+    }, [fetchClassrooms]);
 
-        {/* Header */}
-        <h2 className="text-2xl mt-6 text-[#701366]">Classes</h2>
+    function renderBody() {
+        if (loading) return (
+            <tr>
+                <td colSpan={2} className="py-8 text-center text-[#701366] opacity-50">
+                    Loading...
+                </td>
+            </tr>
+        );
 
-        {/* Tabs + Searchbar */}
-        <div className="flex items-center justify-between">
-          <Tabs tabs={classTabs} />
-          <Searchbar
-            placeholder="Search by ID or status..."
-            filterOptions={["Available", "Occupied"]}
-            addPath="/Add-Classrooms"
-            showAdd={true}
-            onSearchChange={(val) => setSearch(val)}
-            onFilterChange={(val) => setFilter(val)}
-          />
-        </div>
+        if (error) return (
+            <tr>
+                <td colSpan={2} className="py-8 text-center text-red-400">
+                    {error}
+                </td>
+            </tr>
+        );
 
-        {/* Table */}
-        <div className="w-full px-6 bg-white rounded-2xl shadow-sm overflow-hidden">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="bg-[#F8E0F8] h-12 text-[#701366] text-left">
-                <th className="py-3 " style={{ paddingLeft: "50px" }}>ID</th>
-                <th className="px-4 py-3 ">Capacity</th>
-                <th className="px-4 py-3 ">Status</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-[#f8e0f8]">
-              {filtered.length > 0 ? (
-                filtered.map((cls) => (
-                  <tr key={cls.id} className="hover:bg-[#fffafe] transition h-12">
-                    <td className="py-3  text-[#701366]" style={{ paddingLeft: "50px" }}>{cls.id}</td>
-                    <td className="px-4 py-3  text-[#701366]">{cls.capacity}</td>
-                    <td className="px-4 py-3 ">
-                      <span className={`inline-flex items-center justify-center px-3 py-1 rounded-lg text-xs font-medium ${statusStyles[cls.status.color]}`}>
-                        {cls.status.text}
-                      </span>
-                    </td>
-                  </tr>
-                ))
-              ) : (
-                <tr>
-                  <td colSpan={3} className="py-8 text-center text-[#701366] opacity-50">
+        if (classrooms.length === 0) return (
+            <tr>
+                <td colSpan={2} className="py-8 text-center text-[#701366] opacity-50">
                     No classrooms found.
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
+                </td>
+            </tr>
+        );
 
-      </div>
-    </DashboardLayout>
-  );
+        return classrooms.map((room) => (
+            <tr key={room.id} className="hover:bg-[#fffafe] transition h-12">
+                <td className="py-3 text-[#701366]" style={{ paddingLeft: '50px' }}>
+                    {room.name}
+                </td>
+                <td className="px-4 py-3 text-[#701366]">
+                    {room.capacity}
+                </td>
+            </tr>
+        ));
+    }
+
+    return (
+        <DashboardLayout>
+            <div className="max-w-6xl mx-auto flex flex-col gap-6 pt-6">
+
+                {/* Header */}
+                <h2 className="text-2xl mt-6 text-[#701366]">Classrooms</h2>
+
+                {/* Tabs + Searchbar */}
+                <div className="flex items-center justify-between">
+                    <Tabs tabs={classTabs} />
+                    <Searchbar
+                        placeholder="Search by name or capacity..."
+                        addPath="/Add-Classrooms"
+                        showAdd={true}
+                        onSearchChange={(val) => setSearch(val)}
+                    />
+                </div>
+
+                {/* Table */}
+                <div className="w-full px-6 bg-white rounded-2xl shadow-sm overflow-hidden">
+                    <table className="w-full text-sm">
+                        <thead>
+                            <tr className="bg-[#F8E0F8] h-12 text-[#701366] text-left">
+                                <th className="py-3" style={{ paddingLeft: '50px' }}>Name</th>
+                                <th className="px-4 py-3">Capacity</th>
+                            </tr>
+                        </thead>
+                        <tbody className="divide-y divide-[#f8e0f8]">
+                            {renderBody()}
+                        </tbody>
+                    </table>
+                </div>
+
+            </div>
+        </DashboardLayout>
+    );
 }
