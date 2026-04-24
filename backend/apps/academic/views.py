@@ -10,7 +10,7 @@ from django.db import transaction
 from django.core.exceptions import ValidationError
 
 from .models import Language , Level , Position , Classroom , Class, Schedule
-from .serializers import LanguageSerializer, LanguageCreateSerializer, LevelCreateSerializer , LevelSerializer , ClassroomCreateSerializer , LevelCreateSerializer , PositionCreateSerializer , PositionSerializer , ClassroomSerializer , ClassSerializer , ClassCreateSerializer , ScheduleSerializer , ScheduleCreateSerializer
+from .serializers import LanguageSerializer, LanguageCreateSerializer, LevelCreateSerializer , LevelSerializer , ClassroomCreateSerializer , LevelCreateSerializer , PositionCreateSerializer , PositionSerializer , ClassroomSerializer , ClassSerializer , ClassCreateSerializer , ScheduleSerializer , ScheduleCreateSerializer , SessionSerializer , SessionCreateSerializer
 from .services import create_language, update_language , get_teacher_busy_times , get_available_classrooms 
 
 # language part
@@ -219,3 +219,76 @@ class ScheduleViewSet(viewsets.ModelViewSet):
             serializer.errors,
             status=status.HTTP_400_BAD_REQUEST
         )
+
+
+from .models import Session, Schedule
+class SessionViewSet(viewsets.ModelViewSet):
+
+    queryset           = Session.objects.all()
+    serializer_class   = SessionSerializer
+
+    # ── Create session (max 16 per class) ──
+    def create(self, request):
+        serializer = SessionCreateSerializer(data=request.data)
+
+        if serializer.is_valid():
+            try:
+                session = serializer.save()
+                return Response(
+                    SessionSerializer(session).data,
+                    status=status.HTTP_201_CREATED
+                )
+            except ValidationError as e:
+                return Response(
+                    {'error': e.message},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+        return Response(
+            serializer.errors,
+            status=status.HTTP_400_BAD_REQUEST
+        )
+
+    # ── Complete session ──
+    @action(detail=True, methods=['patch'])
+    def complete(self, request, pk=None):
+        session = self.get_object()
+
+        if session.status == 'completed':
+            return Response(
+                {'error': 'Session is already completed.'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        from .services import complete_session
+        complete_session(session)
+        return Response(SessionSerializer(session).data)
+
+    # ── Reschedule session ──
+    @action(detail=True, methods=['patch'])
+    def reschedule(self, request, pk=None):
+        session  = self.get_object()
+        new_date = request.data.get('new_date')
+
+        if not new_date:
+            return Response(
+                {'error': 'new_date is required.'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        from .services import reschedule_session
+        reschedule_session(session, new_date)
+        return Response(SessionSerializer(session).data)
+
+    # ── Class progress ──
+    @action(detail=False, methods=['get'])
+    def progress(self, request):
+        class_id = request.query_params.get('class_id')
+
+        if not class_id:
+            return Response(
+                {'error': 'class_id is required.'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        from .services import get_class_progress
+        return Response(get_class_progress(class_id))

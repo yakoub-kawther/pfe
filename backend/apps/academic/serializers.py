@@ -202,3 +202,23 @@ class BusyTimeSerializer(serializers.Serializer):
     day_of_week = serializers.CharField()
     start_time  = serializers.TimeField()
     end_time    = serializers.TimeField()
+
+
+
+#  sessions section 
+class SessionSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model  = Session
+        fields = ['id', 'schedule', 'session_date', 'status']
+
+
+class SessionCreateSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model  = Session
+        fields = ['schedule']
+
+    def create(self, validated_data):
+        from .services import create_session
+        return create_session(validated_data['schedule'])
