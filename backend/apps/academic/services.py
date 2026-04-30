@@ -218,61 +218,55 @@ def create_schedule(data):
         raise ValidationError("Classroom is already booked at this time.")
 
     schedule = Schedule.objects.create(**data)
-    generate_sessions(schedule)
+    # generate_sessions(schedule)
     return schedule
 
 
 
 
-def generate_sessions(schedule):
-    class_obj = schedule.class_obj
-    start_date = class_obj.start_date
+MAX_SESSIONS = 16
 
-    # Prevent duplicate generation
-    if Session.objects.filter(schedule=schedule).exists():
-        return
 
-    # Map day_of_week to Python weekday
-    day_map = {
-        'monday': 0,
-        'tuesday': 1,
-        'wednesday': 2,
-        'thursday': 3,
-        'friday': 4,
-        'saturday': 5,
-        'sunday': 6
+def create_session(schedule, session_date) -> Session:
+    total = Session.objects.filter(schedule__class_obj=schedule.class_obj).count()
+
+    if total >= MAX_SESSIONS:
+        raise ValidationError(f"This class has reached the maximum of {MAX_SESSIONS} sessions.")
+
+    return Session.objects.create(
+        schedule=schedule,
+        session_date=session_date,
+        status='scheduled'
+    )
+
+
+def complete_session(session) -> Session:
+    session.status = 'completed'
+    session.save(update_fields=['status'])
+    return session
+
+
+def update_session_date(session, new_date) -> Session:
+    if session.status == 'completed':
+        raise ValidationError("Cannot reschedule a completed session.")
+    session.session_date = new_date
+    session.save(update_fields=['session_date'])
+    return session
+
+
+def get_class_progress(class_id) -> dict:
+    sessions  = Session.objects.filter(schedule__class_obj__id=class_id)
+    total     = sessions.count()
+    completed = sessions.filter(status='completed').count()
+
+    if MAX_SESSIONS == 0:
+        progress = 0
+    else:
+        progress = round((completed / MAX_SESSIONS) * 100, 1)
+
+    return {
+        'total':            total,
+        'completed':        completed,
+        'remaining':        MAX_SESSIONS - completed,
+        'progress_percent': progress,
     }
-
-    if schedule.day_of_week not in day_map:
-        raise ValidationError("Invalid day_of_week value.")
-
-    target_day = day_map[schedule.day_of_week]
-
-    # Find first occurrence of the target weekday
-    current_date = start_date
-    while current_date.weekday() != target_day:
-        current_date += timedelta(days=1)
-
-    # Determine end date (safe)
-    end_date = getattr(class_obj, 'end_date', None) or (start_date + timedelta(days=90))
-
-    # Validate date range
-    if start_date > end_date:
-        raise ValidationError("Start date cannot be after end date.")
-
-    sessions = []
-
-    # Generate weekly sessions
-    while current_date <= end_date:
-        sessions.append(
-            Session(
-                schedule=schedule,
-                session_date=current_date,
-                status='scheduled'
-            )
-        )
-        current_date += timedelta(weeks=1)
-
-    # Bulk insert
-    if sessions:
-        Session.objects.bulk_create(sessions)
