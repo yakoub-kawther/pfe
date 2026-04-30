@@ -1,6 +1,8 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import DashboardLayout from "../../components/DashboardLayout";
+import DashboardLayout from "../../layouts/DashboardLayout";
+import Buttons from "../../components/Buttons";
+
 
 const inp = {
   width: "100%",
@@ -36,10 +38,6 @@ const Card = ({ title, children }) => (
   </div>
 );
 
-const btnBase    = "inline-flex items-center justify-center px-5 py-1.5 h-7 w-12 text-sm rounded-lg border transition-colors font-Inter";
-const btnOutline = `${btnBase} border-[#701366] text-[#701366] bg-white hover:bg-[#701366] hover:text-white`;
-const btnGhost   = `${btnBase} border-[#701366] text-[#701366] bg-white hover:bg-[#701366] hover:text-white`;
-const btnFilled  = `${btnBase} border-[#701366] text-white bg-[#701366] hover:bg-white hover:text-[#701366]`;
 
 const emptyForm = {
   name: "", language: "", level: "", teacher: "",
@@ -63,17 +61,19 @@ export default function Add_classe() {
 
   return (
     <DashboardLayout>
-      <div className="w-full pb-10" style={{ padding: "30px clamp(12px, 2vw, 32px)" }}>
+      <div className="w-full flex flex-col gap-6 pt-6 px-4 sm:px-6 lg:px-8 xl:px-10 2xl:px-12 pb-10">
 
-        {/* Header */}
-        <div className="flex items-center justify-between mb-8 flex-wrap gap-3">
-          <h1 className="text-2xl text-[#701366] font-Inter">Add New Class</h1>
-          <div className="flex gap-2 flex-wrap">
-            <button onClick={() => navigate("/Classes")} className={btnOutline}>cancel</button>
-            <button onClick={handleReset}               className={btnGhost}>reset</button>
-            <button onClick={handleSave}                className={btnFilled}>save</button>
-          </div>
-        </div>
+      {/* Header */}
+      <div className="flex items-center justify-between mb-8 flex-wrap gap-3">
+        <h1 className="text-2xl text-[#701366] font-Inter">Add New Class</h1>
+        <Buttons
+          cancelPath="/Classes"
+          showReset={true}
+          onReset={handleReset}
+          onSave={handleSave}
+        />
+      </div>
+
 
         <Card title="Class Information">
           <div className="grid grid-cols-2" style={{ gap: "18px" }}>

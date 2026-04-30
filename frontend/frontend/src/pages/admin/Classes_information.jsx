@@ -1,5 +1,6 @@
 import { useLocation, useNavigate } from "react-router-dom";
-import DashboardLayout from "../../components/DashboardLayout";
+import DashboardLayout from "../../layouts/DashboardLayout";
+import Buttons from "../../components/Buttons";
 
 const statusStyles = {
   Active:   "bg-green-100 text-green-700",
@@ -40,9 +41,6 @@ const Card = ({ title, children }) => (
   </div>
 );
 
-const btnBase    = "inline-flex items-center justify-center px-5 py-1.5 h-7 w-12 text-sm rounded-lg border transition-colors font-Inter";
-const btnOutline = `${btnBase} border-[#701366] text-[#701366] bg-white h-7 w-12 hover:bg-[#701366] hover:text-white`;
-const btnFilled  = `${btnBase} border-[#701366] text-white bg-[#701366] hover:bg-white hover:text-[#701366] `;
 
 export default function Classes_information() {
   const { state } = useLocation();
@@ -54,14 +52,16 @@ export default function Classes_information() {
       {/* only change: max-w-5xl → w-full, padding uses clamp so it never overflows */}
       <div className="w-full pb-10" style={{ padding: "30px clamp(12px, 2vw, 32px)" }}>
 
-        {/* Header */}
-        <div className="flex items-center justify-between mb-8">
-          <h1 className="text-2xl text-[#701366] font-Inter">Class Information</h1>
-          <div className="flex gap-2">
-            <button onClick={() => navigate("/Classes")} className={btnOutline}>Back</button>
-            <button onClick={() => navigate("/Edit_classes", { state: { cls } })} className={btnFilled}>Edit</button>
-          </div>
-        </div>
+{/* Header */}
+<div className="flex items-center justify-between mb-8">
+  <h1 className="text-2xl text-[#701366] font-Inter">Class Information</h1>
+  <Buttons
+    cancelPath="/Classes"
+    showSave={false}
+    showEdit={true}
+    onEdit={() => navigate("/Edit_classes", { state: { cls } })}
+  />
+</div>
 
         {/* single card — no grid needed anymore */}
         <div style={{ marginTop: "30px" }}>

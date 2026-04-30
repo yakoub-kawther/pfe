@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import DashboardLayout from "../../components/DashboardLayout.jsx";
+import DashboardLayout from "../../layouts/DashboardLayout.jsx";
 import Searchbar from "../../components/Searchbar.jsx";
 import Table from "../../components/Table.jsx";
 
@@ -28,7 +28,7 @@ const Students = () => {
 
         {/* Table — pass search & filter as props if your Table supports it */}
         <section>
-          <Table search={search} filter={filter} />
+          <Table search={search} filter={filter} role="admin" />
         </section>
 
       </div>

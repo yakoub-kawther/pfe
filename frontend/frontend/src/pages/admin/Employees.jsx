@@ -1,6 +1,6 @@
 import { useNavigate } from "react-router-dom";
 import { SquarePen, LayoutGrid, Plus } from "lucide-react";
-import DashboardLayout from "../../components/DashboardLayout";
+import DashboardLayout from "../../layouts/DashboardLayout";
 
 const employeesData = [
   { id: 1, name: "test",  phone: "055555555", position: "Secretaire",    hireDate: "15-05-2025", status: "Active",   gender: "Female", dob: "", address: "", username: "test"  },

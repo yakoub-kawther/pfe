@@ -1,8 +1,9 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import DashboardLayout from "../../components/DashboardLayout";
+import DashboardLayout from "../../layouts/DashboardLayout";
 import Tabs from "../../components/Tabs";
 import Form from "../../components/Form";
+import Buttons from "../../components/Buttons";
 
 export default function Student_profile() {
   const [activeTab, setActiveTab] = useState("profile");
@@ -17,12 +18,12 @@ export default function Student_profile() {
 
   return (
     <DashboardLayout>
+  <div className="flex flex-col gap-6">
+
       {/* Title */}
       <h2 className="text-2xl">Student Profile</h2>
 
-      {/* Tabs + Button */}
-      <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 lg:gap-6">
-
+    
         {/* Tabs */}
         <div className="w-full lg:w-auto overflow-x-auto">
           <Tabs tabs={studentTabs} />
@@ -30,13 +31,8 @@ export default function Student_profile() {
 
         {/* Cancel Button */}
         <div className="w-full lg:w-auto flex justify-start lg:justify-end">
-          <button
-            onClick={() => navigate("/students")}
-            className="px-4 py-2 bg-[#701366] border border-[#701366] text-white hover:bg-white hover:text-[#701366] rounded-lg"
-          >
-            Cancel
-          </button>
-        </div>
+  <Buttons cancelPath="/Students" showSave={false} />
+</div>
       </div>
 
       {/* Content */}

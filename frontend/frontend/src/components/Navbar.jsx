@@ -134,7 +134,7 @@ function NotifDropdown({ notifications, setNotifications, onClose }) {
   );
 }
 
-function Navbar() {
+function Navbar({role="admin"}) {
   const navigate = useNavigate();
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [notifications, setNotifications] = useState(INITIAL_NOTIFICATIONS);
@@ -208,7 +208,7 @@ function Navbar() {
         {/* Settings */}
         <button
           aria-label="Settings"
-          onClick={() => navigate("/Settings")}
+         onClick={() => navigate(role === "secretary" ? "/Settings_secretary" : "/Settings")}
           style={{
             width: "36px", height: "36px",
             display: "flex", alignItems: "center", justifyContent: "center",

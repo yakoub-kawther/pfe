@@ -1,4 +1,4 @@
-import DashboardLayout from "../../components/DashboardLayout";
+import DashboardLayout from "../../layouts/DashboardLayout";
 import Tabs from "../../components/Tabs";
 import { useLocation } from "react-router-dom";
 

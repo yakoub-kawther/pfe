@@ -40,7 +40,7 @@ const tdStyle = {
   whiteSpace: "nowrap",
 };
 
-const Table = ({ search = "", filter = "All" }) => {
+const Table = ({ search = "", filter = "All", role="admin" }) => {
   const navigate = useNavigate();
 
   const filteredStudents = studentsData.filter((student) => {
@@ -104,7 +104,9 @@ const Table = ({ search = "", filter = "All" }) => {
                   <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
                     <button
                       aria-label="Edit"
-                      onClick={() => navigate("/Edit_student", { state: { student } })}
+                      onClick={() => navigate(
+                       role === "secretary" ? "/Edit_student_secretary" : "/Edit_student",
+                         { state: { student } })}
                       style={{
                         padding: "6px", borderRadius: "4px", border: "none",
                         background: "none", color: "#701366", cursor: "pointer",
@@ -118,7 +120,8 @@ const Table = ({ search = "", filter = "All" }) => {
                     </button>
                     <button
                       aria-label="More"
-                      onClick={() => navigate("/Student_profile")}
+                      onClick={() => navigate(
+                        role === "secretary" ? "/Student_profile_secretary" : "/Student_profile")}
                       style={{
                         padding: "6px", borderRadius: "4px", border: "none",
                         background: "none", color: "#701366", cursor: "pointer",

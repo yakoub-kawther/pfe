@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import DashboardLayout from "../../components/DashboardLayout";
+import DashboardLayout from "../../layouts/DashboardLayout";
 import { ArrowLeft, Save, GraduationCap } from "lucide-react";
 
 const F = "'Inter', sans-serif";
@@ -90,13 +90,6 @@ export default function AddStudentPayment() {
   return (
     <DashboardLayout>
       <div style={{ width: "100%", maxWidth: "680px", margin: "30px auto 0", boxSizing: "border-box", paddingBottom: "40px" }}>
-
-        <button
-          onClick={() => navigate("/Fees")}
-          style={{ display: "flex", alignItems: "center", gap: "6px", background: "none", border: "none", cursor: "pointer", color: "#9c5094", fontFamily: F, fontSize: "14px", padding: 0, marginBottom: "24px" }}
-        >
-          <ArrowLeft size={16} /> Back to Fees
-        </button>
 
         <div style={{ background: "white", borderRadius: "20px", boxShadow: "0 2px 16px rgba(112,19,102,.08)", overflow: "hidden" }}>
 

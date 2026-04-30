@@ -1,5 +1,5 @@
 import { useLocation, useNavigate } from "react-router-dom";
-import DashboardLayout from "../../components/DashboardLayout";
+import DashboardLayout from "../../layouts/DashboardLayout";
 import Tabs from "../../components/Tabs";
 
 const ReadField = ({ label, value, full = false }) => (

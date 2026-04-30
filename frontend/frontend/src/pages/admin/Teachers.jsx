@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import DashboardLayout from "../../components/DashboardLayout";
+import DashboardLayout from "../../layouts/DashboardLayout";
 import { SquarePen, LayoutGrid } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import Searchbar from "../../components/Searchbar";

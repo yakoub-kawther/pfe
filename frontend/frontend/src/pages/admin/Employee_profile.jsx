@@ -1,5 +1,5 @@
 import { useLocation, useNavigate } from "react-router-dom";
-import DashboardLayout from "../../components/DashboardLayout";
+import DashboardLayout from "../../layouts/DashboardLayout";
 
 const statusStyles = {
   Active: "bg-green-100 text-green-700",

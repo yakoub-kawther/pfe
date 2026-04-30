@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from "react";
-import DashboardLayout from "../../components/DashboardLayout";
+import DashboardLayout from "../../layouts/DashboardLayout";
 
 // ──────────────────────────────────────────────────────
 // CONSTANTS
@@ -551,7 +551,6 @@ export default function Time_table() {
 
   return (
     <DashboardLayout>
-      {/* ↓ only change: w-full with fluid padding instead of a fixed max-width */}
       <div className="w-full" style={{ padding: "0 clamp(12px, 2vw, 32px) 40px" }}>
 
         <h1 style={{ fontSize: "1.6rem", color: "#701366", marginBottom: 16 }}>

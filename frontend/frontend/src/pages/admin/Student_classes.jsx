@@ -1,5 +1,5 @@
 import Navbar from "../../components/Navbar";
-import DashboardLayout from "../../components/DashboardLayout";
+import DashboardLayout from "../../layouts/DashboardLayout";
 import Searchbar from "../../components/Searchbar";
 import Tabs from "../../components/Tabs";
 
@@ -38,14 +38,17 @@ const classesData = [
 export default function Studentclasses() {
   return (
     <DashboardLayout>
+      <div className="flex flex-col gap-6">
+        
+        {/* TITLE */}
       <h2 className="text-2xl">Classes</h2>
 
-      <div className="flex justify-between items-center mb-6">
+        {/* TABS */}
         <Tabs tabs={studentTabs} />
-      </div>
 
-      <div className="p-6">
-        <div className="max-w-6xl w-full px-6 bg-white rounded-2xl shadow-sm overflow-hidden">
+          {/* TABLE */}
+          <div className="w-full lg:w-2/3 bg-white rounded-2xl shadow-sm overflow-hidden">
+            <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
               <tr className="bg-[#F8E0F8] h-12.5 text-[#701366] font-Inter text-left">
@@ -71,7 +74,7 @@ export default function Studentclasses() {
                   <td className="px-4 py-3 text-[#701366]">{row.score}</td>
                   <td className="px-4 py-3">
                     <span
-                      className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${statusStyles[row.status]}`}
+                      className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-Inter ${statusStyles[row.status]}`}
                     >
                        {row.status}
                     </span>
@@ -82,6 +85,7 @@ export default function Studentclasses() {
           </table>
         </div>
       </div>
+    </div>
     </DashboardLayout>
   );
 }

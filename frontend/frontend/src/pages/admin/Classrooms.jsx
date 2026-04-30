@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import DashboardLayout from "../../components/DashboardLayout";
+import DashboardLayout from "../../layouts/DashboardLayout";
 import Tabs from "../../components/Tabs";
 import Searchbar from "../../components/Searchbar";
 
@@ -38,7 +38,7 @@ export default function Classrooms() {
   return (
     <DashboardLayout>
       {/* Only change: was max-w-6xl mx-auto, now w-full with fluid padding */}
-      <div className="w-full flex flex-col gap-6" style={{ padding: "24px 16px 40px" }}>
+      <div className="w-full flex flex-col gap-6 pt-6 px-4 sm:px-6 lg:px-8 xl:px-10 2xl:px-12 pb-10">
 
         <h2 className="text-2xl mt-6 text-[#701366]">Classrooms</h2>
 
@@ -47,7 +47,7 @@ export default function Classrooms() {
           <Searchbar
             placeholder="Search by ID or status..."
             filterOptions={["Available", "Occupied"]}
-            addPath="/Add-Classrooms"
+            addPath="/Add_classrooms"
             showAdd={true}
             onSearchChange={(val) => setSearch(val)}
             onFilterChange={(val) => setFilter(val)}

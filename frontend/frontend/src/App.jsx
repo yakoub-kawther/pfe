@@ -28,13 +28,38 @@ import Add_classe from "./pages/admin/Add_classe";
 import Add_classrooms from "./pages/admin/Add_classrooms";
 import Settings  from "./pages/admin/Settings";
 import Fees from "./pages/admin/Fees";
-import Dashboard_secretary from "./pages/secretary/Dashboard_secretary";
 import  Languages  from "./pages/admin/Languages";
 import Add_language from "./pages/admin/Add_language";
 import Inscriptions from "./pages/admin/Inscriptions"
 import Add_student_payment from "./pages/admin/Add_student_payment";
-import Add_employees_fees from "./pages/admin/Add_employees_fees"
+import Add_employees_fees from "./pages/admin/Add_employees_fees";
+import Edit_classes from "./pages/admin/Edit_classes";
 
+import Dashboard_secretary from "./pages/secretary/Dashboard_secretary";
+import Secretary_sidebar from "./components/Sidebar/Secretary_sidebar";
+import Student_secretary from "./pages/secretary/Student_secretary";
+import Classes_secretary from "./pages/secretary/Classes_secretary";
+import Fees_secretary from "./pages/secretary/Fees_secretary";
+import Timetable_secretary from "./pages/secretary/Timetable_secretary";
+import Notifications_secretary from "./pages/secretary/Notifications_secretary";
+import Inscriptions_secretary from "./pages/secretary/Inscriptions_secretary";
+import Settings_secretary from "./pages/secretary/Settings_secretary";
+import Secretary_layout from "./layouts/Secretary_layout";
+import Add_student_secretary from "./pages/secretary/Add_student_secretary";
+import Edit_student_secretary from "./pages/secretary/Edit_student_secretary";
+import Student_profile_secretary from "./pages/secretary/Student_profile_secretary";
+import Student_classes_secretary from "./pages/secretary/Student_classes_secretary";
+import Payment_student_secretary from "./pages/secretary/Payment_student_secretary";
+import Attendance_student_secretary from "./pages/secretary/Attendance_student_secretary";
+import Add_classes_secretary from "./pages/secretary/Add_classes_secretary";
+import Classes_information_secretary from "./pages/secretary/Classes_information_secretary";
+import Edit_classes_secretary from "./pages/secretary/Edit_classes_secretary";
+import Classrooms_secretary from "./pages/secretary/Classrooms_secretary"; 
+import Add_classrooms_secretary from "./pages/secretary/Add_classrooms_secretary";
+import Languages_secretary from "./pages/secretary/Languages_secretary";
+import Add_language_secretary from "./pages/secretary/Add_language_secretary"
+import Add_employees_fees_secretary from "./pages/secretary/Add_employees_fees_secretary";
+import Add_student_fees_secretary from "./pages/secretary/Add_student_fees_secretary";
 
 const isLoggedIn = localStorage.getItem("user");
 
@@ -77,7 +102,7 @@ function App() {
         <Route path="/Add_employee" element={<Add_employee />} />
         <Route path="/Classes_information" element={<Classes_information />} />
         <Route path="/Add_classe" element={<Add_classe />} />
-        <Route path="/Add-Classrooms" element={<Add_classrooms />} />
+        <Route path="/Add_Classrooms" element={<Add_classrooms />} />
         <Route path="/Settings" element={<Settings/>}/>
         <Route path="/Fees" element={<Fees/>} />
         <Route path="/Dashboard_secretary" element={<Dashboard_secretary/>} />
@@ -86,10 +111,40 @@ function App() {
         <Route path="/Inscriptions" element={<Inscriptions/>} />
         <Route path="/Add_student_payment" element={<Add_student_payment/>} />
         <Route path="/Add_employees_fees" element={<Add_employees_fees/>} />
+         <Route path="/Edit_classes" element={<Edit_classes />} />
+
+
+ {/* Secretary Routes */}
+        <Route path="/secretary" element={<Secretary_layout />}/>
+          <Route path="/Dashboard_secretary" element={<Dashboard_secretary />} />
+          <Route path="/Student_secretary" element={<Student_secretary />} />
+          <Route path="/Classes_secretary" element={<Classes_secretary />} />
+          <Route path="/Fees_secretary" element={<Fees_secretary />} />
+          <Route path="/Add_student_secretary" element={<Add_student_secretary />} />
+          <Route path="/Edit_student_secretary" element={<Edit_student_secretary />} />
+          <Route path="/Student_profile_secretary" element={<Student_profile_secretary />} />
+          <Route path="/Student_classes_secretary" element={<Student_classes_secretary />} />
+          <Route path="/Payment_student_secretary" element={<Payment_student_secretary />} />
+          <Route path="/Attendance_student_secretary" element={<Attendance_student_secretary />} />
+          <Route path="/Add_classes_secretary" element={<Add_classes_secretary />} />
+          <Route path="/Classes_information_secretary" element={<Classes_information_secretary />} />
+          <Route path="/Edit_classes_secretary" element={<Edit_classes_secretary />} />
+          <Route path="/Classrooms_secretary" element={<Classrooms_secretary />} />
+          <Route path="/Add_classrooms_secretary" element={<Add_classrooms_secretary />} />
+          <Route path="/Languages_secretary" element={<Languages_secretary/>}/>
+          <Route path="/Add_language_secretary" element={<Add_language_secretary/>}/>
+          <Route path="/Add_employees_fees_secretary" element={<Add_employees_fees_secretary/>}/>
+          <Route path="/Add_student_fees_secretary" element={<Add_student_fees_secretary/>}/>
+          <Route path="/Timetable_secretary" element={<Timetable_secretary/>}/>
+          <Route path="/Notifications_secretary" element={<Notifications_secretary />} />
+          <Route path="/Inscriptions_secretary" element={<Inscriptions_secretary />} />
+          <Route path="/Settings_secretary" element={<Settings_secretary />} />
+
+
 
 
       </Routes>
-
+ 
   );
 }
 

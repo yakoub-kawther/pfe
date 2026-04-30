@@ -1,5 +1,6 @@
 import { useState } from "react";
-import DashboardLayout from "../../components/DashboardLayout";
+import DashboardLayout from "../../layouts/DashboardLayout";
+import Buttons from "../../components/Buttons";
 
 const Card = ({ title, icon, children }) => (
   <div
@@ -38,9 +39,6 @@ const ReadField = ({ label, value }) => (
   </div>
 );
 
-const btnBase    = "inline-flex items-center justify-center px-5 py-1.5 text-sm rounded-lg border transition-colors font-Inter";
-const btnOutline = `${btnBase} border-[#701366] text-[#701366] bg-white h-8 w-12 hover:bg-[#701366] hover:text-white`;
-const btnFilled  = `${btnBase} border-[#701366] text-white bg-[#701366] hover:bg-white hover:text-[#701366]`;
 
 function getStrength(pw) {
   if (!pw) return null;
@@ -264,14 +262,12 @@ export default function Settings() {
               {error   && <p className="text-[13px] font-Inter" style={{ color: "#ef4444" }}>⚠ {error}</p>}
               {success && <p className="text-[13px] font-Inter" style={{ color: "#22c55e" }}>✓ {success}</p>}
 
-              <div className="flex gap-3 pt-1">
-                <button
-                  onClick={() => { setForm({ current: "", next: "", confirm: "" }); setError(""); setSuccess(""); }}
-                  className={btnOutline} style={{ flex: 1 }}
-                >Cancel</button>
-                <button onClick={handleSave} className={btnFilled} style={{ flex: 1 }}>
-                  Save Password
-                </button>
+              <div className="flex justify-end pt-1">
+                <Buttons
+                  onCancel={() => { setForm({ current: "", next: "", confirm: "" }); setError(""); setSuccess(""); }}
+                  onSave={handleSave}
+                  saveLabel="Save Password"
+                />
               </div>
             </div>
           </Card>

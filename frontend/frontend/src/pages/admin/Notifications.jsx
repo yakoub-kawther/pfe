@@ -1,5 +1,5 @@
 import { useState } from "react";
-import DashboardLayout from "../../components/DashboardLayout";
+import DashboardLayout from "../../layouts/DashboardLayout";
 import { Send, X } from "lucide-react";
 
 const NOTIFICATION_TYPES = ["Announcement", "Alert", "Information"];
@@ -36,7 +36,6 @@ export default function Notifications() {
 
   return (
     <DashboardLayout>
-      {/* ↓ was fixed maxWidth: 560px, now fluid with clamp so it fills any desktop */}
       <div style={{ padding: "10px clamp(12px, 2vw, 32px) 40px", width: "100%", maxWidth: "680px" }}>
 
         {/* header */}
@@ -113,7 +112,7 @@ export default function Notifications() {
               onMouseEnter={e => e.currentTarget.style.borderColor = "#701366"}
               onMouseLeave={e => e.currentTarget.style.borderColor = "#e2d0e2"}
             >
-              <X size={13} /> Cancel
+               Cancel
             </button>
             <button
               onClick={handleSend}

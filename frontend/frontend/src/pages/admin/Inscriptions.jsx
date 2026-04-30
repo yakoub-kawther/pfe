@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from "react";
-import DashboardLayout from "../../components/DashboardLayout";
+import DashboardLayout from "../../layouts/DashboardLayout";
 
 // ─── Mock Data ────────────────────────────────────────────────────────────────
 const ALL_STUDENTS = [
@@ -52,7 +52,17 @@ const btn = (variant = "solid") => ({
 });
 
 // ─── Sub-components ───────────────────────────────────────────────────────────
-
+  const Avatar = ({ initials, size = 36 }) => (
+  <div style={{
+    width: size, height: size, borderRadius: "50%",
+    background: "#f8e0f8", color: "#701366",
+    display: "flex", alignItems: "center", justifyContent: "center",
+    fontSize: size * 0.35, fontWeight: 600,
+    fontFamily: "Inter, sans-serif", flexShrink: 0,
+  }}>
+    {initials}
+  </div>
+);
 
 
 const Badge = ({ status }) => {

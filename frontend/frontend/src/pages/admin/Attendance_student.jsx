@@ -1,5 +1,5 @@
 import React from "react";
-import DashboardLayout from "../../components/DashboardLayout";
+import DashboardLayout from "../../layouts/DashboardLayout";
 import Tabs from "../../components/Tabs";
 
 export default function Attendance_student() {

@@ -1,6 +1,8 @@
 import { useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import DashboardLayout from "../../components/DashboardLayout.jsx";
+import DashboardLayout from "../../layouts/DashboardLayout.jsx";
+import Buttons from "../../components/Buttons.jsx";
+
 
 const inp = {
   width: "100%",
@@ -77,26 +79,17 @@ const Edit_student = () => {
     <DashboardLayout>
       <div className="w-full mx-auto pb-10" style={{ padding: "30px clamp(12px, 2vw, 32px)" }}>
 
-        {/* Header */}
-        <div className="flex items-center justify-between mb-8">
-          <h1 className="text-2xl text-[#701366]">
-            Edit Student — <span className="font-Inter">{student?.name}</span>
-          </h1>
-          <div className="flex gap-3">
-            <button
-              onClick={() => navigate(-1)}
-              className="px-5 py-2 rounded-sm border border-[#701366] bg-white text-[#701366] text-sm hover:bg-[#701366] hover:text-white transition-all"
-            >
-              Cancel
-            </button>
-            <button
-              onClick={handleSubmit}
-              className="px-5 py-2 rounded-sm border border-[#701366] bg-[#701366] text-white text-sm hover:bg-white hover:text-[#701366] transition-all"
-            >
-              Save Changes
-            </button>
-          </div>
-        </div>
+   {/* Header */}
+<div className="flex flex-wrap items-center justify-between gap-4 mb-8">
+  <h1 className="text-2xl text-[#701366]">
+    Edit Student — <span className="font-Inter">{student?.name}</span>
+  </h1>
+
+  <Buttons
+    cancelPath="/Students"
+    onSave={handleSubmit}
+  />
+</div>
 
         {/* Form Grid */}
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(340px, 1fr))", gap: "28px", marginTop: "30px" }}>

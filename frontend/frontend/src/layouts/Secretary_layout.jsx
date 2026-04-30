@@ -1,14 +1,14 @@
 import React from "react";
-import Sidebar from "./Sidebar";
-import { SIDEBAR_W } from "./Sidebar";
-import Navbar from "./Navbar";
+import Secretary_sidebar from "../components/Sidebar/Secretary_sidebar";
+import { SIDEBAR_W } from "../components/Sidebar/Secretary_sidebar";
+import Navbar from "../components/Navbar";
 
-const DashboardLayout = ({ children }) => {
+const Secretary_layout = ({ children }) => {
   return (
     <div style={{ display: "flex", minHeight: "100vh", background: "#fffafe", color: "#701366" }}>
 
       {/* Sidebar — fixed, always exactly SIDEBAR_W wide */}
-      <Sidebar />
+      <Secretary_sidebar />
 
       {/* Main area — pushed right by exactly SIDEBAR_W so it never overlaps */}
       <div
@@ -21,7 +21,7 @@ const DashboardLayout = ({ children }) => {
           overflow: "hidden",
         }}
       >
-        <Navbar />
+        <Navbar role="secretary" />
         <main style={{ flex: 1, padding: "24px" }}>
           {children}
         </main>
@@ -30,4 +30,4 @@ const DashboardLayout = ({ children }) => {
   );
 };
 
-export default DashboardLayout;
+export default Secretary_layout;
