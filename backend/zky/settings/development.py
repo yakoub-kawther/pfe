@@ -1,3 +1,4 @@
+# settings.development.py
 from .base import *
 
 DEBUG = True
@@ -9,7 +10,3 @@ CORS_ALLOWED_ORIGINS = [
 ]
 
 
-REST_FRAMEWORK = {
-    'DEFAULT_AUTHENTICATION_CLASSES': [],
-    'DEFAULT_PERMISSION_CLASSES': [],
-}

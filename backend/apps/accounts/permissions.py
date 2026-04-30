@@ -24,4 +24,14 @@ class IsStudent(_RolePermission):
 
 
 class IsAdminOrSuperAdmin(_RolePermission):
-    allowed_roles = ('admin', 'super_admin')
+    allowed_roles = ('admin', 'superadmin')
+
+
+class IsNotStudent(_RolePermission):
+    allowed_roles = ('admin', 'teacher', 'superadmin')
+    def has_permission(self, request, view):
+        print("USER:", request.user)
+        print("ROLE:", request.user.role)
+        print("ROLE NAME:", request.user.role.name)
+        print("ALLOWED:", self.allowed_roles)
+        return super().has_permission(request, view)

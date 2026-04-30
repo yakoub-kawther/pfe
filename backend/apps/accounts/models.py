@@ -58,4 +58,8 @@ class Account(models.Model):
         return False
     
 
+    @property
+    def is_active(self):
+     return self.status == 'active'
+
     
