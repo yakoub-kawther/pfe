@@ -1,20 +1,38 @@
-from rest_framework.views import APIView
-from rest_framework.response import Response
 from rest_framework import status
-from django.shortcuts import get_object_or_404
-from django.db import transaction
+from rest_framework.decorators import action
+from rest_framework.response import Response
+from rest_framework.viewsets import GenericViewSet
+from rest_framework.permissions import IsAuthenticated
 
 from .models import Inscription
-from .serializers import InscriptionSerializer, InscriptionDetailSerializer
-from apps.persons.models import Student
-from apps.academic.models import Class
+from .serializers import (
+    InscriptionSerializer,
+    InscriptionDetailSerializer,
+    TransitionSerializer,
+)
+from .services import (
+    create_inscription,
+    update_inscription,
+    cancel_inscription,
+    get_student_history,
+    get_student_current,
+    promote_student,
+    repeat_student,
+)
+from apps.accounts.permissions import IsAdminOrSuperAdmin
 
-ACTIVE_STATUSES = ('confirmed',)
 
+class InscriptionViewSet(GenericViewSet):
 
+    def get_permissions(self):
+        if self.action in ('history', 'current'):
+            return [IsAuthenticated()]
+        return [IsAuthenticated(), IsAdminOrSuperAdmin()]
 
-class CreateInscriptionView(APIView):
-    def post(self, request):
+    # ─────────────────────────────────────────
+    # POST /inscriptions/
+    # ─────────────────────────────────────────
+    def create(self, request):
         student_id = request.data.get('student_id')
         class_id   = request.data.get('class_id')
 
@@ -24,96 +42,48 @@ class CreateInscriptionView(APIView):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        student   = get_object_or_404(Student, pk=student_id)
-        class_obj = get_object_or_404(Class,   pk=class_id)
+        try:
+            inscription = create_inscription(student_id, class_id)
+        except ValueError as e:
+            return Response({'detail': str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
-        
-        if class_obj.status != 'active':
-            return Response(
-                {'detail': f'Cannot enroll in a class with status "{class_obj.status}".'},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
-
-        
-        if Inscription.objects.filter(student=student, status__in=ACTIVE_STATUSES).exists():
-            return Response(
-                {'detail': 'Student already has an active inscription.'},
-                status=status.HTTP_409_CONFLICT,
-            )
-
-        
-        if Inscription.objects.filter(student=student, class_id=class_obj).exists():
-            return Response(
-                {'detail': 'Student is already enrolled in this class.'},
-                status=status.HTTP_409_CONFLICT,
-            )
-
-        inscription = Inscription.objects.create(
-            student=student,
-            class_id=class_obj,
-            status='confirmed',
+        return Response(
+            InscriptionSerializer(inscription).data,
+            status=status.HTTP_201_CREATED,
         )
-        return Response(InscriptionSerializer(inscription).data, status=status.HTTP_201_CREATED)
 
+    # ─────────────────────────────────────────
+    # PATCH /inscriptions/{id}/
+    # ─────────────────────────────────────────
+    def partial_update(self, request, pk=None):
+        try:
+            inscription = update_inscription(pk, request.data)
+        except ValueError as e:
+            return Response({'detail': str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
+        return Response(InscriptionSerializer(inscription).data)
 
-class UpdateInscriptionView(APIView):
-    def patch(self, request, inscription_id):
-        inscription = get_object_or_404(Inscription, pk=inscription_id)
+    # ─────────────────────────────────────────
+    # POST /inscriptions/{id}/cancel/
+    # ─────────────────────────────────────────
+    @action(detail=True, methods=['post'], url_path='cancel')
+    def cancel(self, request, pk=None):
+        try:
+            inscription = cancel_inscription(pk)
+        except ValueError as e:
+            return Response({'detail': str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
-        
-        if inscription.status != 'confirmed':
-            return Response(
-                {'detail': f'Cannot update an inscription with status "{inscription.status}".'},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
+        return Response({
+            'detail': 'Inscription cancelled successfully.',
+            'id': inscription.pk,
+        })
 
-        
-        if 'student' in request.data or 'student_id' in request.data:
-            return Response(
-                {'detail': 'Cannot change the student of an inscription.'},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
-
-        serializer = InscriptionSerializer(inscription, data=request.data, partial=True)
-        if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-
-
-class CancelInscriptionView(APIView):
-    def patch(self, request, inscription_id):
-        inscription = get_object_or_404(Inscription, pk=inscription_id)
-
-        if inscription.status == 'cancelled':
-            return Response(
-                {'detail': 'Inscription is already cancelled.'},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
-        if inscription.status != 'confirmed':
-            return Response(
-                {'detail': f'Cannot cancel an inscription with status "{inscription.status}".'},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
-
-        inscription.status = 'cancelled'
-        inscription.save(update_fields=['status'])
-        return Response({'detail': 'Inscription cancelled successfully.', 'id': inscription.pk})
-
-
-
-class StudentInscriptionHistoryView(APIView):
-    def get(self, request, student_id):
-        student = get_object_or_404(Student, pk=student_id)
-
-        inscriptions = (
-            Inscription.objects
-            .filter(student=student)
-            .select_related('class_idlanguage', 'class_idlevel')
-            .order_by('-inscription_date')
-        )
+    # ─────────────────────────────────────────
+    # GET /inscriptions/student/{id}/history/
+    # ─────────────────────────────────────────
+    @action(detail=False, methods=['get'], url_path='student/(?P<student_id>[^/.]+)/history')
+    def history(self, request, student_id=None):
+        student, inscriptions = get_student_history(student_id)
 
         return Response({
             'student_id':   student.pk,
@@ -122,19 +92,12 @@ class StudentInscriptionHistoryView(APIView):
             'history':      InscriptionDetailSerializer(inscriptions, many=True).data,
         })
 
-
-
-class StudentCurrentInscriptionView(APIView):
-    def get(self, request, student_id):
-        student = get_object_or_404(Student, pk=student_id)
-
-        inscription = (
-            Inscription.objects
-            .filter(student=student, status__in=ACTIVE_STATUSES)
-            .select_related('class_idlanguage', 'class_idlevel')
-            .order_by('-inscription_date')
-            .first()
-        )
+    # ─────────────────────────────────────────
+    # GET /inscriptions/student/{id}/current/
+    # ─────────────────────────────────────────
+    @action(detail=False, methods=['get'], url_path='student/(?P<student_id>[^/.]+)/current')
+    def current(self, request, student_id=None):
+        inscription = get_student_current(student_id)
 
         if not inscription:
             return Response(
@@ -144,79 +107,46 @@ class StudentCurrentInscriptionView(APIView):
 
         return Response(InscriptionDetailSerializer(inscription).data)
 
+    # ─────────────────────────────────────────
+    # POST /inscriptions/student/{id}/promote/
+    # ─────────────────────────────────────────
+    @action(detail=False, methods=['post'], url_path='student/(?P<student_id>[^/.]+)/promote')
+    def promote(self, request, student_id=None):
+        serializer = TransitionSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
 
+        try:
+            current, new_inscription = promote_student(
+                student_id,
+                serializer.validated_data['new_class_id']
+            )
+        except ValueError as e:
+            return Response({'detail': str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
-def _transition_student(student_id, new_class_id, transition_type):
-    student   = get_object_or_404(Student, pk=student_id)
-    new_class = get_object_or_404(Class,   pk=new_class_id)
-
-    if new_class.status != 'active':
-        return Response(
-            {'detail': f'Target class status is "{new_class.status}". Must be active.'},
-            status=status.HTTP_400_BAD_REQUEST,
-        )
-
-    
-    current = (
-        Inscription.objects
-        .filter(student=student, status__in=ACTIVE_STATUSES)
-        .order_by('-inscription_date')
-        .first()
-    )
-
-    if not current:
-        return Response(
-            {'detail': 'No active inscription found. Cannot proceed.'},
-            status=status.HTTP_400_BAD_REQUEST,
-        )
-
-    
-    if Inscription.objects.filter(student=student, class_id=new_class).exists():
-        return Response(
-            {'detail': 'Student already has a record in the target class.'},
-            status=status.HTTP_409_CONFLICT,
-        )
-
-    with transaction.atomic():
-       
-        current.status = transition_type
-        current.save(update_fields=['status'])
-
-        
-        new_inscription = Inscription.objects.create(
-            student=student,
-            class_id=new_class,
-            status='confirmed',
-        )
-        return Response(
-        {
-            'detail':                  f'Student {transition_type} successfully.',
+        return Response({
+            'detail': 'Student promoted successfully.',
             'previous_inscription_id': current.pk,
-            'new_inscription':         InscriptionSerializer(new_inscription).data,
-        },
-        status=status.HTTP_201_CREATED,
-    )
+            'new_inscription': InscriptionSerializer(new_inscription).data,
+        }, status=status.HTTP_201_CREATED)
 
+    # ─────────────────────────────────────────
+    # POST /inscriptions/student/{id}/repeat/
+    # ─────────────────────────────────────────
+    @action(detail=False, methods=['post'], url_path='student/(?P<student_id>[^/.]+)/repeat')
+    def repeat(self, request, student_id=None):
+        serializer = TransitionSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
 
-
-class PromoteStudentView(APIView):
-    def post(self, request, student_id):
-        new_class_id = request.data.get('new_class_id')
-        if not new_class_id:
-            return Response(
-                {'detail': 'new_class_id is required.'},
-                status=status.HTTP_400_BAD_REQUEST,
+        try:
+            current, new_inscription = repeat_student(
+                student_id,
+                serializer.validated_data['new_class_id']
             )
-        return _transition_student(student_id, new_class_id, transition_type='promoted')
+        except ValueError as e:
+            return Response({'detail': str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
-
-
-class RepeatLevelView(APIView):
-    def post(self, request, student_id):
-        new_class_id = request.data.get('new_class_id')
-        if not new_class_id:
-            return Response(
-                {'detail': 'new_class_id is required.'},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
-        return _transition_student(student_id, new_class_id, transition_type='repeated')
+        return Response({
+            'detail': 'Student repeated successfully.',
+            'previous_inscription_id': current.pk,
+            'new_inscription': InscriptionSerializer(new_inscription).data,
+        }, status=status.HTTP_201_CREATED)

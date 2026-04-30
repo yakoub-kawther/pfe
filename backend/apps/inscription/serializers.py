@@ -13,18 +13,17 @@ class ClassSummarySerializer(serializers.ModelSerializer):
 
 
 class InscriptionSerializer(serializers.ModelSerializer):
-    """Minimal – used for create / update responses."""
+    """Minimal — used for create / update responses."""
 
     class Meta:
         model  = Inscription
-        fields = ['id', 'student', 'class_id', 'inscription_date', 'status']
-        read_only_fields = ['inscription_date', 'student']  
+        fields = ['id', 'student', 'enrolled_class', 'inscription_date', 'status']
+        read_only_fields = ['inscription_date', 'student']
 
 
 class InscriptionDetailSerializer(serializers.ModelSerializer):
-    """Full detail – used for history & current enrollment."""
-
-    class_info   = ClassSummarySerializer(source='class_id', read_only=True)
+    """Full detail — used for history & current enrollment."""
+    class_info   = ClassSummarySerializer(source='enrolled_class', read_only=True)
     student_name = serializers.SerializerMethodField()
 
     class Meta:
@@ -42,3 +41,8 @@ class InscriptionDetailSerializer(serializers.ModelSerializer):
     def get_student_name(self, obj):
         person = obj.student.person
         return f"{person.first_name} {person.last_name}"
+
+
+class TransitionSerializer(serializers.Serializer):
+    """Used for promote and repeat actions."""
+    new_class_id = serializers.IntegerField()

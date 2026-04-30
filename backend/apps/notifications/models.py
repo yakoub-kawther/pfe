@@ -22,6 +22,8 @@ class Notification(models.Model):
 
     class Meta:
         db_table = 'notification'
+        ordering = ['-sent_at']
+
 
     def __str__(self):
         return f"{self.title} ({self.type})"
@@ -31,6 +33,9 @@ class Notification(models.Model):
 class NotificationReceiver(models.Model):
     notification = models.ForeignKey(Notification, on_delete=models.CASCADE)
     receiver = models.ForeignKey(Account, on_delete=models.CASCADE)
+    is_read = models.BooleanField(default=False)
+    read_at = models.DateTimeField(null=True, blank=True)
+
 
     class Meta:
         db_table = 'notification_receiver'

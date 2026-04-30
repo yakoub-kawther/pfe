@@ -13,22 +13,18 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
-        migrations.RemoveConstraint(
-            model_name='inscription',
-            name='unique_student_class',
-        ),
-        migrations.AddField(
-            model_name='inscription',
-            name='class_id',
-            field=models.ForeignKey(db_column='class_id', default=1, on_delete=django.db.models.deletion.CASCADE, to='academic.class'),
-            preserve_default=False,
-        ),
-        migrations.AddConstraint(
-            model_name='inscription',
-            constraint=models.UniqueConstraint(fields=('student', 'class_id'), name='unique_student_class'),
-        ),
-        migrations.RemoveField(
-            model_name='inscription',
-            name='class_obj',
-        ),
-    ]
+    migrations.RemoveConstraint(
+        model_name='inscription',
+        name='unique_student_class',
+    ),
+    migrations.AddField(
+        model_name='inscription',
+        name='class_id',
+        field=models.ForeignKey(db_column='class_id', default=1, on_delete=django.db.models.deletion.CASCADE, to='academic.class'),
+        preserve_default=False,
+    ),
+    migrations.AddConstraint(
+        model_name='inscription',
+        constraint=models.UniqueConstraint(fields=('student', 'class_id'), name='unique_student_class'),
+    ),
+]
