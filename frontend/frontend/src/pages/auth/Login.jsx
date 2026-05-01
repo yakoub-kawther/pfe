@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { Eye, EyeOff, LogIn } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { saveTokens, clearTokens } from "../../services/api";
 
 const F = "'Inter', sans-serif";
 
@@ -29,14 +30,14 @@ function Field({ id, label, type = "text", value, onChange, placeholder, right, 
           onFocus={(e) => {
             if (!hasError) {
               e.target.style.borderColor = "#701366";
-              e.target.style.boxShadow = "0 0 0 3px rgba(112,19,102,.1)";
+              e.target.style.boxShadow   = "0 0 0 3px rgba(112,19,102,.1)";
             }
             onFocus && onFocus(e);
           }}
           onBlur={(e) => {
             if (!hasError) {
               e.target.style.borderColor = "#e8c0e4";
-              e.target.style.boxShadow = "none";
+              e.target.style.boxShadow   = "none";
             }
             onBlur && onBlur(e);
           }}
@@ -134,140 +135,120 @@ const roleRoutes = {
   secretariat: "/Dashboard_secretary",
 };
 
-const USERS = [
-  { email: "admin@zkyli.com",       password: "admin123",       role: "admin"       },
-  { email: "teacher@zkyli.com",     password: "teacher123",     role: "teacher"     },
-  { email: "student@zkyli.com",     password: "student123",     role: "student"     },
-  { email: "secretariat@zkyli.com", password: "secretariat123", role: "secretariat" },
-];
-
-// Gmail compose URL
 const GMAIL_COMPOSE = "https://mail.google.com/mail/?view=cm&fs=1&to=yousraztn.contact@gmail.com";
+
+const API_BASE = "http://localhost:8000/api";
 
 // ─── MAIN LOGIN ───────────────────────────────────────────────
 export default function LoginPage() {
-  const [showSuggestions, setShowSuggestions] = useState(false);
   const [email, setEmail]               = useState("");
   const [password, setPassword]         = useState("");
   const [show, setShow]                 = useState(false);
   const [remember, setRemember]         = useState(false);
   const [emailError, setEmailError]     = useState("");
   const [passwordError, setPasswordError] = useState("");
+  const [loading, setLoading]           = useState(false);
   const navigate = useNavigate();
 
-  // ✅ Always clear session when landing on login page
+  // Clear any stale session when landing on login page
   useEffect(() => {
-    localStorage.removeItem("user");
+    clearTokens();
   }, []);
 
-  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  // const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-  const validateEmail = (val) => {
-    if (!emailRegex.test(val)) { setEmailError("Please enter a valid email address."); return false; }
-    setEmailError(""); return true;
-  };
+  // const validateEmail = (val) => {
+  //   if (!emailRegex.test(val)) { setEmailError("Please enter a valid email address."); return false; }
+  //   setEmailError(""); return true;
+  // };
 
-  const submit = (e) => {
+  const submit = async (e) => {
     e.preventDefault();
     setPasswordError("");
-    if (!validateEmail(email)) return;
+    // if (!validateEmail(email)) return;
     if (!password) { setPasswordError("Please enter your password."); return; }
 
-    const user = USERS.find((u) => u.email === email && u.password === password);
-    if (!user) {
-      const emailExists = USERS.find((u) => u.email === email);
-      if (emailExists) setPasswordError("Incorrect password. Please try again.");
-      else setEmailError("No account found with this email.");
-      return;
-    }
+    setLoading(true);
+    try {
+      const res = await fetch(`${API_BASE}/account/login/`, {
+        method : "POST",
+        headers: { "Content-Type": "application/json" },
+        body   : JSON.stringify({ username: email, password }),
+      });
 
-    localStorage.setItem("user", JSON.stringify(user));
-    navigate(roleRoutes[user.role] || "/Dashboard");
+      const data = await res.json();
+
+      if (!res.ok) {
+        // Django returns detail or field errors
+        const msg = data?.detail || data?.non_field_errors?.[0] || "Invalid credentials.";
+        // Try to detect whether it's an email vs password issue
+        if (msg.toLowerCase().includes("password")) {
+          setPasswordError(msg);
+        } else {
+          setEmailError(msg);
+        }
+        return;
+      }
+
+      // Save tokens + user info
+      saveTokens({
+        access   : data.access,
+        refresh  : data.refresh,
+        role     : data.role,
+        full_name: data.full_name,
+      });
+
+      navigate(roleRoutes[data.role] || "/Dashboard");
+
+    } catch {
+      setPasswordError("Network error. Please try again.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
     <>
-      {/* ── Responsive styles ── */}
       <style>{`
         * { box-sizing: border-box; }
-
         .login-wrapper {
-          display: flex;
-          width: 100vw;
-          height: 100vh;
-          overflow: hidden;
-          background: #faf0fa;
-          font-family: ${F};
+          display: flex; width: 100vw; height: 100vh;
+          overflow: hidden; background: #faf0fa; font-family: ${F};
         }
-
-        /* Left panel: visible on large screens */
         .login-left {
-          width: 42%;
-          min-width: 320px;
-          max-width: 520px;
-          height: 100%;
-          flex-shrink: 0;
-          display: none;
+          width: 42%; min-width: 320px; max-width: 520px;
+          height: 100%; flex-shrink: 0; display: none;
         }
         .login-divider {
-          width: 1px;
-          height: 100%;
-          background: rgba(248,178,234,.3);
-          flex-shrink: 0;
-          display: none;
+          width: 1px; height: 100%;
+          background: rgba(248,178,234,.3); flex-shrink: 0; display: none;
         }
         @media (min-width: 900px) {
           .login-left    { display: block; }
           .login-divider { display: block; }
         }
-
-        /* Right panel */
         .login-right {
-          flex: 1;
-          height: 100%;
-          display: flex;
-          flex-direction: column;
-          justify-content: center;
-          align-items: center;
+          flex: 1; height: 100%;
+          display: flex; flex-direction: column;
+          justify-content: center; align-items: center;
           overflow-y: auto;
           background: rgba(253,244,253,.5);
-          position: relative;
-          padding: 24px 16px;
+          position: relative; padding: 24px 16px;
         }
-
-        /* Form card */
         .login-card {
-          width: 100%;
-          max-width: 420px;
-          padding: 48px 40px;
-          position: relative;
-          z-index: 1;
+          width: 100%; max-width: 420px;
+          padding: 48px 40px; position: relative; z-index: 1;
         }
-
-        @media (max-width: 500px) {
-          .login-card {
-            padding: 32px 20px;
-          }
-        }
-
-        /* Suggestion dropdown item hover */
-        .suggestion-item:hover {
-          background: #fdf0fc;
-        }
+        @media (max-width: 500px) { .login-card { padding: 32px 20px; } }
       `}</style>
 
       <div className="login-wrapper">
 
-        {/* Left panel */}
-        <div className="login-left">
-          <LeftPanel />
-        </div>
+        <div className="login-left"><LeftPanel /></div>
         <div className="login-divider" />
 
-        {/* Right panel */}
         <div className="login-right">
 
-          {/* Decorative blur */}
           <div style={{
             position: "fixed", top: "-60px", right: "-60px",
             width: "280px", height: "280px", borderRadius: "50%",
@@ -276,7 +257,6 @@ export default function LoginPage() {
 
           <div className="login-card">
 
-            {/* Heading */}
             <div style={{ marginBottom: "32px" }}>
               <p style={{ fontFamily: F, fontSize: "32px", fontWeight: 450, color: "#701366", margin: 0, lineHeight: 1.2 }}>
                 Log in to your account
@@ -288,43 +268,17 @@ export default function LoginPage() {
 
             <form onSubmit={submit} style={{ display: "flex", flexDirection: "column", gap: "18px" }}>
 
-              {/* Email */}
-              <div style={{ position: "relative" }}>
+              {/* Email / Username */}
+              <div>
                 <Field
-                  id="email" label="Email" value={email}
+                  id="email" label="Username" value={email}
                   onChange={(e) => { setEmail(e.target.value); setEmailError(""); }}
-                  placeholder="you@example.com" hasError={!!emailError}
-                  onFocus={() => setShowSuggestions(true)}
-                  onBlur={() => setTimeout(() => setShowSuggestions(false), 150)}
+                  placeholder="enter your username" hasError={!!emailError}
                 />
                 {emailError && (
                   <p style={{ color: "#dc2626", fontSize: "12px", marginTop: "4px", fontFamily: F, fontWeight: 500 }}>
                     {emailError}
                   </p>
-                )}
-                {showSuggestions && (
-                  <div style={{
-                    position: "absolute", top: "100%", left: 0, width: "100%",
-                    background: "#fff", border: "1px solid #ddd",
-                    borderRadius: 8, marginTop: 5, zIndex: 1000,
-                    boxShadow: "0 8px 24px rgba(0,0,0,.08)",
-                  }}>
-                    {USERS.map((user) => (
-                      <div
-                        key={user.role}
-                        className="suggestion-item"
-                        onMouseDown={() => { setEmail(user.email); setPassword(user.password); setShowSuggestions(false); }}
-                        style={{
-                          padding: "10px 14px", cursor: "pointer",
-                          borderBottom: "1px solid #eee",
-                          fontFamily: F, fontSize: "13px",
-                          transition: "background .12s",
-                        }}
-                      >
-                        <strong style={{ color: "#701366" }}>{user.role}</strong> — {user.email}
-                      </div>
-                    ))}
-                  </div>
                 )}
               </div>
 
@@ -334,7 +288,7 @@ export default function LoginPage() {
                   id="password" label="Password"
                   type={show ? "text" : "password"} value={password}
                   onChange={(e) => { setPassword(e.target.value); setPasswordError(""); }}
-                  placeholder="••••••••" hasError={!!passwordError}
+                  placeholder="enter your password" hasError={!!passwordError}
                   right={
                     <button
                       type="button" onClick={() => setShow(v => !v)}
@@ -378,16 +332,17 @@ export default function LoginPage() {
               {/* Submit */}
               <button
                 type="submit"
-                style={btnStyle}
-                onMouseEnter={e => e.currentTarget.style.background = "linear-gradient(135deg,#701366 0%,#4a0d45 100%)"}
-                onMouseLeave={e => e.currentTarget.style.background = "linear-gradient(135deg,#8a1a7e 0%,#701366 100%)"}
+                disabled={loading}
+                style={{ ...btnStyle, opacity: loading ? 0.7 : 1, cursor: loading ? "not-allowed" : "pointer" }}
+                onMouseEnter={e => { if (!loading) e.currentTarget.style.background = "linear-gradient(135deg,#701366 0%,#4a0d45 100%)"; }}
+                onMouseLeave={e => { if (!loading) e.currentTarget.style.background = "linear-gradient(135deg,#8a1a7e 0%,#701366 100%)"; }}
               >
-                <LogIn size={16} /> Sign In
+                <LogIn size={16} />
+                {loading ? "Signing in..." : "Sign In"}
               </button>
 
             </form>
 
-            {/* Divider */}
             <div style={{ display: "flex", alignItems: "center", gap: "10px", margin: "24px 0" }}>
               <div style={{ flex: 1, height: "1px", background: "rgba(248,178,234,.5)" }} />
               <span style={{ fontFamily: F, fontSize: "11px", color: "#c87dbe", fontWeight: 500 }}>or</span>
@@ -396,7 +351,6 @@ export default function LoginPage() {
 
             <p style={{ textAlign: "center", fontFamily: F, fontSize: "13px", color: "#9c5094" }}>
               Don't have an account?{" "}
-              {/* ✅ Opens Gmail compose window directly */}
               <a
                 href={GMAIL_COMPOSE}
                 target="_blank"
