@@ -153,20 +153,7 @@ class ClassSerializer(serializers.ModelSerializer):
 # SCHEDULE
 # ──────────────────────────────
 
-class ScheduleSerializer(serializers.ModelSerializer):
-    
-    classroom = ClassroomSerializer(read_only=True)
-
-    class Meta:
-        model  = Schedule
-        fields = [
-            'id', 'class_obj', 'classroom',
-            'day_of_week', 'start_time', 'end_time'
-        ]
-
-
 class ScheduleCreateSerializer(serializers.ModelSerializer):
-    
 
     class Meta:
         model  = Schedule
@@ -184,21 +171,29 @@ class ScheduleCreateSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError("Invalid day of week.")
         return value.lower()
 
-    def validate(self, data):
-        if data['start_time'] >= data['end_time']:
-            raise serializers.ValidationError({
-                'end_time': "End time must be after start time."
-            })
-        return data
-
     def create(self, validated_data):
         from .services import create_schedule
         return create_schedule(validated_data)
 
 
-# we add this for consistance api response 
+class ScheduleSerializer(serializers.ModelSerializer):
+    classroom = ClassroomSerializer(read_only=True)
+
+    class Meta:
+        model  = Schedule
+        fields = [
+            'id', 'class_obj', 'classroom',
+            'day_of_week', 'start_time', 'end_time'
+        ]
+
+
 class BusyTimeSerializer(serializers.Serializer):
-    
     day_of_week = serializers.CharField()
     start_time  = serializers.TimeField()
     end_time    = serializers.TimeField()
+
+
+class SessionSerializer(serializers.ModelSerializer):
+    class Meta:
+        model  = Session
+        fields = ['id', 'schedule', 'session_date', 'status']

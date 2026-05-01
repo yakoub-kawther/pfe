@@ -103,7 +103,11 @@ def get_my_notifications(account_id: int):
 # ─────────────────────────────────────────
 
 def auto_absence_alert(student_id: int) -> Notification | None:
-    student_account = Account.objects.get(student__id=student_id)
+    student_account = Account.objects.filter(student__person_id=student_id).first()
+
+    if not student_account:
+        return None  # student has no account, skip silently
+
     system = Account.objects.filter(is_system=True).first()
 
     if not system:
@@ -125,7 +129,7 @@ def auto_absence_alert(student_id: int) -> Notification | None:
         notification_type=Notification.Type.ABSENCE_ALERT,
         title="Absence Limit Exceeded",
         body=(
-            f"Dear {student_account.get_full_name()}, "
+            f"Dear {student_account.username}, "
             "you have exceeded the allowed number of absences. "
             "Please contact your supervisor."
         ),

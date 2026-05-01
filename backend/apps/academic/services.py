@@ -1,7 +1,7 @@
 from django.db import transaction, IntegrityError
 from rest_framework.validators import ValidationError
 from .models import Language , Level , Position , Classroom , Class , Schedule , Session
-from datetime import timedelta
+from datetime import date, timedelta
 
 
 # languages part
@@ -190,6 +190,20 @@ def get_available_classrooms(day_of_week, start_time, end_time):
     return Classroom.objects.exclude(id__in=busy_classrooms)
 
 
+MAX_SESSIONS = 12
+
+from datetime import timedelta
+
+DAYS = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday']
+
+def generate_sessions(schedule) -> None:
+    start_date = schedule.class_obj.start_date
+    for i in range(MAX_SESSIONS):
+        Session.objects.create(
+            schedule=schedule,
+            session_date=start_date + timedelta(weeks=i),
+            status='scheduled'
+        )
 
 
 @transaction.atomic
@@ -197,20 +211,39 @@ def create_schedule(data):
     if data['start_time'] >= data['end_time']:
         raise ValidationError("End time must be after start time.")
 
-    # Teacher conflict FIRST
+    class_obj  = data['class_obj']
+    start_date = class_obj.start_date
+    day_of_week = data['day_of_week'].lower()
+
+    # Validate start_date is set
+    if not start_date:
+        raise ValidationError("Class has no start date set.")
+
+    # Validate start_date is not in the past
+    if start_date < date.today():
+        raise ValidationError("Class start date is in the past.")
+
+    # Validate start_date matches day_of_week
+    if DAYS[start_date.weekday()] != day_of_week:
+        raise ValidationError(
+            f"Start date {start_date} is a {DAYS[start_date.weekday()].capitalize()}, "
+            f"but schedule day is {day_of_week.capitalize()}."
+        )
+
+    # Teacher conflict
     if Schedule.objects.filter(
-        class_obj__teacher=data['class_obj'].teacher,
-        day_of_week=data['day_of_week'],
+        class_obj__teacher=class_obj.teacher,
+        day_of_week=day_of_week,
         start_time__lt=data['end_time'],
         end_time__gt=data['start_time'],
         class_obj__status='active'
-    ).exclude(class_obj=data['class_obj']).exists():
+    ).exclude(class_obj=class_obj).exists():
         raise ValidationError("Teacher is already busy at this time.")
 
-    # Classroom conflict SECOND
+    # Classroom conflict
     if Schedule.objects.filter(
         classroom=data['classroom'],
-        day_of_week=data['day_of_week'],
+        day_of_week=day_of_week,
         start_time__lt=data['end_time'],
         end_time__gt=data['start_time'],
         class_obj__status='active'
@@ -218,44 +251,11 @@ def create_schedule(data):
         raise ValidationError("Classroom is already booked at this time.")
 
     schedule = Schedule.objects.create(**data)
-    # generate_sessions(schedule)
+    generate_sessions(schedule)
     return schedule
 
-
-
-
-MAX_SESSIONS = 16
-
-
-def create_session(schedule, session_date) -> Session:
-    total = Session.objects.filter(schedule__class_obj=schedule.class_obj).count()
-
-    if total >= MAX_SESSIONS:
-        raise ValidationError(f"This class has reached the maximum of {MAX_SESSIONS} sessions.")
-
-    return Session.objects.create(
-        schedule=schedule,
-        session_date=session_date,
-        status='scheduled'
-    )
-
-
-def complete_session(session) -> Session:
-    session.status = 'completed'
-    session.save(update_fields=['status'])
-    return session
-
-
-def update_session_date(session, new_date) -> Session:
-    if session.status == 'completed':
-        raise ValidationError("Cannot reschedule a completed session.")
-    session.session_date = new_date
-    session.save(update_fields=['session_date'])
-    return session
-
-
 def get_class_progress(class_id) -> dict:
-    sessions  = Session.objects.filter(schedule__class_obj__id=class_id)
+    sessions  = Session.objects.filter(schedule__class_obj__id=int(class_id))
     total     = sessions.count()
     completed = sessions.filter(status='completed').count()
 
@@ -270,3 +270,9 @@ def get_class_progress(class_id) -> dict:
         'remaining':        MAX_SESSIONS - completed,
         'progress_percent': progress,
     }
+
+
+def complete_session(session) -> Session:
+    session.status = 'completed'
+    session.save(update_fields=['status'])
+    return session

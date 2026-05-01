@@ -219,3 +219,24 @@ class ScheduleViewSet(viewsets.ModelViewSet):
             serializer.errors,
             status=status.HTTP_400_BAD_REQUEST
         )
+    
+from .serializers import SessionSerializer
+from .services import get_class_progress
+from .models import Session
+
+class SessionViewSet(viewsets.ModelViewSet):
+    queryset         = Session.objects.all()
+    serializer_class = SessionSerializer
+    http_method_names = ['get', 'head', 'options']  # block POST/PUT/DELETE
+
+    @action(detail=False, methods=['get'])
+    def progress(self, request):
+        class_id = request.query_params.get('class_id')
+
+        if not class_id:
+            return Response(
+                {'detail': 'class_id is required.'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        return Response(get_class_progress(class_id))

@@ -11,3 +11,4 @@ __pycache__/
 # Environment
 .env
 db.sqlite3
+.env.exemple
