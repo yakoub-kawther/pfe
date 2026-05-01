@@ -44,6 +44,7 @@ export default function Studentclasses() {
       <h2 className="text-2xl">Classes</h2>
 
         {/* TABS */}
+        
         <Tabs tabs={studentTabs} />
 
           {/* TABLE */}

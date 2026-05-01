@@ -11,11 +11,11 @@ const Student_secretary = () => {
 
   return (
     <Secretary_layout>
-      <div className="max-w-6xl mx-auto flex flex-col gap-10 pt-6">
+      <div style={{ width: "100%", display: "flex", flexDirection: "column", gap: "24px", paddingTop: "6px", boxSizing: "border-box", minWidth: 0 }}>
 
         {/* Search */}
         <section className="flex items-center gap-4" style={{ marginTop: "30px" }}>
-          <h1 className="text-2xl text-[#701366] text-left whitespace-nowrap">Students List</h1>
+          <h2 className="text-2xl text-[#701366] text-left whitespace-nowrap">Students List</h2>
           <Searchbar
             placeholder="Search by Name, Phone..."
             filterOptions={["Active", "Inactive", "Graduated"]}

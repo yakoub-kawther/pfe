@@ -141,7 +141,8 @@ export default function Settings() {
 
         {/* Header */}
         <div className="flex items-center justify-between mb-8">
-          <h1 className="text-2xl text-[#701366] font-Inter">Settings</h1>
+            <h2 style={{ fontSize: "24px", color: "#701366", fontFamily: "Inter, sans-serif", margin: 0 }}>
+            Settings</h2>
         </div>
 
         {/* Two-column grid → single column on narrow */}

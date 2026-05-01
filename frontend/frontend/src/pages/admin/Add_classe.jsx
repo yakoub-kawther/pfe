@@ -102,7 +102,12 @@ export default function Add_classe() {
             </Field>
 
             <Field label="Teacher">
-              <input style={inp} value={form.teacher} onChange={handle("teacher")} placeholder="e.g. Mr Ahmed" />
+              <select style={inp} value={form.teacher} onChange={handle("teacher")} placeholder="e.g. Mr Ahmed">
+                <option value="">Select teacher</option>
+                <option>Mr. Ahmed</option>
+                <option>Ms. Fatima</option>
+                <option>Dr. Hassan</option>
+              </select>
             </Field>
 
             <Field label="Max Students">

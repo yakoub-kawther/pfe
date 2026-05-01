@@ -1,5 +1,6 @@
 import { useLocation, useNavigate } from "react-router-dom";
 import DashboardLayout from "../../layouts/DashboardLayout";
+import Buttons from "../../components/Buttons";
 
 const statusStyles = {
   Active: "bg-green-100 text-green-700",
@@ -40,9 +41,6 @@ const Card = ({ title, children }) => (
   </div>
 );
 
-const btnBase    = "inline-flex items-center justify-center px-5 py-1.5 text-sm h-7 w-12 rounded-lg border transition-colors font-Inter";
-const btnOutline = `${btnBase} border-[#701366] text-[#701366] bg-white hover:bg-[#701366] hover:text-white`;
-const btnFilled  = `${btnBase} border-[#701366] text-white bg-[#701366] hover:text-[#701366] hover:bg-white`;
 
 export default function Employee_profile() {
   const { state } = useLocation();
@@ -55,19 +53,17 @@ export default function Employee_profile() {
 
   return (
     <DashboardLayout>
-      {/* ↓ only change: w-full + clamp padding instead of fixed max-w-5xl */}
-      <div className="w-full mx-auto pb-10" style={{ maxWidth: "min(1100px, 100%)", padding: "30px clamp(12px, 2vw, 32px)" }}>
+      <div className="w-full mx-auto pb-10" style={{ padding: "30px clamp(12px, 2vw, 32px)" }}>
 
-        {/* Header — unchanged */}
+        {/* Header  */}
         <div className="flex items-center justify-between mb-8">
           <h1 className="text-2xl text-[#701366] font-Inter">Employee Profile</h1>
-          <div className="flex gap-2">
-            <button onClick={() => navigate("/Employees")} className={btnOutline}>Back</button>
-            <button onClick={() => navigate("/Edit_employee", { state: { employee } })} className={btnFilled}>Edit</button>
-          </div>
+          <Buttons
+            cancelPath="/Employees"
+            onEdit={() => navigate("/Edit_employee", { state: { employee } })}
+          />
         </div>
 
-        {/* ↓ only change: grid auto-fits so cards never overflow on any desktop width */}
         <div
           style={{
             display: "grid",
@@ -78,7 +74,7 @@ export default function Employee_profile() {
           }}
         >
 
-          {/* LEFT — Basic Information — unchanged */}
+          {/* LEFT — Basic Information */}
           <Card title="Basic Information">
             <div className="flex items-center gap-4 mb-5">
               <div
@@ -105,7 +101,7 @@ export default function Employee_profile() {
             </div>
           </Card>
 
-          {/* RIGHT — Contact Information — unchanged */}
+          {/* RIGHT — Contact Information  */}
           <Card title="Contact Information">
             <div className="grid grid-cols-2" style={{ gap: "18px" }}>
               <ReadField label="Phone"   value={employee?.phone} />

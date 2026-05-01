@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import DashboardLayout from "../../layouts/DashboardLayout";
+import Buttons from "../../components/Buttons";
 
 const inp = {
   width: "100%",
@@ -36,10 +37,6 @@ const Card = ({ title, children }) => (
   </div>
 );
 
-const btnBase    = "inline-flex items-center justify-center px-5 py-1.5 text-sm rounded-lg border transition-colors font-Inter";
-const btnOutline = `${btnBase} border-[#701366] text-[#701366] h-7 w-12 bg-white hover:bg-[#701366] hover:text-white`;
-const btnGhost   = `${btnBase} border-[#701366] text-[#701366] bg-white hover:bg-[#701366] hover:text-white`;
-const btnFilled  = `${btnBase} border-[#701366] text-white bg-[#701366] hover:text-[#701366] hover:bg-white`;
 
 const emptyForm = {
   firstName: "", lastName: "", dob: "", position: "", hireDate: "",
@@ -66,12 +63,13 @@ export default function Add_employee() {
 
         {/* Header */}
         <div className="flex items-center justify-between flex-wrap gap-3" style={{ marginBottom: "30px" }}>
-          <h1 className="text-2xl text-[#701366] font-Inter">Add New Employee</h1>
-          <div className="flex gap-2 flex-wrap">
-            <button onClick={() => navigate("/Employees")} className={btnOutline}>Cancel</button>
-            <button onClick={handleReset}                  className={btnGhost}>Reset</button>
-            <button onClick={handleSave}                   className={btnFilled}>Save</button>
-          </div>
+          <h2 className="text-2xl text-[#701366] font-Inter">Add New Employee</h2>
+          <Buttons
+            cancelPath="/Employees"
+            onReset={handleReset}
+            onSave={handleSave}
+            saveLabel="Save"
+          />
         </div>
 
         <div
@@ -112,7 +110,12 @@ export default function Add_employee() {
               </Field>
 
               <Field label="Position">
-                <input style={inp} value={form.position} onChange={handle("position")} placeholder="e.g. Receptionist" />
+                <select style={inp} value={form.position} onChange={handle("position")} placeholder="e.g. Receptionist">
+                  <option value="">Select a position</option>
+                  <option value="Receptionist">Receptionist</option>
+                  <option value="Accountant">Accountant</option>
+                  <option value="HR Manager">HR Manager</option>
+                </select>
               </Field>
 
               <Field label="Hire Date">

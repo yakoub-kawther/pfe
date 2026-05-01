@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import DashboardLayout from "../../layouts/DashboardLayout";
+import Buttons from "../../components/Buttons";
 
 const inp = {
   width: "100%",
@@ -35,10 +36,6 @@ const Card = ({ title, children }) => (
     {children}
   </div>
 );
-
-const btnBase    = "inline-flex items-center justify-center px-5 py-1.5 text-sm rounded-lg border transition-colors font-medium";
-const btnOutline = `${btnBase} border-[#701366] text-[#701366] h-7 w-12 bg-white hover:bg-[#701366] hover:text-white`;
-const btnFilled  = `${btnBase} border-[#701366] text-white bg-[#701366] hover:opacity-90`;
 
 export default function Edit_employee() {
   const { state } = useLocation();
@@ -76,10 +73,11 @@ export default function Edit_employee() {
           <h1 className="text-2xl text-[#701366] font-Inter">
             Edit Employee — <span>{employee?.name}</span>
           </h1>
-          <div className="flex gap-2">
-            <button onClick={() => navigate("/Employees")} className={btnOutline}>cancel</button>
-            <button onClick={handleSave} className={btnFilled}>save changes</button>
-          </div>
+          <Buttons
+            cancelPath="/Employees"
+            onSave={handleSave}
+            saveLabel="Save changes"
+          />
         </div>
 
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(340px, 1fr))", gap: "24px", alignItems: "start", marginTop: "30px" }}>

@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import DashboardLayout from "../../layouts/DashboardLayout";
+import Buttons from "../../components/Buttons";
 
 const inp = {
   width: "100%",
@@ -29,16 +30,12 @@ const Card = ({ title, children }) => (
     className="bg-white rounded-2xl border border-gray-100 min-w-0"
     style={{ padding: "24px 28px", boxShadow: "0 1px 6px rgba(0,0,0,0.05)" }}
   >
-    <h3 className="text-[#701366] font-Inter" style={{ fontSize: "16px", marginBottom: "20px" }}>
+    <h2 className="text-[#701366] font-Inter" style={{ fontSize: "16px", marginBottom: "20px" }}>
       {title}
-    </h3>
+    </h2>
     {children}
   </div>
 );
-
-const btnBase    = "inline-flex items-center justify-center px-5 py-1.5 text-sm rounded-lg border transition-colors font-Inter";
-const btnOutline = `${btnBase} border-[#701366] text-[#701366] bg-white h-7 w-12 hover:bg-[#701366] hover:text-white`;
-const btnFilled  = `${btnBase} border-[#701366] text-white bg-[#701366] hover:bg-white hover:text-[#701366]`;
 
 const Edit_teacher = () => {
   const { state } = useLocation();
@@ -79,10 +76,11 @@ const Edit_teacher = () => {
           <h1 className="text-2xl text-[#701366] font-Inter">
             Edit Teacher — <span>{teacher?.name}</span>
           </h1>
-          <div className="flex gap-2">
-            <button onClick={() => navigate("/Teachers")} className={btnOutline}>Cancel</button>
-            <button onClick={handleSave} className={btnFilled}>Save changes</button>
-          </div>
+          <Buttons
+            cancelPath="/Teachers"
+            onSave={handleSave}
+            saveLabel="Save changes"
+          />
         </div>
 
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(340px, 1fr))", gap: "24px", alignItems: "start", marginTop: "30px" }}>

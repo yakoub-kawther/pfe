@@ -71,15 +71,7 @@ const Teachers = () => {
 
   return (
     <DashboardLayout>
-      <div style={{
-        width: "100%",
-        display: "flex",
-        flexDirection: "column",
-        gap: "24px",
-        paddingTop: "6px",
-        boxSizing: "border-box",
-        minWidth: 0,
-      }}>
+      <div style={{ width: "100%", display: "flex", flexDirection: "column", gap: "24px", paddingTop: "6px", boxSizing: "border-box", minWidth: 0 }}>
 
         {/* Header */}
         <section style={{
@@ -91,15 +83,12 @@ const Teachers = () => {
           flexShrink: 0,
           minWidth: 0,
         }}>
-          <h1 style={{
-            fontSize: "24px",
-            color: "#701366",
-            whiteSpace: "nowrap",
-            margin: 0,
-            flexShrink: 0,
-          }}>
+        <div className="flex items-center justify-between mt-6">
+          <h2 style={{ fontSize: "24px", color: "#701366", margin: 0, flexShrink: 0 }}>
             Teachers List
-          </h1>
+          </h2>
+        </div>
+        
           <Searchbar
             placeholder=" Name, phone, Head Teacher..."
             filterOptions={["Active", "Inactive"]}

@@ -34,7 +34,8 @@ import Inscriptions from "./pages/admin/Inscriptions"
 import Add_student_payment from "./pages/admin/Add_student_payment";
 import Add_employees_fees from "./pages/admin/Add_employees_fees";
 import Edit_classes from "./pages/admin/Edit_classes";
-
+import Add_position from "./pages/admin/Add_position";
+import Edit_position from "./pages/admin/Edit_position";
 
 import Dashboard_secretary from "./pages/secretary/Dashboard_secretary";
 import Secretary_sidebar from "./components/Sidebar/Secretary_sidebar";
@@ -75,6 +76,10 @@ import Notes_teacher from "./pages/teacher/Notes_teacher";
 import Notes_student_teacher from "./pages/teacher/Notes_student_teacher";
 import Add_notes_teacher from "./pages/teacher/Add_notes_teacher";
 import Fees_teacher from "./pages/teacher/Fees_teacher";
+
+
+import Student_layout from "./layouts/Student_layout";
+import Dashboard_student from "./pages/student/Dashboard_student";
 
 
 const isLoggedIn = localStorage.getItem("user");
@@ -128,6 +133,8 @@ function App() {
         <Route path="/Add_student_payment" element={<Add_student_payment/>} />
         <Route path="/Add_employees_fees" element={<Add_employees_fees/>} />
          <Route path="/Edit_classes" element={<Edit_classes />} />
+          <Route path="/Add_position" element={<Add_position />} />
+          <Route path="/Edit_position" element={<Edit_position />} />
 
 
  {/* Secretary Routes */}
@@ -170,6 +177,12 @@ function App() {
           <Route path="/Notes_students_teacher" element={<Notes_student_teacher />} />
           <Route path="/Notes_add_teacher" element={<Add_notes_teacher />} />
           <Route path="/Fees_teacher" element={<Fees_teacher />} />
+
+
+
+   {/* Student Routes */}
+        <Route path="/student" element={<Student_layout />}/>
+        <Route path="/Dashboard_student" element={<Dashboard_student />} />
 
 
       </Routes>
