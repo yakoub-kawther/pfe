@@ -1,11 +1,33 @@
-import StudentForm from "../components/StudentForm";
+import React from "react";
+import Teacher_sidebar from "../components/Sidebar/Teacher_sidebar";
+import { SIDEBAR_W } from "../components/Sidebar/Teacher_sidebar";
+import Navbar from "../components/Navbar";
 
-export default function Admin() {
+const DashboardLayout = ({ children }) => {
   return (
-    <div className="p-6">
-      <h1 className="text-2xl font-bold mb-4">Admin Dashboard</h1>
+    <div style={{ display: "flex", minHeight: "100vh", background: "#fffafe", color: "#701366" }}>
 
-      <StudentForm />
+      {/* Sidebar — fixed, always exactly SIDEBAR_W wide */}
+      <Teacher_sidebar />
+
+      {/* Main area — pushed right by exactly SIDEBAR_W so it never overlaps */}
+      <div
+        style={{
+          marginLeft: SIDEBAR_W,
+          flex: 1,
+          display: "flex",
+          flexDirection: "column",
+          minWidth: 0,
+          overflow: "hidden",
+        }}
+      >
+        <Navbar role="teacher" />
+        <main style={{ flex: 1, padding: "24px" }}>
+          {children}
+        </main>
+      </div>
     </div>
   );
-}
+};
+
+export default DashboardLayout;

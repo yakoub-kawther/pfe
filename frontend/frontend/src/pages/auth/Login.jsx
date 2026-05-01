@@ -129,7 +129,7 @@ const btnStyle = {
 // ─── ROLE → ROUTE MAP ─────────────────────────────────────────
 const roleRoutes = {
   admin:       "/Dashboard",
-  teacher:     "/Teacher",
+  teacher:     "/Dashboard_teacher",
   student:     "/Student",
   secretariat: "/Dashboard_secretary",
 };
@@ -155,7 +155,7 @@ export default function LoginPage() {
   const [passwordError, setPasswordError] = useState("");
   const navigate = useNavigate();
 
-  // ✅ Always clear session when landing on login page
+  //  Always clear session when landing on login page
   useEffect(() => {
     localStorage.removeItem("user");
   }, []);
@@ -396,7 +396,6 @@ export default function LoginPage() {
 
             <p style={{ textAlign: "center", fontFamily: F, fontSize: "13px", color: "#9c5094" }}>
               Don't have an account?{" "}
-              {/* ✅ Opens Gmail compose window directly */}
               <a
                 href={GMAIL_COMPOSE}
                 target="_blank"

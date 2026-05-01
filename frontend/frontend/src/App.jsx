@@ -35,6 +35,7 @@ import Add_student_payment from "./pages/admin/Add_student_payment";
 import Add_employees_fees from "./pages/admin/Add_employees_fees";
 import Edit_classes from "./pages/admin/Edit_classes";
 
+
 import Dashboard_secretary from "./pages/secretary/Dashboard_secretary";
 import Secretary_sidebar from "./components/Sidebar/Secretary_sidebar";
 import Student_secretary from "./pages/secretary/Student_secretary";
@@ -60,6 +61,21 @@ import Languages_secretary from "./pages/secretary/Languages_secretary";
 import Add_language_secretary from "./pages/secretary/Add_language_secretary"
 import Add_employees_fees_secretary from "./pages/secretary/Add_employees_fees_secretary";
 import Add_student_fees_secretary from "./pages/secretary/Add_student_fees_secretary";
+
+import Dashboard_teacher from "./pages/teacher/Dashboard_teacher";
+import Classes_teacher from "./pages/teacher/Classes_teacher";
+import Session_attendance_teacher from "./pages/teacher/Session_attendance_teacher";
+import Class_sessions_teacher from "./pages/teacher/Class_sessions_teacher";
+import Teacher_layout from "./layouts/Teacher_layout";
+import Notifications_teacher from "./pages/teacher/Notifications_teacher";
+import Settings_teacher from "./pages/teacher/Settings_teacher";
+import Profile_teacher from "./pages/teacher/Profile_teacher";
+import Timetable_teacher from "./pages/teacher/Timetable_teacher";
+import Notes_teacher from "./pages/teacher/Notes_teacher";
+import Notes_student_teacher from "./pages/teacher/Notes_student_teacher";
+import Add_notes_teacher from "./pages/teacher/Add_notes_teacher";
+import Fees_teacher from "./pages/teacher/Fees_teacher";
+
 
 const isLoggedIn = localStorage.getItem("user");
 
@@ -140,7 +156,20 @@ function App() {
           <Route path="/Inscriptions_secretary" element={<Inscriptions_secretary />} />
           <Route path="/Settings_secretary" element={<Settings_secretary />} />
 
-
+ {/* Teacher Routes */}
+        <Route path="/teacher" element={<Teacher_layout />}/>
+          <Route path="/Dashboard_teacher" element={<Dashboard_teacher />} />
+          <Route path="/Classes_teacher" element={<Classes_teacher />} />
+          <Route path="/Class_sessions_teacher" element={<Class_sessions_teacher />} />
+          <Route path="/Session_attendance_teacher" element={<Session_attendance_teacher />} />
+          <Route path="/Notifications_teacher" element={<Notifications_teacher />} />
+          <Route path="/Settings_teacher" element={<Settings_teacher />} />
+          <Route path="/Profile_teacher" element={<Profile_teacher />} />
+          <Route path="/Timetable_teacher" element={<Timetable_teacher />} />
+          <Route path="/Notes_teacher" element={<Notes_teacher />} />
+          <Route path="/Notes_students_teacher" element={<Notes_student_teacher />} />
+          <Route path="/Notes_add_teacher" element={<Add_notes_teacher />} />
+          <Route path="/Fees_teacher" element={<Fees_teacher />} />
 
 
       </Routes>

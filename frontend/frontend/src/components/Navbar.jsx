@@ -208,7 +208,7 @@ function Navbar({role="admin"}) {
         {/* Settings */}
         <button
           aria-label="Settings"
-         onClick={() => navigate(role === "secretary" ? "/Settings_secretary" : "/Settings")}
+         onClick={() => navigate(role === "secretary" ? "/Settings_secretary" : role === "teacher" ? "/Settings_teacher" : "/Settings")}
           style={{
             width: "36px", height: "36px",
             display: "flex", alignItems: "center", justifyContent: "center",
