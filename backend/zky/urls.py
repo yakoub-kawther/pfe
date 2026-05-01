@@ -27,4 +27,5 @@ urlpatterns = [
     path('api/academic/',  include('apps.academic.urls')),
     path('api/notifications/',  include('apps.notifications.urls')),
     path('api/attendance/', include('apps.attendance.urls')),
+    path('api/notes/', include('apps.test_bank.urls')),
 ]
