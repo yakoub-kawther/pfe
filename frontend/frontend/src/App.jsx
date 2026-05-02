@@ -80,7 +80,16 @@ import Fees_teacher from "./pages/teacher/Fees_teacher";
 
 import Student_layout from "./layouts/Student_layout";
 import Dashboard_student from "./pages/student/Dashboard_student";
-
+import Profile_student from "./pages/student/Profile_student";
+import Notes_student from "./pages/student/Notes_student";
+import Notes_student_student from "./pages/student/Notes_student_student";
+import Time_table_student from "./pages/student/Timetable_student";
+import Classes_student from "./pages/student/Classes_student";
+import Attendance_detail_student from "./pages/student/Attendance_detail_student";
+import Fees_student from "./pages/student/Fees_student";
+import Fees_detail_student from "./pages/student/Fees_detail_student";
+import Settings_student from "./pages/student/Settings_student";
+import Notifications_student from "./pages/student/Notifications_student";
 
 const isLoggedIn = localStorage.getItem("user");
 
@@ -183,6 +192,16 @@ function App() {
    {/* Student Routes */}
         <Route path="/student" element={<Student_layout />}/>
         <Route path="/Dashboard_student" element={<Dashboard_student />} />
+        <Route path="/Profile_student" element={<Profile_student />} />
+        <Route path="/Notes_student" element={<Notes_student />} />
+        <Route path="/Notes_students_student" element={<Notes_student_student />} />
+        <Route path="/Timetable_student" element={<Time_table_student />} />
+        <Route path="/Classes_student" element={<Classes_student />} />
+        <Route path="/Attendance_detail_student" element={<Attendance_detail_student />} />
+        <Route path="/Fees_student" element={<Fees_student />} />
+        <Route path="/Fees_detail_student" element={<Fees_detail_student />} />
+        <Route path="/Settings_student" element={<Settings_student />} />
+        <Route path="/Notifications_student" element={<Notifications_student />} />
 
 
       </Routes>

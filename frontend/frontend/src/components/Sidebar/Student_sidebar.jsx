@@ -30,11 +30,11 @@ function Student_sidebar() {
 
   const navItems = [
     { to: "/Dashboard_student",     icon: <LayoutDashboard size={15} />, label: "Dashboard"     },
-    { to: "/Classes_student",       icon: <BookOpen        size={15} />, label: "Attendance" },
-    { to: "/Notes_student",       icon: <GraduationCapIcon   size={15} />, label: "Notes" },
-    { to: "/Fees_student",          icon: <CreditCard      size={15} />, label: "Fees"          },
     { to: "/Profile_student",          icon: <User2   size={15} />, label: "Profile"          },
+    { to: "/Notes_student",       icon: <GraduationCapIcon   size={15} />, label: "Notes" },
     { to: "/Timetable_student",    icon: <Calendar        size={15} />, label: "Time Table"    },
+    { to: "/Classes_student",       icon: <BookOpen        size={15} />, label: "Attendance" },
+    { to: "/Fees_student",          icon: <CreditCard      size={15} />, label: "Fees"          },
     { to: "/Notifications_student", icon: <Bell            size={15} />, label: "Notifications" },
     { to: "/Settings_student",      icon: <Settings        size={15} />, label: "Settings"      },
   ];
