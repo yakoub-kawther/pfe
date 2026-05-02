@@ -1,5 +1,7 @@
 from django.apps import AppConfig
 
 
-class SaleriesConfig(AppConfig):
-    name = "apps.saleries"
+class SalaryConfig(AppConfig):
+    default_auto_field = 'django.db.models.BigAutoField'
+    name = 'apps.saleries'
+    verbose_name = 'Saleires'

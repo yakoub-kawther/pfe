@@ -43,6 +43,7 @@ INSTALLED_APPS = [
     'apps.account',
     'apps.payments.apps.PaymentsConfig',
     'apps.inscription',
+    'apps.saleries',
 
 ]
 
