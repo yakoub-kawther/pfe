@@ -1,9 +1,23 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import DashboardLayout from "../../layouts/DashboardLayout";
-import { Send, X } from "lucide-react";
+import { Send } from "lucide-react";
+import { apiFetch } from "../../services/api";
 
-const NOTIFICATION_TYPES = ["Announcement", "Alert", "Information"];
-const RECIPIENTS         = ["All Users", "Students", "Teachers", "Specific Class"];
+const NOTIFICATION_TYPES = [
+  { label: "Schedule Change",  value: "schedule_change" },
+  { label: "Payment Reminder", value: "payment_reminder" },
+  { label: "Absence Alert",    value: "absence_alert" },
+  { label: "Meeting",          value: "meeting" },
+  { label: "Salary",           value: "salary" },
+  { label: "General",          value: "general" },
+];
+
+const RECIPIENTS = [
+  { label: "All Students",   value: "all_students" },
+  { label: "All Teachers",   value: "all_teachers" },
+  { label: "Entire Class",   value: "class" },
+  { label: "Specific Users", value: "specific" },
+];
 
 const Field = ({ label, children }) => (
   <div className="flex flex-col gap-1.5">
@@ -22,30 +36,202 @@ const inputCls = {
   boxSizing: "border-box",
 };
 
+const emptyForm = { notification_type: "", target: "", title: "", body: "" };
+
+// ─── Reusable searchable multi-select list ────────────────────
+const SelectorList = ({ items, selectedIds, onToggle, searchPlaceholder, renderLabel, single = false }) => {
+  const [search, setSearch] = useState("");
+  const filtered = items.filter(item =>
+    renderLabel(item).toLowerCase().includes(search.toLowerCase())
+  );
+
+  return (
+    <div>
+      <input
+        type="text"
+        placeholder={searchPlaceholder}
+        value={search}
+        onChange={e => setSearch(e.target.value)}
+        style={{ ...inputCls, marginBottom: "8px", cursor: "text" }}
+        onFocus={e => { e.target.style.borderColor = "#701366"; e.target.style.boxShadow = "0 0 0 3px rgba(112,19,102,0.08)"; }}
+        onBlur={e  => { e.target.style.borderColor = "#e2d0e2"; e.target.style.boxShadow = "none"; }}
+      />
+      <div style={{ maxHeight: "180px", overflowY: "auto", border: "1.5px solid #e2d0e2", borderRadius: "10px" }}>
+        {filtered.length === 0 ? (
+          <div style={{ padding: "12px 14px", fontSize: "13px", color: "#c9a8c9", fontFamily: "Inter, sans-serif" }}>
+            No results found.
+          </div>
+        ) : filtered.map(item => {
+          const isSelected = single
+            ? selectedIds[0] === item.id
+            : selectedIds.includes(item.id);
+          return (
+            <div
+              key={item.id}
+              onClick={() => onToggle(item.id)}
+              style={{
+                padding: "9px 14px", fontSize: "13px", cursor: "pointer",
+                fontFamily: "Inter, sans-serif", color: "#701366",
+                background: isSelected ? "#f8e0f8" : "white",
+                borderBottom: "1px solid #f0e0f0",
+                display: "flex", alignItems: "center", justifyContent: "space-between",
+                transition: "background 0.1s",
+              }}
+            >
+              <span>{renderLabel(item)}</span>
+              {isSelected && <span style={{ fontSize: "12px", color: "#701366", fontWeight: 700 }}>✓</span>}
+            </div>
+          );
+        })}
+      </div>
+      {selectedIds.length > 0 && (
+        <p style={{ fontSize: "11px", color: "#701366", fontFamily: "Inter, sans-serif", marginTop: "6px" }}>
+          {single ? "1 selected" : `${selectedIds.length} selected`}
+        </p>
+      )}
+    </div>
+  );
+};
+
+// ─── Info banner for broadcast targets ───────────────────────
+const BroadcastInfo = ({ label }) => (
+  <div style={{ padding: "12px 16px", background: "#f8e0f8", borderRadius: "10px", fontSize: "13px", color: "#701366", fontFamily: "Inter, sans-serif" }}>
+     This notification will be sent to <strong>{label}</strong>.
+  </div>
+);
+
 export default function Notifications() {
-  const [form, setForm] = useState({ type: "", recipients: "", title: "", message: "" });
+  const [form,          setForm]          = useState(emptyForm);
+  const [loading,       setLoading]       = useState(false);
+  const [success,       setSuccess]       = useState(false);
+  const [error,         setError]         = useState("");
+
+  const [users,         setUsers]         = useState([]);
+  const [selectedIds,   setSelectedIds]   = useState([]);
+
+  const [classes,       setClasses]       = useState([]);
+  const [selectedClass, setSelectedClass] = useState([]);
+
+  const resetExtras = () => { setSelectedIds([]); setSelectedClass([]); };
+
+  useEffect(() => {
+    resetExtras();
+    if (form.target === "specific") {
+      apiFetch("/account/accounts/")
+        .then(res => res.json())
+        .then(data => setUsers(Array.isArray(data) ? data : (data.results ?? [])))
+        .catch(() => {});
+    }
+    if (form.target === "class") {
+      apiFetch("/academic/classes/")
+        .then(res => res.json())
+        .then(data => setClasses(Array.isArray(data) ? data : (data.results ?? [])))
+        .catch(() => {});
+    }
+  }, [form.target]);
 
   const focus = (e) => { e.target.style.borderColor = "#701366"; e.target.style.boxShadow = "0 0 0 3px rgba(112,19,102,0.08)"; };
   const blur  = (e) => { e.target.style.borderColor = "#e2d0e2"; e.target.style.boxShadow = "none"; };
 
-  const handleSend = () => {
-    if (!form.title && !form.message) return;
-    // call API here to persist the notification
-    setForm({ type: "", recipients: "", title: "", message: "" });
+  const toggleUser  = (id) => setSelectedIds(prev  => prev.includes(id)  ? prev.filter(i => i !== id)  : [...prev, id]);
+  const toggleClass = (id) => setSelectedClass(prev => prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]);
+
+  const handleSend = async () => {
+    if (!form.notification_type || !form.target || !form.title || !form.body) {
+      setError("Please fill in all fields."); return;
+    }
+    if (form.target === "specific" && selectedIds.length === 0) {
+      setError("Please select at least one user."); return;
+    }
+    if (form.target === "class" && selectedClass.length === 0) {
+      setError("Please select a class."); return;
+    }
+
+    setLoading(true);
+    setError("");
+    setSuccess(false);
+
+    try {
+      const body = {
+        notification_type: form.notification_type,
+        title            : form.title,
+        body             : form.body,
+        target           : form.target,
+        ...(form.target === "specific" && { receiver_ids: selectedIds }),
+        ...(form.target === "class"    && { class_id: selectedClass[0] }),
+      };
+
+      const res = await apiFetch("/notifications/send/", { method: "POST", body });
+
+      if (!res.ok) {
+  const errData = await res.json();
+  console.log("Error response:", JSON.stringify(errData));  // ← add this
+  setError(errData.detail || "Failed to send notification.");
+  return;
+}
+
+      setSuccess(true);
+      setForm(emptyForm);
+      resetExtras();
+    } catch {
+      setError("Network error. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleCancel = () => {
+    setForm(emptyForm);
+    setError("");
+    setSuccess(false);
+    resetExtras();
+  };
+
+  // ─── Dynamic selector based on target ────────────────────────
+  const renderTargetSelector = () => {
+    switch (form.target) {
+      case "specific":
+        return (
+          <Field label="Select Users">
+            <SelectorList
+              items={users}
+              selectedIds={selectedIds}
+              onToggle={toggleUser}
+              searchPlaceholder="Search by username..."
+              renderLabel={u => u.username}
+            />
+          </Field>
+        );
+      case "class":
+        return (
+          <Field label="Select Class">
+            <SelectorList
+              items={classes}
+              selectedIds={selectedClass}
+              onToggle={toggleClass}
+              searchPlaceholder="Search by class name..."
+              renderLabel={c => c.name}
+              single
+            />
+          </Field>
+        );
+      case "all_students":
+        return <BroadcastInfo label="all students" />;
+      case "all_teachers":
+        return <BroadcastInfo label="all teachers" />;
+      default:
+        return null;
+    }
   };
 
   return (
     <DashboardLayout>
       <div style={{ padding: "10px clamp(12px, 2vw, 32px) 40px", width: "100%", maxWidth: "680px" }}>
 
-        {/* header */}
+        {/* Header */}
         <div style={{ marginBottom: "28px" }}>
           <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "6px" }}>
-            <div style={{
-              width: "36px", height: "36px", borderRadius: "10px",
-              background: "linear-gradient(135deg, #701366, #9c1e8e)",
-              display: "flex", alignItems: "center", justifyContent: "center",
-            }}>
+            <div style={{ width: "36px", height: "36px", borderRadius: "10px", background: "linear-gradient(135deg, #701366, #9c1e8e)", display: "flex", alignItems: "center", justifyContent: "center" }}>
               <Send size={16} color="white" />
             </div>
             <h1 style={{ fontSize: "22px", fontWeight: 500, color: "#701366", fontFamily: "Inter, sans-serif", margin: 0 }}>
@@ -57,79 +243,81 @@ export default function Notifications() {
           </p>
         </div>
 
-        {/* card */}
-        <div style={{
-          background: "white", borderRadius: "20px", padding: "28px 32px",
-          boxShadow: "0 2px 16px rgba(112,19,102,0.07)", border: "1px solid #f0e0f0",
-          display: "flex", flexDirection: "column", gap: "20px",
-        }}>
+        {/* Banners */}
+        {success && (
+          <div style={{ background: "#f0fdf4", color: "#166534", padding: "12px 20px", borderRadius: "10px", marginBottom: "16px", fontSize: "13px", border: "1px solid #bbf7d0", fontFamily: "Inter, sans-serif" }}>
+            ✓ Notification sent successfully!
+          </div>
+        )}
+        {error && (
+          <div style={{ background: "#fef2f2", color: "#991b1b", padding: "12px 20px", borderRadius: "10px", marginBottom: "16px", fontSize: "13px", fontFamily: "Inter, sans-serif" }}>
+            {error}
+          </div>
+        )}
 
-          {/* type + recipients */}
+        {/* Card */}
+        <div style={{ background: "white", borderRadius: "20px", padding: "28px 32px", boxShadow: "0 2px 16px rgba(112,19,102,0.07)", border: "1px solid #f0e0f0", display: "flex", flexDirection: "column", gap: "20px" }}>
+
+          {/* Type + Recipients row */}
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: "16px" }}>
             <Field label="Notification Type">
-              <input list="notif-types" placeholder="e.g. Announcement"
-                value={form.type} onChange={(e) => setForm({ ...form, type: e.target.value })}
-                style={inputCls} onFocus={focus} onBlur={blur} />
-              <datalist id="notif-types">{NOTIFICATION_TYPES.map((t) => <option key={t} value={t} />)}</datalist>
+              <select style={{ ...inputCls, cursor: "pointer" }} value={form.notification_type}
+                onChange={e => setForm({ ...form, notification_type: e.target.value })}
+                onFocus={focus} onBlur={blur}>
+                <option value="" disabled>Select type</option>
+                {NOTIFICATION_TYPES.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
+              </select>
             </Field>
+
             <Field label="Recipients">
-              <input list="notif-recipients" placeholder="e.g. All Users"
-                value={form.recipients} onChange={(e) => setForm({ ...form, recipients: e.target.value })}
-                style={inputCls} onFocus={focus} onBlur={blur} />
-              <datalist id="notif-recipients">{RECIPIENTS.map((r) => <option key={r} value={r} />)}</datalist>
+              <select style={{ ...inputCls, cursor: "pointer" }} value={form.target}
+                onChange={e => setForm({ ...form, target: e.target.value })}
+                onFocus={focus} onBlur={blur}>
+                <option value="" disabled>Select recipients</option>
+                {RECIPIENTS.map(r => <option key={r.value} value={r.value}>{r.label}</option>)}
+              </select>
             </Field>
           </div>
 
-          {/* title */}
+          {/* Dynamic selector */}
+          {form.target && renderTargetSelector()}
+
+          {/* Title */}
           <Field label="Title">
             <input type="text" placeholder="Enter notification title"
-              value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })}
-              style={inputCls} onFocus={focus} onBlur={blur} />
+              value={form.title} onChange={e => setForm({ ...form, title: e.target.value })}
+              style={{ ...inputCls, cursor: "text" }} onFocus={focus} onBlur={blur} />
           </Field>
 
-          {/* message */}
+          {/* Message */}
           <Field label="Message">
             <textarea placeholder="Write your message here…"
-              value={form.message} onChange={(e) => setForm({ ...form, message: e.target.value })}
-              rows={5} style={{ ...inputCls, resize: "none", lineHeight: "1.55" }}
+              value={form.body} onChange={e => setForm({ ...form, body: e.target.value })}
+              rows={5} style={{ ...inputCls, resize: "none", lineHeight: "1.55", cursor: "text" }}
               onFocus={focus} onBlur={blur} />
           </Field>
 
           <p style={{ fontSize: "11px", color: "#c9a8c9", fontFamily: "Inter, sans-serif", marginTop: "-12px", textAlign: "right" }}>
-            {form.message.length} characters
+            {form.body.length} characters
           </p>
 
-          {/* actions */}
+          {/* Actions */}
           <div style={{ display: "flex", justifyContent: "flex-end", gap: "10px", paddingTop: "4px" }}>
-            <button
-              onClick={() => setForm({ type: "", recipients: "", title: "", message: "" })}
-              style={{
-                display: "inline-flex", alignItems: "center", gap: "6px",
-                border: "1.5px solid #e2d0e2", color: "#701366", background: "white",
-                borderRadius: "10px", padding: "9px 20px", fontSize: "13px",
-                fontFamily: "Inter, sans-serif", cursor: "pointer", transition: "all 0.15s",
-              }}
+            <button onClick={handleCancel}
+              style={{ display: "inline-flex", alignItems: "center", gap: "6px", border: "1.5px solid #e2d0e2", color: "#701366", background: "white", borderRadius: "10px", padding: "9px 20px", fontSize: "13px", fontFamily: "Inter, sans-serif", cursor: "pointer", transition: "all 0.15s" }}
               onMouseEnter={e => e.currentTarget.style.borderColor = "#701366"}
-              onMouseLeave={e => e.currentTarget.style.borderColor = "#e2d0e2"}
-            >
-               Cancel
+              onMouseLeave={e => e.currentTarget.style.borderColor = "#e2d0e2"}>
+              Cancel
             </button>
-            <button
-              onClick={handleSend}
-              style={{
-                display: "inline-flex", alignItems: "center", gap: "6px",
-                background: "linear-gradient(135deg, #701366, #9c1e8e)",
-                color: "white", border: "none", borderRadius: "10px",
-                padding: "9px 24px", fontSize: "13px",
-                fontFamily: "Inter, sans-serif", cursor: "pointer", transition: "opacity 0.15s",
-                boxShadow: "0 4px 12px rgba(112,19,102,0.25)",
-              }}
-              onMouseEnter={e => e.currentTarget.style.opacity = "0.88"}
-              onMouseLeave={e => e.currentTarget.style.opacity = "1"}
-            >
-              <Send size={13} /> Send Notification
+            <button onClick={handleSend} disabled={loading}
+              style={{ display: "inline-flex", alignItems: "center", gap: "6px", background: "linear-gradient(135deg, #701366, #9c1e8e)", color: "white", border: "none", borderRadius: "10px", padding: "9px 24px", fontSize: "13px", fontFamily: "Inter, sans-serif", cursor: loading ? "not-allowed" : "pointer", opacity: loading ? 0.7 : 1, transition: "opacity 0.15s", boxShadow: "0 4px 12px rgba(112,19,102,0.25)" }}
+              onMouseEnter={e => { if (!loading) e.currentTarget.style.opacity = "0.88"; }}
+              onMouseLeave={e => { if (!loading) e.currentTarget.style.opacity = "1"; }}>
+              <Send size={13} />
+              {loading ? "Sending..." : "Send Notification"}
             </button>
           </div>
+
         </div>
       </div>
     </DashboardLayout>

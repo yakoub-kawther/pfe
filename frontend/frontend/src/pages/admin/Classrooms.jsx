@@ -1,51 +1,63 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import DashboardLayout from "../../layouts/DashboardLayout";
 import Tabs from "../../components/Tabs";
 import Searchbar from "../../components/Searchbar";
+import { Loader2 } from "lucide-react";
+import { apiFetch } from "../../services/api";
 
 export default function Classrooms() {
   const classTabs = [
     { name: "Classes",    path: "/Classes"    },
     { name: "Classrooms", path: "/Classrooms" },
-        { name: "Language",   path: "/Languages"  },
+    { name: "Language",   path: "/Languages"  },
   ];
 
-  const [search, setSearch] = useState("");
-  const [filter, setFilter] = useState("All");
+  const [classrooms, setClassrooms] = useState([]);
+  const [loading,    setLoading]    = useState(false);
+  const [error,      setError]      = useState(null);
+  const [search,     setSearch]     = useState("");
+  const [filter,     setFilter]     = useState("All");
 
-  const classroomsData = [
-    { id: "Room 1", capacity: 15, status: { text: "Available", color: "green" } },
-    { id: "Room 2", capacity: 20, status: { text: "Occupied",  color: "red"   } },
-    { id: "Room 3", capacity: 18, status: { text: "Available", color: "green" } },
-  ];
+  const buildParams = useCallback((searchVal, filterVal) => {
+    const params = new URLSearchParams();
+    if (searchVal.trim())                 params.set("search", searchVal.trim());
+    if (filterVal && filterVal !== "All") params.set("status", filterVal);
+    return params.toString();
+  }, []);
 
-  const statusStyles = {
-    green: "bg-green-100 text-green-600",
-    red:   "bg-red-100 text-red-600",
-  };
+  const fetchClassrooms = useCallback(async (searchVal, filterVal) => {
+    setLoading(true);
+    setError(null);
+    try {
+      const qs  = buildParams(searchVal, filterVal);
+      const res = await apiFetch(`/academic/classrooms/${qs ? `?${qs}` : ""}`);
+      if (!res.ok) throw new Error(`Server error: ${res.status}`);
+      const data = await res.json();
+      setClassrooms(Array.isArray(data) ? data : (data.results ?? []));
+    } catch (err) {
+      setError(err.message || "Failed to load classrooms.");
+    } finally {
+      setLoading(false);
+    }
+  }, [buildParams]);
 
-  const filtered = classroomsData.filter((cls) => {
-    const q = search.toLowerCase();
-    const matchSearch =
-      !q ||
-      cls.id.toLowerCase().includes(q) ||
-      cls.capacity.toString().includes(q) ||
-      cls.status.text.toLowerCase().includes(q);
-    const matchFilter = filter === "All" || cls.status.text === filter;
-    return matchSearch && matchFilter;
-  });
+  useEffect(() => {
+    const timer = setTimeout(() => fetchClassrooms(search, filter), 300);
+    return () => clearTimeout(timer);
+  }, [search, filter, fetchClassrooms]);
 
   return (
     <DashboardLayout>
-      {/* Only change: was max-w-6xl mx-auto, now w-full with fluid padding */}
       <div className="w-full flex flex-col gap-6 pt-6 px-4 sm:px-6 lg:px-8 xl:px-10 2xl:px-12 pb-10">
 
+        {/* Header */}
         <h2 className="text-2xl mt-6 text-[#701366]">Classrooms</h2>
 
+        {/* Tabs + Search */}
         <div className="flex items-center justify-between">
           <Tabs tabs={classTabs} />
           <Searchbar
-            placeholder="Search by ID or status..."
+            placeholder="Search by room or capacity..."
             filterOptions={["Available", "Occupied"]}
             addPath="/Add_classrooms"
             showAdd={true}
@@ -54,37 +66,61 @@ export default function Classrooms() {
           />
         </div>
 
-        <div className="w-full px-6 bg-white rounded-2xl shadow-sm overflow-hidden">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="bg-[#F8E0F8] h-12 text-[#701366] text-left">
-                <th className="py-3" style={{ paddingLeft: "50px" }}>ID</th>
-                <th className="px-4 py-3">Capacity</th>
-                <th className="px-4 py-3">Status</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-[#f8e0f8]">
-              {filtered.length > 0 ? (
-                filtered.map((cls) => (
-                  <tr key={cls.id} className="hover:bg-[#fffafe] transition h-12">
-                    <td className="py-3 text-[#701366]" style={{ paddingLeft: "50px" }}>{cls.id}</td>
-                    <td className="px-4 py-3 text-[#701366]">{cls.capacity}</td>
-                    <td className="px-4 py-3">
-                      <span className={`inline-flex items-center justify-center px-3 py-1 rounded-lg text-xs font-medium ${statusStyles[cls.status.color]}`}>
-                        {cls.status.text}
-                      </span>
+        {/* Table — smaller, centered */}
+        <div className="flex justify-center">
+          <div className="bg-white rounded-2xl shadow-sm overflow-hidden" style={{ width: "100%" }}>
+            <table className="w-full text-sm" style={{ borderCollapse: "collapse" }}>
+              <thead>
+                <tr className="bg-[#F8E0F8] h-12 text-[#701366] text-left">
+                  <th className="py-3 px-8">Room</th>
+                  <th className="py-3 px-8">Capacity</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-[#f8e0f8]">
+
+                {/* Loading */}
+                {loading && (
+                  <tr>
+                    <td colSpan={2} className="py-8 text-center">
+                      <div className="flex items-center justify-center gap-2 text-[#701366] opacity-60">
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                        <span className="text-sm">Loading classrooms...</span>
+                      </div>
                     </td>
                   </tr>
-                ))
-              ) : (
-                <tr>
-                  <td colSpan={3} className="py-8 text-center text-[#701366] opacity-50">
-                    No classrooms found.
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
+                )}
+
+                {/* Error */}
+                {!loading && error && (
+                  <tr>
+                    <td colSpan={2} className="py-8 text-center text-red-500 text-sm">
+                      {error}
+                    </td>
+                  </tr>
+                )}
+
+                {/* Empty */}
+                {!loading && !error && classrooms.length === 0 && (
+                  <tr>
+                    <td colSpan={2} className="py-8 text-center text-[#701366] opacity-50">
+                      No classrooms found.
+                    </td>
+                  </tr>
+                )}
+
+                {/* Rows */}
+                {!loading && !error && classrooms.map((room) => (
+                  <tr key={room.id} className="hover:bg-[#fffafe] transition h-12">
+                    <td className="py-3 px-8 text-[#701366]">
+                      {room.name || room.room_number || `Room ${room.id}`}
+                    </td>
+                    <td className="py-3 px-8 text-[#701366]">{room.capacity ?? "---"}</td>
+                  </tr>
+                ))}
+
+              </tbody>
+            </table>
+          </div>
         </div>
 
       </div>

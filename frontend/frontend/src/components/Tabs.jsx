@@ -9,7 +9,7 @@ const Tabs = ({ tabs }) => {
       {tabs.map((tab) => (
         <button
           key={tab.name}
-          onClick={() => navigate(tab.path)}
+          onClick={() => navigate(tab.path, { state: tab.state })}
           style={{
             padding: "0 16px",
             height: "32px",

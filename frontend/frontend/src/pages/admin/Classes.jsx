@@ -1,14 +1,21 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import DashboardLayout from "../../layouts/DashboardLayout";
 import Tabs from "../../components/Tabs";
 import { useNavigate } from "react-router-dom";
-import { LayoutGrid } from "lucide-react";
+import { LayoutGrid, Loader2 } from "lucide-react";
 import Searchbar from "../../components/Searchbar";
+import { apiFetch } from "../../services/api";
+
+
 
 export default function Classes() {
   const navigate = useNavigate();
-  const [search, setSearch] = useState("");
-  const [filter, setFilter] = useState("All");
+
+  const [classes, setClasses] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [error,   setError]   = useState(null);
+  const [search,  setSearch]  = useState("");
+  const [filter,  setFilter]  = useState("All");
 
   const classTabs = [
     { name: "Classes",    path: "/Classes"    },
@@ -16,34 +23,33 @@ export default function Classes() {
     { name: "Language",   path: "/Languages"  },
   ];
 
-  const classesData = [
-    {
-      name: "Class A", language: "English", level: "B2", teacher: "Mr Ahmed",
-      students: 15, year: "2024-2025", status: { text: "Inactive", color: "red" },
-    },
-    {
-      name: "Class B", language: "French", level: "C1", teacher: "Mme Sara",
-      students: 20, year: "2025-2026", status: { text: "Active", color: "green" },
-    },
-  ];
+  const buildParams = useCallback((searchVal, filterVal) => {
+    const params = new URLSearchParams();
+    if (searchVal.trim())                 params.set("search", searchVal.trim());
+    if (filterVal && filterVal !== "All") params.set("status", filterVal);
+    return params.toString();
+  }, []);
 
-  const statusStyles = {
-    green: "bg-green-100 text-green-600",
-    red:   "bg-red-100 text-red-600",
-  };
+  const fetchClasses = useCallback(async (searchVal, filterVal) => {
+    setLoading(true);
+    setError(null);
+    try {
+      const qs  = buildParams(searchVal, filterVal);
+      const res = await apiFetch(`/academic/classes/${qs ? `?${qs}` : ""}`);
+      if (!res.ok) throw new Error(`Server error: ${res.status}`);
+      const data = await res.json();
+      setClasses(Array.isArray(data) ? data : (data.results ?? []));
+    } catch (err) {
+      setError(err.message || "Failed to load classes.");
+    } finally {
+      setLoading(false);
+    }
+  }, [buildParams]);
 
-  const filteredClasses = classesData.filter((cls) => {
-    const q = search.toLowerCase();
-    const matchesSearch =
-      !q ||
-      cls.name.toLowerCase().includes(q)     ||
-      cls.language.toLowerCase().includes(q) ||
-      cls.teacher.toLowerCase().includes(q)  ||
-      cls.level.toLowerCase().includes(q)    ||
-      cls.year.toLowerCase().includes(q);
-    const matchesFilter = filter === "All" || cls.status.text === filter;
-    return matchesSearch && matchesFilter;
-  });
+  useEffect(() => {
+    const timer = setTimeout(() => fetchClasses(search, filter), 300);
+    return () => clearTimeout(timer);
+  }, [search, filter, fetchClasses]);
 
   return (
     <DashboardLayout>
@@ -71,46 +77,90 @@ export default function Classes() {
 
         {/* Table */}
         <div className="w-full bg-white rounded-2xl shadow-sm overflow-x-auto">
-          <table className="w-full min-w-160 text-sm">
+          <table className="w-full min-w-160 text-sm" style={{ borderCollapse: "collapse" }}>
             <thead>
               <tr className="bg-[#F8E0F8] h-12 text-[#701366] text-left">
-                <th className="py-3 pl-6 lg:pl-8 whitespace-nowrap" style={{ paddingLeft: "50px" }}>Name</th>
-                <th className="px-3 lg:px-4 py-3 whitespace-nowrap">Language</th>
-                <th className="px-3 lg:px-4 py-3 whitespace-nowrap">Level</th>
-                <th className="px-3 lg:px-4 py-3 whitespace-nowrap">Teacher</th>
-                <th className="px-3 lg:px-4 py-3 whitespace-nowrap">Students</th>
-                <th className="px-3 lg:px-4 py-3 whitespace-nowrap">Year</th>
-                <th className="px-3 lg:px-4 py-3 whitespace-nowrap">Status</th>
-                <th className="px-3 lg:px-4 py-3 whitespace-nowrap">Action</th>
+                <th className="py-3 whitespace-nowrap" style={{ paddingLeft: "50px" }}>Name</th>
+                <th className="px-4 py-3 whitespace-nowrap">Language</th>
+                <th className="px-4 py-3 whitespace-nowrap">Level</th>
+                <th className="px-4 py-3 whitespace-nowrap">Teacher</th>
+                <th className="px-4 py-3 whitespace-nowrap">Start Date</th>
+                <th className="px-4 py-3 whitespace-nowrap">Status</th>
+                <th className="px-4 py-3 whitespace-nowrap">Action</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-[#f8e0f8]">
-              {filteredClasses.length === 0 ? (
+
+              {/* Loading */}
+              {loading && (
                 <tr>
-                  <td colSpan={8} className="text-center py-10 text-[#701366] opacity-50">
+                  <td colSpan={7} className="text-center py-10">
+                    <div className="flex items-center justify-center gap-2 text-[#701366] opacity-60">
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      <span className="text-sm">Loading classes...</span>
+                    </div>
+                  </td>
+                </tr>
+              )}
+
+              {/* Error */}
+              {!loading && error && (
+                <tr>
+                  <td colSpan={7} className="text-center py-10 text-red-500 text-sm">
+                    {error}
+                  </td>
+                </tr>
+              )}
+
+              {/* Empty */}
+              {!loading && !error && classes.length === 0 && (
+                <tr>
+                  <td colSpan={7} className="text-center py-10 text-[#701366] opacity-50">
                     No classes found.
                   </td>
                 </tr>
-              ) : (
-                filteredClasses.map((cls, idx) => (
+              )}
+
+              {/* Rows */}
+              {!loading && !error && classes.map((cls) => {
+                // const person   = cls.teacher?.employee?.person ?? {};
+                const status   = (cls.status ?? "").toLowerCase();
+                // const fullName = `${cls.teacher?.first_name ?? ""} ${cls.teacher?.last_name ?? ""}`.trim();
+
+                return (
                   <tr
-                    key={idx}
+                    key={cls.id}
                     className="hover:bg-[#fffafe] transition-colors duration-100 h-12"
                   >
-                    <td className="py-3 pl-6 lg:pl-8 text-[#701366] font-Inter whitespace-nowrap" style={{ paddingLeft: "50px" }}>{cls.name}</td>
-                    <td className="px-3 lg:px-4 py-3 text-[#701366] whitespace-nowrap">{cls.language}</td>
-                    <td className="px-3 lg:px-4 py-3 text-[#701366] whitespace-nowrap">{cls.level}</td>
-                    <td className="px-3 lg:px-4 py-3 text-[#701366] whitespace-nowrap">{cls.teacher}</td>
-                    <td className="px-3 lg:px-4 py-3 text-[#701366] whitespace-nowrap">{cls.students}</td>
-                    <td className="px-3 lg:px-4 py-3 text-[#701366] whitespace-nowrap">{cls.year}</td>
-                    <td className="px-3 lg:px-4 py-3 whitespace-nowrap">
-                      <span
-                        className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-Inter ${statusStyles[cls.status.color]}`}
-                      >
-                        {cls.status.text}
+                    <td className="py-3 text-[#701366] whitespace-nowrap" style={{ paddingLeft: "50px" }}>
+                      {cls.name || "---"}
+                    </td>
+                    <td className="px-4 py-3 text-[#701366] whitespace-nowrap">{cls.language?.language_name ?? "---"}</td>
+                    <td className="px-4 py-3 text-[#701366] whitespace-nowrap">{cls.level?.level_name       ?? "---"}</td>
+                    <td className="px-4 py-3 text-[#701366] whitespace-nowrap">{cls.teacher                || "---"}</td>
+                    <td className="px-4 py-3 text-[#701366] whitespace-nowrap">{cls.start_date              || "---"}</td>
+
+                    {/* Status badge */}
+                    <td className="px-4 py-3 whitespace-nowrap">
+                      <span style={{
+                        display: "inline-flex", alignItems: "center", gap: "5px",
+                        padding: "4px 12px", borderRadius: "20px", fontSize: "11px",
+                        fontWeight: "600", fontFamily: "Inter, sans-serif", letterSpacing: "0.03em",
+                        background: status === "active" ? "#dcfce7" : "#fee2e2",
+                        color:      status === "active" ? "#15803d"  : "#b91c1c",
+                        border:     `1px solid ${status === "active" ? "#bbf7d0" : "#fecaca"}`,
+                        whiteSpace: "nowrap",
+                      }}>
+                        <span style={{
+                          width: "6px", height: "6px", borderRadius: "50%", flexShrink: 0,
+                          background: status === "active" ? "#16a34a" : "#dc2626",
+                        }} />
+                        {status ? status.charAt(0).toUpperCase() + status.slice(1) : "---"}
                       </span>
                     </td>
-                    <td className="px-3 lg:px-4 py-3 whitespace-nowrap">
+
+                    {/* Action */}
+                    <td className="px-4 py-3 whitespace-nowrap">
                       <button
                         onClick={() => navigate("/Classes_information", { state: { cls } })}
                         className="p-1.5 rounded-sm text-[#701366] hover:text-white hover:bg-[#701366] transition-all hover:scale-110"
@@ -119,8 +169,9 @@ export default function Classes() {
                       </button>
                     </td>
                   </tr>
-                ))
-              )}
+                );
+              })}
+
             </tbody>
           </table>
         </div>

@@ -138,9 +138,21 @@ const Teachers = () => {
                       </span>
                     </td>
                     <td style={tdStyle}>
-                      <span style={{ display: "inline-flex", alignItems: "center", gap: "5px", padding: "3px 12px", borderRadius: "12px", fontSize: "12px", background: status === "active" ? "#dcfce7" : "#fee2e2", color: status === "active" ? "#15803d" : "#dc2626", whiteSpace: "nowrap", flexShrink: 0 }}>
-                        {status ? status.charAt(0).toUpperCase() + status.slice(1) : "---"}
-                      </span>
+                      <span style={{
+                   display: "inline-flex", alignItems: "center", gap: "5px",
+                   padding: "4px 12px", borderRadius: "20px", fontSize: "12px",
+                    fontFamily: "Inter, sans-serif", letterSpacing: "0.03em",
+                   background: status === "active" ? "#dcfce7" : "#fee2e2",
+                   color:      status === "active" ? "#15803d"  : "#b91c1c",
+                   border:     `0px solid ${status === "active" ? "#bbf7d0" : "#fecaca"}`,
+                   whiteSpace: "nowrap", flexShrink: 0,
+                 }}>
+                   <span style={{
+                     width: "6px", height: "6px", borderRadius: "50%", flexShrink: 0,
+                     background: status === "active" ? "#16a34a" : "#dc2626",
+                   }} />
+                   {status ? status.charAt(0).toUpperCase() + status.slice(1) : "---"}
+                 </span>
                     </td>
                     <td style={tdStyle}>
                       <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>

@@ -1,13 +1,18 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import DashboardLayout from "../../layouts/DashboardLayout";
 import Tabs from "../../components/Tabs";
-import { useNavigate } from "react-router-dom";
-import { LayoutGrid } from "lucide-react";
+// import { useNavigate } from "react-router-dom";
 import Searchbar from "../../components/Searchbar";
+import { Loader2 } from "lucide-react";
+import { apiFetch } from "../../services/api";
 
 export default function Languages() {
-  const navigate = useNavigate();
-  const [search, setSearch] = useState("");
+  // const navigate = useNavigate();
+
+  const [languages, setLanguages] = useState([]);
+  const [search, setSearch]       = useState("");
+  const [loading, setLoading]     = useState(false);
+  const [error, setError]         = useState(null);
 
   const classTabs = [
     { name: "Classes",    path: "/Classes"    },
@@ -15,23 +20,26 @@ export default function Languages() {
     { name: "Language",   path: "/Languages"  },
   ];
 
-  const [languagesData, setLanguagesData] = useState([
-    { id: "LNG-001", language: "English", shortcut: "EN" },
-    { id: "LNG-002", language: "French",  shortcut: "FR" },
-    { id: "LNG-003", language: "Arabic",  shortcut: "AR" },
-    { id: "LNG-004", language: "Spanish", shortcut: "ES" },
-    { id: "LNG-005", language: "Italian", shortcut: "IT" },
-  ]);
+  const fetchLanguages = useCallback(async (searchVal) => {
+    setLoading(true);
+    setError(null);
+    try {
+      const qs  = searchVal.trim() ? `?search=${encodeURIComponent(searchVal.trim())}` : "";
+      const res = await apiFetch(`/academic/languages/${qs}`);
+      if (!res.ok) throw new Error(`Server error: ${res.status}`);
+      const data = await res.json();
+      setLanguages(Array.isArray(data) ? data : (data.results ?? []));
+    } catch (err) {
+      setError(err.message || "Failed to load languages.");
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
-  const filteredLanguages = languagesData.filter((lang) => {
-    const q = search.toLowerCase();
-    return (
-      !q ||
-      lang.id.toLowerCase().includes(q)       ||
-      lang.language.toLowerCase().includes(q) ||
-      lang.shortcut.toLowerCase().includes(q)
-    );
-  });
+  useEffect(() => {
+    const timer = setTimeout(() => fetchLanguages(search), 300);
+    return () => clearTimeout(timer);
+  }, [search, fetchLanguages]);
 
   return (
     <DashboardLayout>
@@ -60,32 +68,60 @@ export default function Languages() {
           <table className="w-full min-w-100 text-sm">
             <thead>
               <tr className="bg-[#F8E0F8] h-12 text-[#701366] text-left">
-                <th className="py-3 pl-6 lg:pl-8 whitespace-nowrap" style={{ paddingLeft: "50px" }}>ID</th>
+                <th className="py-3 whitespace-nowrap" style={{ paddingLeft: "50px" }}>ID</th>
                 <th className="px-3 lg:px-4 py-3 whitespace-nowrap">Language</th>
                 <th className="px-3 lg:px-4 py-3 whitespace-nowrap">Shortcut</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-[#f8e0f8]">
-              {filteredLanguages.length === 0 ? (
+
+              {/* Loading */}
+              {loading && (
                 <tr>
-                  <td colSpan={4} className="text-center py-10 text-[#701366] opacity-50">
+                  <td colSpan={3} className="text-center py-10">
+                    <div className="flex items-center justify-center gap-2 text-[#701366] opacity-60">
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      <span className="text-sm">Loading languages...</span>
+                    </div>
+                  </td>
+                </tr>
+              )}
+
+              {/* Error */}
+              {!loading && error && (
+                <tr>
+                  <td colSpan={3} className="text-center py-10 text-red-500 text-sm">
+                    {error}
+                  </td>
+                </tr>
+              )}
+
+              {/* Empty */}
+              {!loading && !error && languages.length === 0 && (
+                <tr>
+                  <td colSpan={3} className="text-center py-10 text-[#701366] opacity-50">
                     No languages found.
                   </td>
                 </tr>
-              ) : (
-                filteredLanguages.map((lang, idx) => (
-                  <tr key={idx} className="hover:bg-[#fffafe] transition-colors duration-100 h-12">
-                    <td className="py-3 pl-6 lg:pl-8 text-[#701366] font-Inter whitespace-nowrap"style={{ paddingLeft: "50px" }}>{lang.id}</td>
-                    <td className="px-3 lg:px-4 py-3 text-[#701366] whitespace-nowrap">{lang.language}</td>
-                    <td className="px-3 lg:px-4 py-3 whitespace-nowrap">
-                      <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-Inter bg-[#F8E0F8] text-[#701366]">
-                        {lang.shortcut}
-                      </span>
-                    </td>
-                   
-                  </tr>
-                ))
               )}
+
+              {/* Rows */}
+              {!loading && !error && languages.map((lang) => (
+                <tr key={lang.id} className="hover:bg-[#fffafe] transition-colors duration-100 h-12">
+                  <td className="py-3 text-[#701366] font-Inter whitespace-nowrap" style={{ paddingLeft: "50px" }}>
+                    {lang.id}
+                  </td>
+                  <td className="px-3 lg:px-4 py-3 text-[#701366] whitespace-nowrap">
+                    {lang.language_name}
+                  </td>
+                  <td className="px-3 lg:px-4 py-3 whitespace-nowrap">
+                    
+                      {lang.shortcut}
+                    
+                  </td>
+                </tr>
+              ))}
+
             </tbody>
           </table>
         </div>

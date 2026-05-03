@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
+// import { useNavigate } from "react-router-dom";
 import { Link } from "react-router-dom";
 import { Search, SlidersHorizontal, Plus } from "lucide-react";
 
@@ -14,7 +14,7 @@ const Searchbar = ({
   const [dropdownOpen, setDropdownOpen]   = useState(false);
   const [selectedFilter, setSelectedFilter] = useState("All");
 
-  const navigate = useNavigate();
+  // const navigate = useNavigate();
   
   const handleFilterSelect = (option) => {
     setSelectedFilter(option);

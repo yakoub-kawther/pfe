@@ -23,12 +23,29 @@ const Card = ({ title, children }) => (
   </div>
 );
 
-const btnStyle = { width: "80px", height: "32px", flexShrink: 0, display: "inline-flex", alignItems: "center", justifyContent: "center", fontSize: "14px", borderRadius: "8px", cursor: "pointer", border: "1px solid #701366", transition: "background 0.15s, color 0.15s", fontFamily: "Inter, sans-serif" };
+const btnStyle = {
+  width: "80px", height: "32px", flexShrink: 0,
+  display: "inline-flex", alignItems: "center", justifyContent: "center",
+  fontSize: "14px", borderRadius: "8px", cursor: "pointer",
+  border: "1px solid #701366", transition: "background 0.15s, color 0.15s",
+  fontFamily: "Inter, sans-serif",
+};
 
 const Teacher_profile = () => {
   const { state } = useLocation();
   const navigate  = useNavigate();
   const teacher   = state?.teacher;
+
+  // ─── Extract nested fields ────────────────────────────────
+  const person   = teacher?.employee?.person   ?? {};
+  const employee = teacher?.employee           ?? {};
+  const fullName = `${person.first_name ?? ""} ${person.last_name ?? ""}`.trim();
+  const status   = employee.status
+    ? employee.status.charAt(0).toUpperCase() + employee.status.slice(1)
+    : "Unknown";
+  const gender = person.gender
+    ? person.gender.charAt(0).toUpperCase() + person.gender.slice(1)
+    : "—";
 
   const teacherTabs = [
     { name: "Profile", path: "/Teacher_profile", state: { teacher } },
@@ -36,16 +53,14 @@ const Teacher_profile = () => {
     { name: "Payment", path: "/Teacher_payment", state: { teacher } },
   ];
 
-  const nameParts = teacher?.name?.split(" ") || [];
-  const firstName = nameParts[0] || "";
-  const lastName  = nameParts.slice(1).join(" ") || "";
-
   return (
     <DashboardLayout>
       <div style={{ display: "flex", flexDirection: "column", gap: "24px", width: "100%", minWidth: 0, boxSizing: "border-box" }}>
 
         {/* Header */}
-        <h2 style={{ fontSize: "24px", color: "#701366", fontFamily: "Inter, sans-serif", margin: 0, flexShrink: 0 }}>Teacher Profile</h2>
+        <h2 style={{ fontSize: "24px", color: "#701366", fontFamily: "Inter, sans-serif", margin: 0, flexShrink: 0 }}>
+          Teacher Profile
+        </h2>
 
         {/* Tabs + Actions */}
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", width: "100%", flexShrink: 0, minWidth: 0 }}>
@@ -70,56 +85,62 @@ const Teacher_profile = () => {
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "24px", alignItems: "start", minWidth: 0 }}>
 
           {/* LEFT */}
-          <Card title="Basic Information">
-            <div style={{ display: "flex", alignItems: "center", gap: "16px", marginBottom: "20px" }}>
-              <div style={{ width: "52px", height: "52px", borderRadius: "50%", background: "#f8e0f8", color: "#701366", fontFamily: "Inter, sans-serif", fontSize: "20px", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-                {teacher?.name?.charAt(0) || "T"}
-              </div>
-              <div>
-                <p style={{ color: "#701366", fontFamily: "Inter, sans-serif", fontSize: "16px", margin: "0 0 4px 0" }}>{teacher?.name || "—"}</p>
-                <span style={{
-                  display: "inline-flex", alignItems: "center", padding: "2px 12px", borderRadius: "9999px", fontSize: "12px",
-                  background: teacher?.status === "Active" ? "#dcfce7" : "#fee2e2",
-                  color:      teacher?.status === "Active" ? "#15803d"  : "#dc2626",
-                }}>
-                  {teacher?.status || "Unknown"}
-                </span>
-              </div>
-            </div>
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "18px" }}>
-              <ReadField label="First Name"    value={firstName} />
-              <ReadField label="Last Name"     value={lastName} />
-              <ReadField label="Gender"        value={teacher?.gender} />
-              <ReadField label="Date of Birth" value={teacher?.dob} />
-              <ReadField label="Language"      value={teacher?.language} />
-              <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-                <label style={{ fontSize: "13px", color: "#6b7280", fontFamily: "Inter, sans-serif" }}>Head Teacher</label>
-                <div style={{ padding: "6px 0" }}>
+          <div style={{ display: "flex", flexDirection: "column", gap: "24px", minWidth: 0 }}>
+            <Card title="Basic Information">
+              {/* Avatar + name */}
+              <div style={{ display: "flex", alignItems: "center", gap: "16px", marginBottom: "20px" }}>
+                <div style={{ width: "52px", height: "52px", borderRadius: "50%", background: "#f8e0f8", color: "#701366", fontFamily: "Inter, sans-serif", fontSize: "20px", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                  {person.first_name?.charAt(0) || "T"}
+                </div>
+                <div>
+                  <p style={{ color: "#701366", fontFamily: "Inter, sans-serif", fontSize: "16px", margin: "0 0 4px 0" }}>
+                    {fullName || "—"}
+                  </p>
                   <span style={{
-                    display: "inline-flex", alignItems: "center", padding: "4px 12px", borderRadius: "9999px", fontSize: "12px", fontFamily: "Inter, sans-serif",
-                    background: teacher?.head_teacher ? "#f8e0f8" : "#e5e7eb",
-                    color:      teacher?.head_teacher ? "#701366"  : "#4b5563",
+                    display: "inline-flex", alignItems: "center", padding: "2px 12px", borderRadius: "9999px", fontSize: "12px",
+                    background: employee.status === "active" ? "#dcfce7" : "#fee2e2",
+                    color:      employee.status === "active" ? "#15803d" : "#dc2626",
                   }}>
-                    {teacher?.head_teacher ? "Yes" : "No"}
+                    {status}
                   </span>
                 </div>
               </div>
-            </div>
-          </Card>
+
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "18px" }}>
+                <ReadField label="First Name"  value={person.first_name} />
+                <ReadField label="Last Name"   value={person.last_name} />
+                <ReadField label="Gender"      value={gender} />
+                <ReadField label="Hire Date"   value={employee.hire_date} />
+                <ReadField label="Language"    value={teacher?.language?.language_name} />
+                <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+                  <label style={{ fontSize: "13px", color: "#6b7280", fontFamily: "Inter, sans-serif" }}>Head Teacher</label>
+                  <div style={{ padding: "6px 0" }}>
+                    <span style={{
+                      display: "inline-flex", alignItems: "center", padding: "4px 12px", borderRadius: "9999px", fontSize: "12px", fontFamily: "Inter, sans-serif",
+                      background: teacher?.is_head_teacher ? "#f8e0f8" : "#e5e7eb",
+                      color:      teacher?.is_head_teacher ? "#701366" : "#4b5563",
+                    }}>
+                      {teacher?.is_head_teacher ? "Yes" : "No"}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </Card>
+
+            <Card title="Teaching Information">
+              <div style={{ display: "flex", flexDirection: "column", gap: "18px" }}>
+                <ReadField label="Qualifications" value={teacher?.qualifications} full />
+              </div>
+            </Card>
+          </div>
 
           {/* RIGHT */}
           <div style={{ display: "flex", flexDirection: "column", gap: "24px", minWidth: 0 }}>
-            <Card title="Login/Account Details">
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "18px" }}>
-                <ReadField value={teacher?.username} />
-                <ReadField value="••••••••" />
-              </div>
-            </Card>
             <Card title="Contact Information">
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "18px" }}>
-                <ReadField label="Phone"   value={teacher?.phone} />
-                <ReadField label="Email"   value={teacher?.email} />
-                <ReadField label="Address" value={teacher?.address} full />
+                <ReadField label="Phone"   value={person.phone} />
+                <ReadField label="Email"   value={person.email} />
+                <ReadField label="Address" value={person.address} full />
               </div>
             </Card>
           </div>

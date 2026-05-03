@@ -1,58 +1,31 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import DashboardLayout from "../../layouts/DashboardLayout";
+import { apiFetch } from "../../services/api";
 
-// ─── Mock Data ────────────────────────────────────────────────────────────────
-const ALL_STUDENTS = [
-  { id: 1, name: "Amira Benali",    phone: "0550 123 456", avatar: "AB" },
-  { id: 2, name: "Yacine Moussaoui",phone: "0660 789 012", avatar: "YM" },
-  { id: 3, name: "Sarah Khelifi",   phone: "0770 345 678", avatar: "SK" },
-  { id: 4, name: "Omar Boudriga",   phone: "0550 901 234", avatar: "OB" },
-  { id: 5, name: "Nadia Hammoudi",  phone: "0660 567 890", avatar: "NH" },
-  { id: 6, name: "Karim Zerrouki",  phone: "0770 123 789", avatar: "KZ" },
-];
-
-const CLASSES = ["Eng-A1", "Eng-A2", "Eng-B1", "Eng-B2", "Eng-C1", "Eng-C2", "Fr-A1", "Fr-B1"];
-
-const INITIAL_INSCRIPTIONS = [
-  { id: 101, studentId: 1, studentName: "Amira Benali",     avatar: "AB", class: "Eng-A2", date: "2025-09-01", status: "Active" },
-  { id: 102, studentId: 2, studentName: "Yacine Moussaoui", avatar: "YM", class: "Eng-B1", date: "2025-09-01", status: "Active" },
-  { id: 103, studentId: 3, studentName: "Sarah Khelifi",    avatar: "SK", class: "Fr-A1",  date: "2025-10-15", status: "Active" },
-];
-
-// ─── Styles ───────────────────────────────────────────────────────────────────
+// ─── Styles ───────────────────────────────────────────────────
 const PURPLE = "#701366";
 const LIGHT  = "#f9f0f8";
 
 const inp = {
-  width: "100%",
-  border: `1px solid ${PURPLE}`,
-  borderRadius: "8px",
-  padding: "10px 14px",
-  fontSize: "14px",
-  color: PURPLE,
-  outline: "none",
-  boxSizing: "border-box",
-  fontFamily: "Inter, sans-serif",
-  backgroundColor: "#fff",
+  width: "100%", border: `1px solid ${PURPLE}`, borderRadius: "8px",
+  padding: "10px 14px", fontSize: "14px", color: PURPLE,
+  outline: "none", boxSizing: "border-box",
+  fontFamily: "Inter, sans-serif", backgroundColor: "#fff",
 };
 
 const sel = { ...inp, cursor: "pointer" };
 
 const btn = (variant = "solid") => ({
-  padding: "10px 22px",
-  borderRadius: "8px",
-  fontSize: "14px",
-  fontFamily: "Inter, sans-serif",
-  cursor: "pointer",
-  border: `1px solid ${PURPLE}`,
-  transition: "all 0.18s",
+  padding: "10px 22px", borderRadius: "8px", fontSize: "14px",
+  fontFamily: "Inter, sans-serif", cursor: "pointer",
+  border: `1px solid ${PURPLE}`, transition: "all 0.18s",
   ...(variant === "solid"
     ? { background: PURPLE, color: "#fff" }
     : { background: "#fff", color: PURPLE }),
 });
 
-// ─── Sub-components ───────────────────────────────────────────────────────────
-  const Avatar = ({ initials, size = 36 }) => (
+// ─── Sub-components ───────────────────────────────────────────
+const Avatar = ({ initials, size = 36 }) => (
   <div style={{
     width: size, height: size, borderRadius: "50%",
     background: "#f8e0f8", color: "#701366",
@@ -64,21 +37,17 @@ const btn = (variant = "solid") => ({
   </div>
 );
 
-
 const Badge = ({ status }) => {
   const colors = {
-    Active:    { bg: "#edfaf3", color: "#15803d" },
-    Cancelled: { bg: "#fef2f2", color: "#dc2626" },
-    Completed: { bg: "#eff6ff", color: "#2563eb" },
+    confirmed: { bg: "#edfaf3", color: "#15803d" },
+    cancelled: { bg: "#fef2f2", color: "#dc2626" },
+    promoted:  { bg: "#eff6ff", color: "#2563eb" },
+    repeated:  { bg: "#fef9c3", color: "#854d0e" },
   };
-  const c = colors[status] || colors.Active;
+  const c = colors[status?.toLowerCase()] || colors.confirmed;
   return (
-    <span style={{
-      padding: "3px 10px", borderRadius: "20px",
-      fontSize: "12px", fontWeight: 500,
-      background: c.bg, color: c.color,
-    }}>
-      {status}
+    <span style={{ padding: "3px 10px", borderRadius: "20px", fontSize: "12px", fontWeight: 500, background: c.bg, color: c.color }}>
+      {status?.charAt(0).toUpperCase() + status?.slice(1)}
     </span>
   );
 };
@@ -90,93 +59,141 @@ const Field = ({ label, children }) => (
   </div>
 );
 
-// ─── Main Component ───────────────────────────────────────────────────────────
+// ─── Main Component ───────────────────────────────────────────
 export default function Inscriptions() {
-  // Search & dropdown
-  const [query, setQuery]           = useState("");
-  const [showDrop, setShowDrop]     = useState(false);
-  const [selected, setSelected]     = useState(null);   // chosen student
-  const dropRef                     = useRef(null);
+  // students is a list of student objects from API
+  const [students,  setStudents]  = useState([]);
+  // selected is the person_id (number) of the chosen student
+  const [selected,  setSelected]  = useState("");
 
-  // Form
-  const [classVal, setClassVal]     = useState(CLASSES[0]);
-  const [dateVal, setDateVal]       = useState("");
-  const [formError, setFormError]   = useState("");
+  // Classes
+  const [classes,  setClasses]  = useState([]);
+  const [classVal, setClassVal] = useState("");
+
+  // Form state
+  const [formError,  setFormError]  = useState("");
   const [successMsg, setSuccessMsg] = useState("");
+  const [enrolling,  setEnrolling]  = useState(false);
 
   // Inscriptions list
-  const [inscriptions, setInscriptions] = useState(INITIAL_INSCRIPTIONS);
-  const [listSearch, setListSearch]     = useState("");
-  const [listFilter, setListFilter]     = useState("All");
+  const [inscriptions, setInscriptions] = useState([]);
+  const [listLoading,  setListLoading]  = useState(false);
+  const [listSearch,   setListSearch]   = useState("");
+  const [listFilter,   setListFilter]   = useState("All");
+  const [confirmId,    setConfirmId]    = useState(null);
+  const [cancelling,   setCancelling]   = useState(null);
 
-  // Cancel confirm
-  const [confirmId, setConfirmId] = useState(null);
-
-  // Close dropdown on outside click
+  // ─── Fetch students on mount ──────────────────────────────
   useEffect(() => {
-    const handler = (e) => { if (dropRef.current && !dropRef.current.contains(e.target)) setShowDrop(false); };
-    document.addEventListener("mousedown", handler);
-    return () => document.removeEventListener("mousedown", handler);
+  apiFetch("/persons/students/")
+    .then(res => res.json())
+    .then(data => {
+      const list = Array.isArray(data) ? data : (data.results ?? []);
+      console.log("first student:", JSON.stringify(list[0])); // ← add this
+      setStudents(list);
+    })
+    .catch(() => {});
+}, []);
+  // ─── Fetch classes on mount ───────────────────────────────
+  useEffect(() => {
+    apiFetch("/academic/classes/")
+      .then(res => res.json())
+      .then(data => {
+        const list = Array.isArray(data) ? data : (data.results ?? []);
+        setClasses(list);
+        if (list.length > 0) setClassVal(String(list[0].id));
+      })
+      .catch(() => {});
   }, []);
 
-  const filtered = ALL_STUDENTS.filter((s) =>
-    s.name.toLowerCase().includes(query.toLowerCase())
-  );
-
-  const handleSelect = (student) => {
-    setSelected(student);
-    setQuery(student.name);
-    setShowDrop(false);
-    setFormError("");
-  };
-
-  const handleAdd = () => {
-    if (!selected)  { setFormError("Please select a student."); return; }
-    if (!dateVal)   { setFormError("Please pick a date."); return; }
-
-    // Check duplicate
-    const duplicate = inscriptions.find(
-      (i) => i.studentId === selected.id && i.class === classVal && i.status === "Active"
-    );
-    if (duplicate) {
-      setFormError(`${selected.name} is already enrolled in ${classVal}.`);
-      return;
+  // ─── Fetch inscriptions ───────────────────────────────────
+  const fetchInscriptions = useCallback(async () => {
+    setListLoading(true);
+    try {
+      const res  = await apiFetch("/inscriptions/");
+      const data = await res.json();
+      setInscriptions(Array.isArray(data) ? data : (data.results ?? []));
+    } catch {
+      // silently fail
+    } finally {
+      setListLoading(false);
     }
+  }, []);
 
-    const newEntry = {
-      id: Date.now(),
-      studentId:   selected.id,
-      studentName: selected.name,
-      class:       classVal,
-      date:        dateVal,
-      status:      "Active",
-    };
+  useEffect(() => { fetchInscriptions(); }, [fetchInscriptions]);
 
-    setInscriptions((prev) => [newEntry, ...prev]);
-    setSuccessMsg(`${selected.name} enrolled in ${classVal} successfully!`);
+  // ─── Enroll ───────────────────────────────────────────────
+  const handleAdd = async () => {
+    console.log("selected:", selected, "classVal:", classVal); 
+    if (!selected) { setFormError("Please select a student."); return; }
+    if (!classVal) { setFormError("Please select a class.");   return; }
+
+    setEnrolling(true);
     setFormError("");
+    setSuccessMsg("");
 
-    // Reset form
-    setSelected(null);
-    setQuery("");
-    setClassVal(CLASSES[0]);
-    setDateVal("");
+    try {
+      const res = await apiFetch("/inscriptions/", {
+     method: "POST",
+  body: {
+    student_id: Number(selected),
+    class_id  : Number(classVal),
+  },
+      });
 
-    setTimeout(() => setSuccessMsg(""), 3500);
+      if (!res.ok) {
+        const err = await res.json();
+        setFormError(err.detail || "Enrollment failed.");
+        return;
+      }
+
+      // Build success message from students list
+      const studentObj = students.find(s => String(s.person?.id) === String(selected));
+      const p          = studentObj?.person ?? {};
+      const className  = classes.find(c => String(c.id) === String(classVal))?.name ?? classVal;
+      setSuccessMsg(`${p.first_name ?? ""} ${p.last_name ?? ""} enrolled in ${className} successfully!`);
+
+      // Reset form
+      setSelected("");
+      if (classes.length > 0) setClassVal(String(classes[0].id));
+
+      fetchInscriptions();
+      setTimeout(() => setSuccessMsg(""), 3500);
+    } catch {
+      setFormError("Network error. Please try again.");
+    } finally {
+      setEnrolling(false);
+    }
   };
 
-  const handleCancel = (id) => {
-    setInscriptions((prev) =>
-      prev.map((i) => (i.id === id ? { ...i, status: "Cancelled" } : i))
-    );
-    setConfirmId(null);
+  // ─── Cancel ───────────────────────────────────────────────
+  const handleCancel = async (id) => {
+    setCancelling(id);
+    try {
+      const res = await apiFetch(`/inscriptions/${id}/cancel/`, { method: "POST" });
+      if (!res.ok) {
+        const err = await res.json();
+        alert(err.detail || "Cancel failed.");
+        return;
+      }
+      setConfirmId(null);
+      fetchInscriptions();
+    } catch {
+      alert("Network error.");
+    } finally {
+      setCancelling(null);
+    }
   };
 
-  // Filtered list
-  const displayedInscriptions = inscriptions.filter((i) => {
-    const matchSearch = i.studentName.toLowerCase().includes(listSearch.toLowerCase()) ||
-                        i.class.toLowerCase().includes(listSearch.toLowerCase());
-    const matchFilter = listFilter === "All" || i.status === listFilter;
+  // ─── Filtered + sorted list (newest first) ────────────────
+const displayed = [...inscriptions]
+  .sort((a, b) => new Date(b.inscription_date) - new Date(a.inscription_date))
+  .filter((i) => {
+    const fullName = i.student_name ?? "";
+    const cls      = i.class_info?.name ?? "";
+    const matchSearch = fullName.toLowerCase().includes(listSearch.toLowerCase()) ||
+                        cls.toLowerCase().includes(listSearch.toLowerCase());
+    const matchFilter = listFilter === "All" || i.status === listFilter.toLowerCase();
     return matchSearch && matchFilter;
   });
 
@@ -184,7 +201,7 @@ export default function Inscriptions() {
     <DashboardLayout>
       <div style={{ maxWidth: 1100, margin: "0 auto", padding: "30px 16px 60px", fontFamily: "Inter, sans-serif" }}>
 
-        {/* ── Page Title ── */}
+        {/* Title */}
         <div style={{ marginBottom: "32px" }}>
           <h2 style={{ fontSize: "25px", color: PURPLE, margin: 0 }}>Inscriptions</h2>
           <p style={{ fontSize: "14px", color: "#9ca3af", marginTop: "4px" }}>
@@ -193,94 +210,59 @@ export default function Inscriptions() {
         </div>
 
         {/* ── Enroll Card ── */}
-        <div style={{
-          background: "#fff",
-          borderRadius: "16px",
-          border: "1px solid #e5e7eb",
-          padding: "28px 32px",
-          boxShadow: "0 1px 4px rgba(0,0,0,0.06)",
-          marginBottom: "36px",
-        }}>
+        <div style={{ background: "#fff", borderRadius: "16px", border: "1px solid #e5e7eb", padding: "28px 32px", boxShadow: "0 1px 4px rgba(0,0,0,0.06)", marginBottom: "36px" }}>
           <h3 style={{ fontSize: "16px", fontWeight: 500, color: PURPLE, borderBottom: "1px solid #f0e0ee", paddingBottom: "12px", marginBottom: "24px", marginTop: 0 }}>
             New Inscription
           </h3>
 
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr auto", gap: "20px", alignItems: "end" }}>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr auto", gap: "20px", alignItems: "end" }}>
 
-            {/* Student search */}
-            <Field label="Student Name">
-              <div style={{ position: "relative" }} ref={dropRef}>
-                <input
-                  style={inp}
-                  placeholder="Search student..."
-                  value={query}
-                  onChange={(e) => {
-                    setQuery(e.target.value);
-                    setSelected(null);
-                    setShowDrop(true);
-                    setFormError("");
-                  }}
-                  onFocus={() => setShowDrop(true)}
-                />
-                {showDrop && query.length > 0 && (
-                  <div style={{
-                    position: "absolute", top: "calc(100% + 6px)", left: 0, right: 0,
-                    background: "#fff", border: `1px solid #e5e7eb`,
-                    borderRadius: "10px", boxShadow: "0 8px 24px rgba(0,0,0,0.10)",
-                    zIndex: 50, overflow: "hidden", maxHeight: "220px", overflowY: "auto",
-                  }}>
-                    {filtered.length === 0 ? (
-                      <div style={{ padding: "14px 16px", color: "#9ca3af", fontSize: "13px" }}>No students found</div>
-                    ) : filtered.map((s) => (
-                      <div
-                        key={s.id}
-                        onClick={() => handleSelect(s)}
-                        style={{
-                          display: "flex", alignItems: "center", gap: "12px",
-                          padding: "10px 16px", cursor: "pointer",
-                          borderBottom: "1px solid #f3f4f6",
-                          transition: "background 0.12s",
-                        }}
-                        onMouseEnter={(e) => e.currentTarget.style.background = LIGHT}
-                        onMouseLeave={(e) => e.currentTarget.style.background = "#fff"}
-                      >
-                        <Avatar initials={s.avatar} size={30} />
-                        <div>
-                          <div style={{ fontSize: "14px", color: "#111", fontWeight: 500 }}>{s.name}</div>
-                          <div style={{ fontSize: "12px", color: "#9ca3af" }}>{s.phone}</div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-            </Field>
-
-            {/* Class */}
-            <Field label="Class">
-              <select style={sel} value={classVal} onChange={(e) => setClassVal(e.target.value)}>
-                {CLASSES.map((c) => <option key={c}>{c}</option>)}
+            {/* Student select */}
+            <Field label="Student">
+              <select
+                style={sel}
+                value={selected}
+                onChange={e => { setSelected(e.target.value); setFormError(""); }}
+              >
+                <option value="" disabled>Select a student</option>
+                {students.map(s => {
+                  const p = s.person ?? {};
+                 return (
+                   <option key={p.id} value={p.id}>
+                      {p.first_name} {p.last_name}
+                    </option>
+                    
+                  );
+                })}
               </select>
             </Field>
 
-            {/* Date */}
-            <Field label="Start Date">
-              <input type="date" style={inp} value={dateVal} onChange={(e) => setDateVal(e.target.value)} />
+            {/* Class select */}
+            <Field label="Class">
+              <select
+                style={sel}
+                value={classVal}
+                onChange={e => { setClassVal(e.target.value); setFormError(""); }}
+              >
+                <option value="" disabled>Select a class</option>
+                {classes.map(c => (
+                  <option key={c.id} value={c.id}>{c.name}</option>
+                ))}
+              </select>
             </Field>
 
             {/* Enroll button */}
             <button
-              style={btn("solid")}
+              style={{ ...btn("solid"), opacity: enrolling ? 0.7 : 1, cursor: enrolling ? "not-allowed" : "pointer" }}
               onClick={handleAdd}
-              onMouseEnter={(e) => { e.currentTarget.style.background = "#5a0f52"; }}
-              onMouseLeave={(e) => { e.currentTarget.style.background = PURPLE; }}
+              disabled={enrolling}
+              onMouseEnter={e => { if (!enrolling) e.currentTarget.style.background = "#5a0f52"; }}
+              onMouseLeave={e => { if (!enrolling) e.currentTarget.style.background = PURPLE; }}
             >
-              + Enroll
+              {enrolling ? "Enrolling..." : "+ Enroll"}
             </button>
-
           </div>
 
-          {/* Errors / Success */}
           {formError && (
             <div style={{ marginTop: "14px", padding: "10px 14px", background: "#fef2f2", color: "#dc2626", borderRadius: "8px", fontSize: "13px" }}>
               ⚠ {formError}
@@ -294,130 +276,110 @@ export default function Inscriptions() {
         </div>
 
         {/* ── Inscriptions List ── */}
-        <div style={{
-          background: "#fff",
-          borderRadius: "16px",
-          border: "1px solid #e5e7eb",
-          padding: "28px 32px",
-          boxShadow: "0 1px 4px rgba(0,0,0,0.06)",
-        }}>
-          {/* List header */}
+        <div style={{ background: "#fff", borderRadius: "16px", border: "1px solid #e5e7eb", padding: "28px 32px", boxShadow: "0 1px 4px rgba(0,0,0,0.06)" }}>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: "12px", borderBottom: "1px solid #f0e0ee", paddingBottom: "16px", marginBottom: "20px" }}>
             <h3 style={{ fontSize: "16px", fontWeight: 500, color: PURPLE, margin: 0 }}>
               All Inscriptions
-              <span style={{ marginLeft: "8px", fontSize: "13px", color: "#9ca3af", fontWeight: 400 }}>
-                ({displayedInscriptions.length})
-              </span>
+              <span style={{ marginLeft: "8px", fontSize: "13px", color: "#9ca3af", fontWeight: 400 }}>({displayed.length})</span>
             </h3>
-
             <div style={{ display: "flex", gap: "12px", alignItems: "center", flexWrap: "wrap" }}>
-              {/* Search list */}
               <input
                 style={{ ...inp, width: "200px" }}
                 placeholder="Search name or class..."
                 value={listSearch}
-                onChange={(e) => setListSearch(e.target.value)}
+                onChange={e => setListSearch(e.target.value)}
               />
-              {/* Filter */}
-              <select style={{ ...sel, width: "130px" }} value={listFilter} onChange={(e) => setListFilter(e.target.value)}>
+              <select style={{ ...sel, width: "140px" }} value={listFilter} onChange={e => setListFilter(e.target.value)}>
                 <option>All</option>
-                <option>Active</option>
+                <option>Confirmed</option>
                 <option>Cancelled</option>
-                <option>Completed</option>
+                <option>Promoted</option>
+                <option>Repeated</option>
               </select>
             </div>
           </div>
 
-          {/* Table */}
-          {displayedInscriptions.length === 0 ? (
-            <div style={{ textAlign: "center", padding: "40px 0", color: "#9ca3af", fontSize: "14px" }}>
-              No inscriptions found.
-            </div>
+          {listLoading ? (
+            <div style={{ textAlign: "center", padding: "40px 0", color: "#9ca3af", fontSize: "14px" }}>Loading...</div>
+          ) : displayed.length === 0 ? (
+            <div style={{ textAlign: "center", padding: "40px 0", color: "#9ca3af", fontSize: "14px" }}>No inscriptions found.</div>
           ) : (
             <div style={{ overflowX: "auto" }}>
               <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "14px" }}>
                 <thead>
                   <tr style={{ borderBottom: "1px solid #f3f4f6" }}>
-                    {["Student", "Class", "Start Date", "Status", "Action"].map((h) => (
-                      <th key={h} style={{ textAlign: "left", padding: "10px 14px", color: "#9ca3af", fontWeight: 500, fontSize: "13px", whiteSpace: "nowrap" }}>
-                        {h}
-                      </th>
+                    {["Student", "Class", "Date", "Status", "Action"].map(h => (
+                      <th key={h} style={{ textAlign: "left", padding: "10px 14px", color: "#9ca3af", fontWeight: 500, fontSize: "13px", whiteSpace: "nowrap" }}>{h}</th>
                     ))}
                   </tr>
                 </thead>
                 <tbody>
-                  {displayedInscriptions.map((ins, idx) => (
-                    <tr
-                      key={ins.id}
-                      style={{
-                        borderBottom: idx < displayedInscriptions.length - 1 ? "1px solid #f9f9f9" : "none",
-                        transition: "background 0.12s",
-                      }}
-                      onMouseEnter={(e) => e.currentTarget.style.background = "#fdf8fc"}
-                      onMouseLeave={(e) => e.currentTarget.style.background = "transparent"}
-                    >
-                      {/* Student */}
-                      <td style={{ padding: "12px 14px" }}>
-                        <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-                          <span style={{ color: "#701366", fontWeight: 400 }}>{ins.studentName}</span>
-                        </div>
-                      </td>
-                      {/* Class */}
-                      <td style={{ padding: "12px 14px" }}>
-                        <span style={{ background: LIGHT, color: PURPLE, padding: "3px 10px", borderRadius: "6px", fontSize: "13px", fontWeight: 500 }}>
-                          {ins.class}
-                        </span>
-                      </td>
-                      {/* Date */}
-                      <td style={{ padding: "12px 14px", color: "#6b7280" }}>
-                        {new Date(ins.date).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" })}
-                      </td>
-                      {/* Status */}
-                      <td style={{ padding: "12px 14px" }}>
-                        <Badge status={ins.status} />
-                      </td>
-                      {/* Action */}
-                      <td style={{ padding: "12px 14px" }}>
-                        {ins.status === "Active" && (
-                          confirmId === ins.id ? (
-                            <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                              <span style={{ fontSize: "12px", color: "#6b7280" }}>Confirm?</span>
+                  {displayed.map((ins, idx) => {
+                   // Inside displayed.map((ins, idx) => {
+                     const fullName = ins.student_name ?? "—";
+                     const initials = fullName.split(" ").map(w => w[0] ?? "").join("").toUpperCase();
+                     const cls      = ins.class_info?.name ?? "—";
+
+                    return (
+                      <tr
+                        key={ins.id}
+                        style={{ borderBottom: idx < displayed.length - 1 ? "1px solid #f9f9f9" : "none", transition: "background 0.12s" }}
+                        onMouseEnter={e => e.currentTarget.style.background = "#fdf8fc"}
+                        onMouseLeave={e => e.currentTarget.style.background = "transparent"}
+                      >
+                        <td style={{ padding: "12px 14px" }}>
+                          <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                            <Avatar initials={initials || "?"} size={30} />
+                            <span style={{ color: PURPLE }}>{fullName || "—"}</span>
+                          </div>
+                        </td>
+                        <td style={{ padding: "12px 14px" }}>
+                          <span style={{ background: LIGHT, color: PURPLE, padding: "3px 10px", borderRadius: "6px", fontSize: "13px", fontWeight: 500 }}>{cls}</span>
+                        </td>
+                        <td style={{ padding: "12px 14px", color: "#6b7280" }}>
+                          {ins.inscription_date
+                            ? new Date(ins.inscription_date).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" })
+                            : "—"}
+                        </td>
+                        <td style={{ padding: "12px 14px" }}>
+                          <Badge status={ins.status} />
+                        </td>
+                        <td style={{ padding: "12px 14px" }}>
+                          {ins.status === "confirmed" ? (
+                            confirmId === ins.id ? (
+                              <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                                <span style={{ fontSize: "12px", color: "#6b7280" }}>Confirm?</span>
+                                <button
+                                  onClick={() => handleCancel(ins.id)}
+                                  disabled={cancelling === ins.id}
+                                  style={{ ...btn("solid"), padding: "5px 12px", fontSize: "12px", background: "#dc2626", borderColor: "#dc2626", opacity: cancelling === ins.id ? 0.7 : 1 }}
+                                >
+                                  {cancelling === ins.id ? "..." : "Yes"}
+                                </button>
+                                <button onClick={() => setConfirmId(null)} style={{ ...btn("outline"), padding: "5px 12px", fontSize: "12px" }}>No</button>
+                              </div>
+                            ) : (
                               <button
-                                onClick={() => handleCancel(ins.id)}
-                                style={{ ...btn("solid"), padding: "5px 12px", fontSize: "12px", background: "#dc2626", borderColor: "#dc2626" }}
+                                onClick={() => setConfirmId(ins.id)}
+                                style={{ ...btn("outline"), padding: "6px 14px", fontSize: "12px" }}
+                                onMouseEnter={e => { e.currentTarget.style.background = "#fef2f2"; e.currentTarget.style.borderColor = "#dc2626"; e.currentTarget.style.color = "#dc2626"; }}
+                                onMouseLeave={e => { e.currentTarget.style.background = "#fff"; e.currentTarget.style.borderColor = PURPLE; e.currentTarget.style.color = PURPLE; }}
                               >
-                                Yes
+                                Cancel
                               </button>
-                              <button
-                                onClick={() => setConfirmId(null)}
-                                style={{ ...btn("outline"), padding: "5px 12px", fontSize: "12px" }}
-                              >
-                                No
-                              </button>
-                            </div>
+                            )
                           ) : (
-                            <button
-                              onClick={() => setConfirmId(ins.id)}
-                              style={{ ...btn("outline"), padding: "6px 14px", fontSize: "12px" }}
-                              onMouseEnter={(e) => { e.currentTarget.style.background = "#fef2f2"; e.currentTarget.style.borderColor = "#dc2626"; e.currentTarget.style.color = "#dc2626"; }}
-                              onMouseLeave={(e) => { e.currentTarget.style.background = "#fff"; e.currentTarget.style.borderColor = PURPLE; e.currentTarget.style.color = PURPLE; }}
-                            >
-                              Cancel
-                            </button>
-                          )
-                        )}
-                        {ins.status !== "Active" && (
-                          <span style={{ color: "#d1d5db", fontSize: "13px" }}>—</span>
-                        )}
-                      </td>
-                    </tr>
-                  ))}
+                            <span style={{ color: "#d1d5db", fontSize: "13px" }}>—</span>
+                          )}
+                        </td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>
           )}
         </div>
-
       </div>
     </DashboardLayout>
   );
