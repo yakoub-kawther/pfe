@@ -33,9 +33,9 @@ const Card = ({ title, children }) => (
     className="bg-white rounded-2xl border border-gray-100 min-w-0"
     style={{ padding: "24px 28px", boxShadow: "0 1px 6px rgba(0,0,0,0.05)" }}
   >
-    <h3 className="text-[#701366] font-Inter" style={{ fontSize: "16px", marginBottom: "20px" }}>
+    <h2 className="text-[#701366] font-Inter" style={{ fontSize: "16px", marginBottom: "20px" }}>
       {title}
-    </h3>
+    </h2>
     {children}
   </div>
 );

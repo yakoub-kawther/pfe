@@ -72,6 +72,9 @@ const Teachers = () => {
           <h1 style={{ fontSize: "24px", color: "#701366", whiteSpace: "nowrap", margin: 0, flexShrink: 0 }}>
             Teachers List
           </h1>
+          </section>
+        {/* </div> */}
+        
           <Searchbar
             placeholder=" Name, phone, Head Teacher..."
             filterOptions={["Active", "Inactive"]}
@@ -80,7 +83,7 @@ const Teachers = () => {
             onSearchChange={(val) => setSearch(val)}
             onFilterChange={(val) => setFilter(val)}
           />
-        </section>
+        
 
         <div style={{ width: "100%", background: "white", borderRadius: "16px", boxShadow: "0 1px 4px rgba(0,0,0,0.06)", overflow: "hidden", boxSizing: "border-box" }}>
           <table style={{ width: "100%", borderCollapse: "collapse", tableLayout: "fixed" }}>

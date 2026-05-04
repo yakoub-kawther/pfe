@@ -1,6 +1,8 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import DashboardLayout from "../../layouts/DashboardLayout";
+import Buttons from "../../components/Buttons";
+import { apiFetch } from "../../services/api";
 
 const inp = {
   width: "100%",
@@ -36,36 +38,116 @@ const Card = ({ title, children }) => (
   </div>
 );
 
-const btnBase    = "inline-flex items-center justify-center px-5 py-1.5 text-sm rounded-lg border transition-colors font-medium";
-const btnOutline = `${btnBase} border-[#701366] text-[#701366] h-7 w-12 bg-white hover:bg-[#701366] hover:text-white`;
-const btnFilled  = `${btnBase} border-[#701366] text-white bg-[#701366] hover:opacity-90`;
+const ACCOUNT_POSITIONS = ['secretary', 'manager'];
 
 export default function Edit_employee() {
   const { state } = useLocation();
   const navigate  = useNavigate();
   const employee  = state?.employee;
-  const nameParts = employee?.name?.split(" ") || [];
-  const [gender, setGender] = useState(employee?.gender || "Male");
-  const [form, setForm] = useState({
-    firstName: nameParts[0] || "",
-    lastName:  nameParts.slice(1).join(" ") || "",
-    dob:       employee?.dob      || "",
-    position:  employee?.position || "",
-    hireDate:  employee?.hireDate || "",
-    status:    employee?.status   || "Active",
-    phone:     employee?.phone    || "",
-    email:     employee?.email    || "",
-    address:   employee?.address  || "",
+
+  const person   = employee?.person   ?? {};
+  const position = employee?.position ?? {};
+
+  const [gender,    setGender]    = useState(person.gender      || "male");
+  const [positions, setPositions] = useState([]);
+  const [account,   setAccount]   = useState(null);
+  const [loading,   setLoading]   = useState(false);
+  const [errors,    setErrors]    = useState({});
+  const [form,      setForm]      = useState({
+    firstName:   person.first_name   || "",
+    lastName:    person.last_name    || "",
+    position_id: position.id         || "",
+    hire_date:   employee?.hire_date || "",
+    status:      employee?.status    || "active",
+    phone:       person.phone        || "",
+    email:       person.email        || "",
+    address:     person.address      || "",
+    username:    "",
   });
+
+  // ── Fetch account (single useEffect, prefills username) ──
+  useEffect(() => {
+    apiFetch(`/accounts/?employee=${employee.person_id}`)
+      .then(res => res.json())
+      .then(data => {
+        const results = Array.isArray(data) ? data : (data.results ?? []);
+        const acc = results[0] ?? null;
+        setAccount(acc);
+        if (acc?.username) {
+          setForm(prev => ({ ...prev, username: acc.username }));
+        }
+      })
+      .catch(() => {});
+  }, []);
+
+  // ── Fetch positions ───────────────────────────────────────
+  useEffect(() => {
+    apiFetch("/academic/positions/")
+      .then(res => res.json())
+      .then(data => setPositions(Array.isArray(data) ? data : (data.results ?? [])))
+      .catch(() => {});
+  }, []);
 
   const handle = (field) => (e) => setForm((prev) => ({ ...prev, [field]: e.target.value }));
 
-  const handleSave = () => {
-    const fullName = `${form.firstName} ${form.lastName}`.trim();
-    if (!fullName) { alert("Please enter at least a first name."); return; }
-    console.log("Updated employee:", { ...form, gender });
-    navigate("/Employees");
+  // // ── Check if selected position needs an account ───────────
+  const selectedPosition = positions.find(p => p.id === Number(form.position_id));
+  const needsAccount     = selectedPosition
+    ? ACCOUNT_POSITIONS.includes(selectedPosition.name.toLowerCase())
+    : ACCOUNT_POSITIONS.includes(position.name?.toLowerCase() ?? "");
+
+  // ── Submit ────────────────────────────────────────────────
+  const handleSave = async () => {
+    setErrors({});
+    setLoading(true);
+
+    const payload = {
+      first_name:  form.firstName,
+      last_name:   form.lastName,
+      gender:      gender,
+      phone:       form.phone,
+      email:       form.email   || null,
+      address:     form.address || null,
+      hire_date:   form.hire_date,
+      position_id: Number(form.position_id),
+      status:      form.status,
+       username:    form.username,
+    };
+
+    // if (needsAccount && form.username) {
+    //   payload.username = form.username;
+    // }
+
+    try {
+      const res = await apiFetch(`/persons/employees/${employee.person_id}/`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: payload,
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        setErrors(data);
+        return;
+      }
+
+      navigate("/Employees");
+    } catch (err) {
+      setErrors({ non_field_errors: "Network error. Please try again." });
+    } finally {
+      setLoading(false);
+    }
   };
+
+  const Err = ({ field }) =>
+    errors[field] ? (
+      <span style={{ color: "#dc2626", fontSize: "12px" }}>
+        {Array.isArray(errors[field]) ? errors[field][0] : errors[field]}
+      </span>
+    ) : null;
+
+  const fullName = `${person.first_name ?? ""} ${person.last_name ?? ""}`.trim();
 
   return (
     <DashboardLayout>
@@ -74,70 +156,122 @@ export default function Edit_employee() {
         {/* Header */}
         <div className="flex items-center justify-between mb-8">
           <h1 className="text-2xl text-[#701366] font-Inter">
-            Edit Employee — <span>{employee?.name}</span>
+            Edit Employee — <span>{fullName}</span>
           </h1>
-          <div className="flex gap-2">
-            <button onClick={() => navigate("/Employees")} className={btnOutline}>cancel</button>
-            <button onClick={handleSave} className={btnFilled}>save changes</button>
-          </div>
+          <Buttons
+            cancelPath="/Employees"
+            onSave={handleSave}
+            saveLabel={loading ? "Saving..." : "Save changes"}
+          />
         </div>
+
+        {errors.non_field_errors && (
+          <div style={{ color: "#dc2626", marginBottom: "16px", fontSize: "14px" }}>
+            {errors.non_field_errors}
+          </div>
+        )}
 
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(340px, 1fr))", gap: "24px", alignItems: "start", marginTop: "30px" }}>
 
           {/* LEFT */}
           <Card title="Basic Information">
             <div className="grid grid-cols-2" style={{ gap: "18px" }}>
+
               <Field label="First Name">
                 <input style={inp} value={form.firstName} onChange={handle("firstName")} placeholder="First Name" />
+                <Err field="first_name" />
               </Field>
+
               <Field label="Last Name">
-                <input style={inp} value={form.lastName} onChange={handle("lastName")} placeholder="Last Name" />
+                <input style={inp} value={form.lastName} 
+                onChange={handle("lastName")} 
+                placeholder="Last Name" />
+                <Err field="last_name" />
               </Field>
+
               <Field label="Gender">
                 <div className="flex items-center gap-5 text-[14px] text-[#701366]" style={{ padding: "6px 0" }}>
                   <label className="flex items-center gap-2 cursor-pointer">
-                    <input type="radio" name="gender" checked={gender === "Male"} onChange={() => setGender("Male")} style={{ accentColor: "#701366", width: "15px", height: "15px" }} />
+                    <input type="radio" name="gender" checked={gender === "male"} onChange={() => setGender("male")} style={{ accentColor: "#701366", width: "15px", height: "15px" }} />
                     Male
                   </label>
                   <label className="flex items-center gap-2 cursor-pointer">
-                    <input type="radio" name="gender" checked={gender === "Female"} onChange={() => setGender("Female")} style={{ accentColor: "#701366", width: "15px", height: "15px" }} />
+                    <input type="radio" name="gender" checked={gender === "female"} onChange={() => setGender("female")} style={{ accentColor: "#701366", width: "15px", height: "15px" }} />
                     Female
                   </label>
                 </div>
+                <Err field="gender" />
               </Field>
-              <Field label="Date of Birth">
-                <input type="date" style={inp} value={form.dob} onChange={handle("dob")} />
-              </Field>
+
               <Field label="Position">
-                <input style={inp} value={form.position} onChange={handle("position")} placeholder="e.g. Receptionist" />
+                <select style={sel} value={form.position_id} onChange={handle("position_id")}>
+                  <option value="">Select a position</option>
+                  {positions.map(pos => (
+                    <option key={pos.id} value={pos.id}>{pos.name}</option>
+                  ))}
+                </select>
+                <Err field="position_id" />
               </Field>
+
               <Field label="Hire Date">
-                <input type="date" style={inp} value={form.hireDate} onChange={handle("hireDate")} />
+                <input type="date" style={inp} 
+                value={form.hire_date} 
+                onChange={handle("hire_date")} />
+                <Err field="hire_date" />
               </Field>
+
               <Field label="Status">
                 <select style={sel} value={form.status} onChange={handle("status")}>
-                  <option>Active</option>
-                  <option>Inactive</option>
+                  <option value="active">Active</option>
+                  <option value="inactive">Inactive</option>
                 </select>
               </Field>
+
             </div>
           </Card>
 
           {/* RIGHT */}
-          <Card title="Contact Information">
-            <div className="grid grid-cols-2" style={{ gap: "18px" }}>
-              <Field label="Phone">
-                <input style={inp} value={form.phone} onChange={handle("phone")} placeholder="Contact number" />
-              </Field>
-              <Field label="Email">
-                <input style={inp} value={form.email} onChange={handle("email")} placeholder="example@gmail.com" />
-              </Field>
-              <Field label="Address" full>
-                <input style={inp} value={form.address} onChange={handle("address")} placeholder="city" />
-              </Field>
-            </div>
-          </Card>
+          <div className="flex flex-col" style={{ gap: "24px" }}>
 
+            {/* ── Account card — only for secretary/manager ── */}
+            {needsAccount && (
+              <Card title="Login / Account Details">
+                <div className="grid grid-cols-2" style={{ gap: "18px" }}>
+                  <Field label="Username">
+                    <input
+                      style={inp}
+                      value={form.username}
+                      onChange={handle("username")}
+                      placeholder="Username"
+                    />
+                    <Err field="username" />
+                  </Field>
+                  <Field label="Password">
+                    <div style={{ ...inp, backgroundColor: "#faf5fa", color: "#c9a8c9", letterSpacing: account ? "4px" : "normal" }}>
+                      {account ? "••••••••" : "—"}
+                    </div>
+                  </Field>
+                </div>
+              </Card>
+            )}
+
+            <Card title="Contact Information">
+              <div className="grid grid-cols-2" style={{ gap: "18px" }}>
+                <Field label="Phone">
+                  <input style={inp} value={form.phone} onChange={handle("phone")} placeholder="Contact number" />
+                  <Err field="phone" />
+                </Field>
+                <Field label="Email">
+                  <input style={inp} value={form.email} onChange={handle("email")} placeholder="example@gmail.com" />
+                  <Err field="email" />
+                </Field>
+                <Field label="Address" full>
+                  <input style={inp} value={form.address} onChange={handle("address")} placeholder="City" />
+                </Field>
+              </div>
+            </Card>
+
+          </div>
         </div>
       </div>
     </DashboardLayout>

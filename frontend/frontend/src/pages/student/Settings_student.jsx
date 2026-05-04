@@ -1,5 +1,5 @@
 import { useState } from "react";
-import Secretary_layout from "../../layouts/Secretary_layout";
+import Student_layout from "../../layouts/Student_layout";
 import Buttons from "../../components/Buttons";
 
 
@@ -111,10 +111,10 @@ const PwField = ({ label, field, form, setForm, show, onToggle }) => (
 );
 
 export default function Settings() {
-  const manager = {
-    name:  "Amira Benali",
-    email: "amira.benali@school.dz",
-    role:  "Secretary",
+  const student = {
+    name:  "Mira mohamed",
+    email: "Mira.mohamed@school.dz",
+    role:  "Student",
   };
 
   const [form,    setForm]    = useState({ current: "", next: "", confirm: "" });
@@ -135,14 +135,15 @@ export default function Settings() {
   };
 
   return (
-    <Secretary_layout>
+    <Student_layout>
       {/* w-full + clamp padding replaces max-w-5xl mx-auto */}
-      <div className="w-full pb-10" style={{ padding: "30px clamp(12px, 2vw, 32px)" }}>
+      <div style={{ maxWidth: "1100px", margin: "40px auto",fontFamily: "Inter, sans-serif", padding: "0 24px", display: "flex", flexDirection: "column", gap: "24px" }}>
 
         {/* Header */}
         <div className="flex items-center justify-between mb-8">
             <h2 style={{ fontSize: "24px", color: "#701366", fontFamily: "Inter, sans-serif", margin: 0 }}>
-            Settings</h2>
+            Settings
+            </h2>
         </div>
 
         {/* Two-column grid → single column on narrow */}
@@ -161,9 +162,9 @@ export default function Settings() {
             {/* Account Info */}
             <Card title="Account Information">
               <div className="grid grid-cols-1" style={{ gap: "16px", marginTop: "20px" }}>
-                <ReadField label="Full Name" value={manager.name} />
-                <ReadField label="Email"     value={manager.email} />
-                <ReadField label="Role"      value={manager.role} />
+                <ReadField label="Full Name" value={student.name} />
+                <ReadField label="Email"     value={student.email} />
+                <ReadField label="Role"      value={student.role} />
               </div>
               <p className="text-[11px] text-gray-400 font-Inter mt-4">
                 * Account details can only be updated by the system administrator.
@@ -275,6 +276,6 @@ export default function Settings() {
           </Card>
         </div>
       </div>
-    </Secretary_layout>
+    </Student_layout>
   );
 }

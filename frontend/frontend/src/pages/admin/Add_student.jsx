@@ -12,11 +12,13 @@ export default function AddStudent() {
 
   return (
     <DashboardLayout>
+    <div className="flex flex-col gap-6">
       <section className="flex items-center justify-between mb-6 flex-wrap gap-3">
         <h1 className="text-2xl text-[#701366]">Add Student</h1>
         <Buttons cancelPath="/Students" onSave={handleSave} />
       </section>
       <Form onSuccess={() => navigate("/Students")} />
+      </div>
     </DashboardLayout>
   );
 }

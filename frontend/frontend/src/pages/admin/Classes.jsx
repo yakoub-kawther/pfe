@@ -8,6 +8,27 @@ import { apiFetch } from "../../services/api";
 
 
 
+// const thStyle = {
+//   padding: "12px 16px",
+//   fontSize: "14px",
+//   fontWeight: 500,
+//   textAlign: "left",
+//   whiteSpace: "nowrap",
+//   color: "#701366",
+// };
+
+// const tdStyle = {
+//   padding: "12px 16px",
+//   fontSize: "14px",
+//   color: "#701366",
+//   whiteSpace: "nowrap",
+// };
+
+// const statusStyles = {
+//   green: { background: "#dcfce7", color: "#16a34a" },
+//   red:   { background: "#fee2e2", color: "#ef4444" },
+// };
+
 export default function Classes() {
   const navigate = useNavigate();
 
@@ -21,6 +42,7 @@ export default function Classes() {
     { name: "Classes",    path: "/Classes"    },
     { name: "Classrooms", path: "/Classrooms" },
     { name: "Language",   path: "/Languages"  },
+    { name: "Positions",   path: "/Positions"  },
   ];
 
   const buildParams = useCallback((searchVal, filterVal) => {
@@ -57,7 +79,7 @@ export default function Classes() {
 
         {/* Header */}
         <div className="flex items-center justify-between mt-6">
-          <h1 className="text-xl sm:text-2xl text-[#701366]">Classes</h1>
+          <h2 className="text-xl sm:text-2xl text-[#701366]">Classes</h2>
         </div>
 
         {/* Tabs + Search */}
@@ -162,10 +184,17 @@ export default function Classes() {
                     {/* Action */}
                     <td className="px-4 py-3 whitespace-nowrap">
                       <button
-                        onClick={() => navigate("/Classes_information", { state: { cls } })}
-                        className="p-1.5 rounded-sm text-[#701366] hover:text-white hover:bg-[#701366] transition-all hover:scale-110"
+                        onClick={() => navigate("/Classe_information", { state: { cls } })}
+                        style={{
+                          padding: "6px", borderRadius: "4px", border: "none",
+                          background: "none", color: "#701366", cursor: "pointer",
+                          transition: "background 0.15s, color 0.15s, transform 0.15s",
+                          flexShrink: 0,
+                        }}
+                        onMouseEnter={e => { e.currentTarget.style.background = "#701366"; e.currentTarget.style.color = "white";   e.currentTarget.style.transform = "scale(1.1)"; }}
+                        onMouseLeave={e => { e.currentTarget.style.background = "none";    e.currentTarget.style.color = "#701366"; e.currentTarget.style.transform = "scale(1)";   }}
                       >
-                        <LayoutGrid className="w-4 h-4" />
+                        <LayoutGrid style={{ width: "16px", height: "16px" }} />
                       </button>
                     </td>
                   </tr>

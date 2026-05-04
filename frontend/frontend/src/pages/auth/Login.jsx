@@ -130,7 +130,7 @@ const btnStyle = {
 // ─── ROLE → ROUTE MAP ─────────────────────────────────────────
 const roleRoutes = {
   admin:       "/Dashboard",
-  teacher:     "/Teacher",
+  teacher:     "/Dashboard_teacher",
   student:     "/Student",
   secretariat: "/Dashboard_secretary",
 };

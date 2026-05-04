@@ -183,7 +183,7 @@ export default function Inscriptions_secretary() {
 
   return (
     <Secretary_layout>
-      <div style={{ maxWidth: 1100, margin: "0 auto", padding: "30px 16px 60px", fontFamily: "Inter, sans-serif" }}>
+      <div style={{ width: "100%", display: "flex", flexDirection: "column", gap: "24px", paddingTop: "6px", boxSizing: "border-box", minWidth: 0 }}>
 
         {/* ── Page Title ── */}
         <div style={{ marginBottom: "32px" }}>

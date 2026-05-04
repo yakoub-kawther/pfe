@@ -10,6 +10,7 @@ export default function Classrooms() {
     { name: "Classes",    path: "/Classes"    },
     { name: "Classrooms", path: "/Classrooms" },
     { name: "Language",   path: "/Languages"  },
+    { name: "Positions",   path: "/Positions"  },
   ];
 
   const [classrooms, setClassrooms] = useState([]);

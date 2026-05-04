@@ -98,7 +98,7 @@ const Form = ({ onSuccess }) => {
     if (!firstName.trim())        errs.first_name = "First name is required.";
     if (!lastName.trim())         errs.last_name  = "Last name is required.";
     if (!dateOfBirth)             errs.dob        = "Date of birth is required.";
-    if (!phone.trim())            errs.phone      = "Phone is required.";
+    if (!phone.trim() && !currentIsMinor)            errs.phone      = "Phone is required.";
     if (!username.trim())         errs.username   = "Username is required.";
     if (!password.trim())         errs.password   = "Password is required.";
     else if (password.length < 6) errs.password   = "Password must be at least 6 characters.";
@@ -213,7 +213,7 @@ const Form = ({ onSuccess }) => {
           marginBottom: "20px", fontSize: "14px",
           border: "1px solid #fecaca",
         }}>
-          ⚠ {errors.error}
+           {errors.error}
         </div>
       )}
 
@@ -323,7 +323,7 @@ const Form = ({ onSuccess }) => {
               </Field>
 
               <Field label="Parent Phone" full>
-                <input style={inp(!!errors.parent_phone)} value={parentPhone} placeholder="Phone number"
+                <input style={inp(!!errors.parent_phone)} value={parentPhone} placeholder="0XXXXXXXXXX (10 digits)" maxLength={10}
                   onChange={e => { setParentPhone(e.target.value); clearErr("parent_phone"); }} />
                 {getError(errors, "parent_phone") && <span style={{ color: "#ef4444", fontSize: "11px" }}>{getError(errors, "parent_phone")}</span>}
               </Field>
@@ -343,6 +343,9 @@ const Form = ({ onSuccess }) => {
                   onChange={e => { setUsername(e.target.value); clearErr("username"); }} />
                 {getError(errors, "username") && <span style={{ color: "#ef4444", fontSize: "11px" }}>{getError(errors, "username")}</span>}
               </Field>
+
+
+
               <Field label="Password">
                 <input type="password" style={inp(!!errors.password)} value={password} placeholder="Password"
                   onChange={e => { setPassword(e.target.value); clearErr("password"); }} />
@@ -353,11 +356,17 @@ const Form = ({ onSuccess }) => {
 
           <Card title="Contact Information">
             <div className="grid grid-cols-2" style={{ gap: "18px" }}>
+
+
+
               <Field label="Phone">
                 <input style={inp(!!errors.phone)} value={phone} placeholder="0XXXXXXXXX (10 digits)" maxLength={10}
                   onChange={e => { setPhone(e.target.value); clearErr("phone"); }} />
                 {getError(errors, "phone") && <span style={{ color: "#ef4444", fontSize: "11px" }}>{getError(errors, "phone")}</span>}
               </Field>
+
+
+
               <Field label="Email">
                 <input style={inp(!!errors.email)} value={email} placeholder="example@gmail.com"
                   onChange={e => { setEmail(e.target.value); clearErr("email"); }} />

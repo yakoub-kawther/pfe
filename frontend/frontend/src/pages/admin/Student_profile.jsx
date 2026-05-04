@@ -66,7 +66,7 @@ export default function Student_profile() {
   const { state } = useLocation();
   const student   = state?.student;
 
-  // ✅ Inside component so student is accessible
+  //  Inside component so student is accessible
   const studentTabs = [
     { name: "Profile",    path: "/Student_profile",    state: { student } },
     { name: "Classes",    path: "/Student_classes",    state: { student } },

@@ -1,7 +1,5 @@
 import { useLocation } from "react-router-dom";
-import Secretary_layout from "../../layouts/Secretary_layout";
-import Tabs from "../../components/Tabs";
-import Buttons from "../../components/Buttons";
+import Student_layout from "../../layouts/Student_layout";
 
 // ── Read-only field ──────────────────────────────────────────────────────────
 const ReadField = ({ label, value, full = false }) => (
@@ -13,7 +11,7 @@ const ReadField = ({ label, value, full = false }) => (
   </div>
 );
 
-// ── Gender — read-only radios ────────────────────────────────────────────────
+// ── Gender  ────────────────────────────────────────────────
 const GenderField = ({ value }) => {
   const val = value?.toLowerCase();
   return (
@@ -31,10 +29,10 @@ const GenderField = ({ value }) => {
   );
 };
 
-// ── Relationship — read-only radios ─────────────────────────────────────────
+// ── Relationship  ─────────────────────────────────────────
 const RelationshipField = ({ value }) => {
-  const fixed    = ["Father", "Mother", "Other"];
-  const isOther  = value && !["father", "mother"].includes(value.toLowerCase());
+  const fixed   = ["Father", "Mother", "Other"];
+  const isOther = value && !["father", "mother"].includes(value.toLowerCase());
   const selected = isOther ? "Other" : value;
   return (
     <div style={{ gridColumn: "1 / -1", display: "flex", flexDirection: "column", gap: "6px" }}>
@@ -66,43 +64,20 @@ const Card = ({ title, children }) => (
   </div>
 );
 
-const studentTabs = [
-  { name: "Profile",    path: "/Student_profile_secretary"    },
-  { name: "Classes",    path: "/Student_classes_secretary"    },
-  { name: "Payment",    path: "/Payment_student_secretary"    },
-  { name: "Attendance", path: "/Attendance_student_secretary" },
-];
-
 // ── Page ─────────────────────────────────────────────────────────────────────
-export default function Student_profile_secretary() {
-  const { state } = useLocation();
-  const student   = state?.student;
-  const nameParts = student?.name?.split(" ") || [];
-  const firstName = nameParts[0] || "";
-  const lastName  = nameParts.slice(1).join(" ") || "";
+const Profile_student = () => {
+  const { state }  = useLocation();
+  const student    = state?.student;
+  const nameParts  = student?.name?.split(" ") || [];
+  const firstName  = nameParts[0] || "";
+  const lastName   = nameParts.slice(1).join(" ") || "";
 
   return (
-    <Secretary_layout>
-      <div className="flex flex-col gap-6">
+    <Student_layout>
+      <div style={{ maxWidth: "1700px", margin: "0 auto", padding: "10px 16px", display: "flex", flexDirection: "column", gap: "24px", fontFamily: "Inter, sans-serif" }}>
 
-        {/* Title */}
-        <h2 className="text-2xl" style={{ color: "#701366", fontFamily: "Inter, sans-serif" }}>Student Profile</h2>
+        <h2 style={{ fontSize: "24px", color: "#701366", margin: 0 }}>My Profile</h2>
 
-        {/* Tabs */}
-        <div className="flex items-center justify-between gap-4 flex-wrap">
-          <Tabs tabs={studentTabs} />
-                  {/* Cancel button */}
-        <div className="w-full lg:w-auto flex justify-start lg:justify-end">
-          <Buttons cancelPath="/Student_secretary" showSave={false} />
-        </div>
-        </div>
-
-
-
-      </div>
-
-      {/* Content */}
-      <div style={{ maxWidth: "1700px", margin: "16px auto 0", padding: "0 16px", boxSizing: "border-box" }}>
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "28px", alignItems: "start" }}>
 
           {/* ── LEFT ── */}
@@ -110,6 +85,7 @@ export default function Student_profile_secretary() {
 
             {/* Basic Info */}
             <Card title="Basic Information">
+              {/* Avatar + name + status */}
               <div style={{ display: "flex", alignItems: "center", gap: "16px", marginBottom: "20px" }}>
                 <div style={{ width: "52px", height: "52px", borderRadius: "50%", background: "#f8e0f8", color: "#701366", fontSize: "20px", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
                   {student?.name?.charAt(0) || "S"}
@@ -138,7 +114,7 @@ export default function Student_profile_secretary() {
                 <ReadField label="Parent First Name" value={student?.parent_first_name} />
                 <ReadField label="Parent Last Name"  value={student?.parent_last_name} />
                 <RelationshipField                   value={student?.relationship} />
-                <ReadField label="Parent Contact"    value={student?.parent_phone} full />
+                <ReadField label="Parent Contact" value={student?.parent_phone} full />
               </div>
             </Card>
 
@@ -167,6 +143,8 @@ export default function Student_profile_secretary() {
           </div>
         </div>
       </div>
-    </Secretary_layout>
+    </Student_layout>
   );
-}
+};
+
+export default Profile_student;

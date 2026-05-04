@@ -18,6 +18,7 @@ export default function Languages() {
     { name: "Classes",    path: "/Classes"    },
     { name: "Classrooms", path: "/Classrooms" },
     { name: "Language",   path: "/Languages"  },
+    { name: "Positions",   path: "/Positions"  },
   ];
 
   const fetchLanguages = useCallback(async (searchVal) => {

@@ -1,98 +1,585 @@
+import { useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import DashboardLayout from "../../layouts/DashboardLayout";
+import DashboardLayout from "../../layouts/DashboardLayout.jsx";
 import Buttons from "../../components/Buttons";
+import {
+  Search, Check, ArrowLeft,
+  BookOpen, Clock, CheckCircle, Users, GraduationCap,
+} from "lucide-react";
 
-const statusStyles = {
-  Active:   "bg-green-100 text-green-700",
-  Inactive: "bg-red-100 text-red-700",
+/* ─── Design tokens ───────────────────────────────────────────────────────── */
+const T = {
+  purple:       "#701366",
+  purpleLight:  "#9c5094",
+  purplePale:   "#F8E0F8",
+  purpleBorder: "#F8E0F8",
+  text:         "#701366",
+  textMid:      "#9c5094",
+  textMuted:    "#b07aaa",
+  surface:      "#FFFFFF",
+  bg:           "#fffafe",
+  border:       "#f8e0f8",
+  green:        "#16a34a",
+  greenBg:      "#dcfce7",
+  greenBorder:  "#bbf7d0",
+  amber:        "#ea580c",
+  amberBg:      "#fff7ed",
+  amberBorder:  "#fed7aa",
+  radius:       "14px",
+  radiusSm:     "9px",
+  shadow:       "0 1px 6px rgba(0,0,0,0.05)",
 };
 
-const ReadField = ({ label, value, full = false }) => (
-  <div className="flex flex-col gap-1.5" style={full ? { gridColumn: "1 / -1" } : {}}>
-    {label ? <label className="text-[13px] text-gray-500 font-Inter">{label}</label> : null}
-    <div
-      style={{
-        width: "100%",
-        border: "1px solid #e2d0e2",
-        borderRadius: "8px",
-        padding: "10px 14px",
-        fontSize: "14px",
-        color: "#701366",
-        boxSizing: "border-box",
-        fontFamily: "Inter, sans-serif",
-        backgroundColor: "#faf5fa",
-        minHeight: "40px",
-      }}
-    >
-      {value || <span style={{ color: "#c9a8c9" }}>—</span>}
-    </div>
-  </div>
+/* ─── Shared micro-components ─────────────────────────────────────────────── */
+
+const Label = ({ children }) => (
+  <span style={{
+    display: "block", fontSize: "10.5px", fontWeight: 600,
+    color: T.textMuted, letterSpacing: "0.08em",
+    textTransform: "uppercase", marginBottom: "6px",
+  }}>
+    {children}
+  </span>
 );
 
-const Card = ({ title, children }) => (
-  <div
-    className="bg-white rounded-2xl border border-gray-100"
-    style={{ padding: "24px 28px", boxShadow: "0 1px 6px rgba(0,0,0,0.05)" }}
-  >
-    <h3 className="text-[#701366] font-Inter" style={{ fontSize: "16px", marginBottom: "20px" }}>
-      {title}
-    </h3>
+const Field = ({ label, children }) => (
+  <div>
+    <Label>{label}</Label>
     {children}
   </div>
 );
 
+const inputStyle = (disabled) => ({
+  width: "100%", boxSizing: "border-box",
+  border: `1.5px solid ${disabled ? T.border : T.purpleBorder}`,
+  borderRadius: T.radiusSm, padding: "9px 12px",
+  fontSize: "13px", color: disabled ? T.textMid : T.text,
+  background: disabled ? T.bg : "#fff",
+  fontFamily: "'Inter', sans-serif",
+  outline: "none", transition: "border-color 0.18s",
+  cursor: disabled ? "default" : "text",
+  appearance: "none",
+});
 
-export default function Classes_information() {
+const SearchInput = ({ value, onChange, placeholder, width = "220px" }) => (
+  <div style={{ position: "relative", display: "flex", alignItems: "center" }}>
+    <Search style={{
+      position: "absolute", left: "12px",
+      width: "14px", height: "14px",
+      color: T.textMuted, pointerEvents: "none",
+    }} />
+    <input
+      type="text" value={value} onChange={onChange}
+      placeholder={placeholder}
+      style={{
+        width, paddingLeft: "36px", paddingRight: "14px",
+        height: "36px", borderRadius: "20px",
+        border: `1.5px solid ${T.border}`, outline: "none",
+        fontSize: "13px", color: T.text,
+        background: "#fff", fontFamily: "'Inter', sans-serif",
+        transition: "border-color 0.18s",
+      }}
+    />
+  </div>
+);
+
+const Badge = ({ status }) => {
+  const isOk = status === "Completed";
+  return (
+    <span style={{
+      display: "inline-flex", alignItems: "center", gap: "5px",
+      padding: "4px 11px", borderRadius: "20px",
+      fontSize: "12px", fontWeight: 400,
+      background: isOk ? T.greenBg : T.amberBg,
+      color:      isOk ? T.green   : T.amber,
+      border:     `1px solid ${isOk ? T.greenBorder : T.amberBorder}`,
+    }}>
+      <span style={{
+        width: "5px", height: "5px", borderRadius: "50%",
+        background: isOk ? T.green : T.amber,
+      }} />
+      {status}
+    </span>
+  );
+};
+
+const StatCard = ({ icon: Icon, label, value, colors }) => (
+  <div style={{
+    flex: 1, background: "#fff", border: `1px solid ${T.border}`,
+    borderRadius: T.radius, padding: "18px 20px",
+    display: "flex", alignItems: "center", gap: "14px",
+    boxShadow: T.shadow, minWidth: 0,
+  }}>
+    <div style={{
+      width: "42px", height: "42px", borderRadius: "12px",
+      background: colors.iconBg, display: "flex",
+      alignItems: "center", justifyContent: "center", flexShrink: 0,
+    }}>
+      <Icon style={{ width: "19px", height: "19px", color: colors.iconColor }} />
+    </div>
+    <div style={{ minWidth: 0 }}>
+      <div style={{
+        fontSize: "11px", color: T.textMuted, fontWeight: 500,
+        letterSpacing: "0.05em", textTransform: "uppercase", marginBottom: "3px",
+      }}>
+        {label}
+      </div>
+      <div style={{
+        fontSize: "24px", fontWeight: 400,
+        color: colors.textColor, lineHeight: 1,
+      }}>
+        {value}
+      </div>
+    </div>
+  </div>
+);
+
+/* ─── Table shell ─────────────────────────────────────────────────────────── */
+
+const TableShell = ({ headers, children, empty }) => (
+  <div style={{
+    background: "#fff", borderRadius: T.radius,
+    border: `1px solid ${T.border}`,
+    overflow: "hidden", boxShadow: T.shadow, overflowX: "auto",
+  }}>
+    <table style={{ width: "100%", minWidth: "400px", borderCollapse: "collapse", fontSize: "13px" }}>
+      <thead>
+        <tr style={{ background: T.purplePale, borderBottom: `1px solid ${T.purpleBorder}` }}>
+          {headers.map((h, i) => (
+            <th key={i} style={{
+              padding: "12px 20px", textAlign: "left",
+              color: T.purple, fontWeight: 500, fontSize: "11.5px",
+              letterSpacing: "0.06em", textTransform: "uppercase", whiteSpace: "nowrap",
+            }}>{h}</th>
+          ))}
+        </tr>
+      </thead>
+      <tbody>
+        {children || (
+          <tr>
+            <td colSpan={headers.length} style={{
+              textAlign: "center", padding: "40px",
+              color: T.textMuted, fontSize: "13px",
+            }}>{empty}</td>
+          </tr>
+        )}
+      </tbody>
+    </table>
+  </div>
+);
+
+const Tr = ({ children }) => {
+  const [hov, setHov] = useState(false);
+  return (
+    <tr
+      style={{
+        borderTop: `1px solid ${T.border}`,
+        background: hov ? "#fffafe" : "#fff",
+        transition: "background 0.13s",
+      }}
+      onMouseEnter={() => setHov(true)}
+      onMouseLeave={() => setHov(false)}
+    >
+      {children}
+    </tr>
+  );
+};
+
+const Td = ({ children, muted, mono }) => (
+  <td style={{
+    padding: "12px 20px",
+    color: muted ? T.textMid : T.text,
+    fontFamily: "'Inter', sans-serif",
+    fontSize: mono ? "12.5px" : "13.5px",
+    whiteSpace: "nowrap",
+  }}>{children}</td>
+);
+
+/* ─── Tab bar ─────────────────────────────────────────────────────────────── */
+
+const TABS = [
+  { key: "details",  label: "Class Details", icon: GraduationCap },
+  { key: "students", label: "Students",       icon: Users },
+  { key: "sessions", label: "Sessions",       icon: BookOpen },
+];
+
+const TabBar = ({ active, onChange }) => (
+  <div style={{
+    display: "flex", gap: "4px",
+    background: T.purplePale,
+    borderRadius: "12px", padding: "4px",
+    border: `1px solid ${T.purpleBorder}`,
+    width: "fit-content", flexWrap: "wrap",
+  }}>
+    {TABS.map(({ key, label, icon: Icon }) => {
+      const on = active === key;
+      return (
+        <button
+          key={key}
+          onClick={() => onChange(key)}
+          style={{
+            display: "flex", alignItems: "center", gap: "7px",
+            padding: "8px 18px", borderRadius: "9px",
+            border: "none", cursor: "pointer",
+            background: on ? T.purple : "transparent",
+            color: on ? "#fff" : T.textMid,
+            fontSize: "13px", fontWeight: on ? 500 : 400,
+            fontFamily: "'Inter', sans-serif",
+            transition: "all 0.18s", whiteSpace: "nowrap",
+          }}
+        >
+          <Icon style={{ width: "14px", height: "14px" }} />
+          {label}
+        </button>
+      );
+    })}
+  </div>
+);
+
+/* ─── Data ─────────────────────────────────────────────────────────────────── */
+
+const initialStudents = [
+  { firstName: "Yousra",  lastName: "Zt"       },
+  { firstName: "Liam",    lastName: "Smith"     },
+  { firstName: "Emma",    lastName: "Brown"     },
+  { firstName: "Noah",    lastName: "Martin"    },
+  { firstName: "Olivia",  lastName: "Davis"     },
+  { firstName: "James",   lastName: "Lee"       },
+  { firstName: "Ava",     lastName: "Johnson"   },
+  { firstName: "Sophia",  lastName: "Wilson"    },
+  { firstName: "Lucas",   lastName: "Taylor"    },
+  { firstName: "Mia",     lastName: "Anderson"  },
+];
+
+const mockSessions = [
+  { session: "Session 1", date: "2024-01-10", status: "Completed"     },
+  { session: "Session 2", date: "2024-01-17", status: "Completed"     },
+  { session: "Session 3", date: "2024-01-24", status: "Completed"     },
+  { session: "Session 4", date: "2024-01-31", status: "Not Completed" },
+  { session: "Session 5", date: "2024-02-07", status: "Not Completed" },
+  { session: "Session 6", date: "2024-02-14", status: "Not Completed" },
+];
+
+const TOTAL_SESSIONS = mockSessions.length;
+const completedCount = mockSessions.filter(s => s.status === "Completed").length;
+const remainingCount = TOTAL_SESSIONS - completedCount;
+
+/* ─── Section header helper ───────────────────────────────────────────────── */
+
+const SectionHeader = ({ icon: Icon, title }) => (
+  <div style={{
+    display: "flex", alignItems: "center", gap: "10px",
+    marginBottom: "22px", paddingBottom: "16px",
+    borderBottom: `1px solid ${T.border}`,
+  }}>
+    <div style={{
+      width: "34px", height: "34px", borderRadius: "9px",
+      background: T.purplePale, display: "flex",
+      alignItems: "center", justifyContent: "center",
+    }}>
+      <Icon style={{ width: "16px", height: "16px", color: T.purple }} />
+    </div>
+    <h2 style={{ margin: 0, fontSize: "16px", fontWeight: 500, color: T.text }}>
+      {title}
+    </h2>
+  </div>
+);
+
+/* ─── Main component ──────────────────────────────────────────────────────── */
+
+const Classe_information = () => {
   const { state } = useLocation();
   const navigate  = useNavigate();
   const cls       = state?.cls;
 
+  const [tab,           setTab]       = useState("details");
+  const [isEditing,     setIsEditing] = useState(false);
+  const [saved,         setSaved]     = useState(false);
+  const [search,        setSearch]    = useState("");
+  const [sessionSearch, setSesSearch] = useState("");
+  const [students]                    = useState(initialStudents);
+
+  const [form, setForm] = useState({
+    classId:      cls?.name         || "C-001",
+    className:    cls?.name         || "Advanced B2",
+    status:       cls?.status?.text || "Active",
+    startingDate: cls?.startingDate || "",
+    language:     cls?.language     || "English",
+    level:        cls?.level        || "B2",
+    teacher:      cls?.teacher      || "Mr Ahmed",
+  });
+
+  const [draft, setDraft] = useState(form);
+
+  const handle        = (f) => (e) => setDraft(p => ({ ...p, [f]: e.target.value }));
+  const handleEdit    = () => { setDraft(form); setIsEditing(true);  setSaved(false); };
+  const handleDiscard = () => { setIsEditing(false); setSaved(false); };
+  const handleSave    = () => {
+    setForm(draft);
+    setIsEditing(false);
+    setSaved(true);
+    setTimeout(() => setSaved(false), 3000);
+  };
+
+  const filteredStudents = students.filter(({ firstName, lastName }) =>
+    `${firstName} ${lastName}`.toLowerCase().includes(search.toLowerCase())
+  );
+
+  const filteredSessions = mockSessions.filter(({ session, date, status }) => {
+    const q = sessionSearch.toLowerCase();
+    return session.toLowerCase().includes(q) || date.includes(q) || status.toLowerCase().includes(q);
+  });
+
+  const wrap = {
+    width: "100%", boxSizing: "border-box",
+    padding: "32px clamp(12px, 2.5vw, 36px) 60px",
+    fontFamily: "'Inter', sans-serif",
+  };
+
+  const card = {
+    background: "#fff", borderRadius: T.radius,
+    border: `1px solid ${T.border}`,
+    padding: "28px", boxShadow: T.shadow,
+  };
+
   return (
     <DashboardLayout>
-      {/* only change: max-w-5xl → w-full, padding uses clamp so it never overflows */}
-      <div className="w-full pb-10" style={{ padding: "30px clamp(12px, 2vw, 32px)" }}>
+      <div style={wrap}>
 
-{/* Header */}
-<div className="flex items-center justify-between mb-8">
-  <h1 className="text-2xl text-[#701366] font-Inter">Class Information</h1>
-  <Buttons
-    cancelPath="/Classes"
-    showSave={false}
-    showEdit={true}
-    onEdit={() => navigate("/Edit_classes", { state: { cls } })}
-  />
-</div>
+        {/* ── Page header ─────────────────────────────────────────────── */}
+        <div style={{
+          display: "flex", alignItems: "center",
+          justifyContent: "space-between", marginBottom: "28px",
+          flexWrap: "wrap", gap: "12px",
+        }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "14px" }}>
+            <button
+              onClick={() => navigate(-1)}
+              style={{
+                display: "flex", alignItems: "center", justifyContent: "center",
+                width: "36px", height: "36px", borderRadius: "50%",
+                border: `1.5px solid ${T.purpleBorder}`,
+                background: "#fff", cursor: "pointer", flexShrink: 0,
+              }}
+            >
+              <ArrowLeft style={{ width: "15px", height: "15px", color: T.purple }} />
+            </button>
+            <div>
+              <p style={{
+                margin: 0, fontSize: "12px", color: T.textMuted,
+                fontWeight: 400, letterSpacing: "0.04em", textTransform: "uppercase",
+              }}>
+                Classes
+              </p>
+              <h1 style={{ margin: 0, fontSize: "22px", fontWeight: 500, color: T.text, lineHeight: 1.2 }}>
+                {form.className}
+              </h1>
+            </div>
+          </div>
 
-        {/* single card — no grid needed anymore */}
-        <div style={{ marginTop: "30px" }}>
-          {/* Class Details */}
-          <Card title="Class Details">
-            <div className="flex items-center gap-4 mb-5">
-              <div
-                className="flex items-center justify-center rounded-full bg-[#f8e0f8] text-[#701366] font-Inter text-xl"
-                style={{ width: "52px", height: "52px", flexShrink: 0 }}
-              >
-                {cls?.name?.charAt(0) || "C"}
+          {/* Edit / Save / Discard — only on Details tab */}
+          {tab === "details" && (
+            <div style={{ display: "flex", gap: "8px", alignItems: "center", flexWrap: "wrap" }}>
+              {saved && (
+                <span style={{
+                  fontSize: "12px", color: T.green,
+                  background: T.greenBg, border: `1px solid ${T.greenBorder}`,
+                  borderRadius: "20px", padding: "4px 12px",
+                  display: "flex", alignItems: "center", gap: "5px",
+                }}>
+                  <Check style={{ width: "11px", height: "11px" }} /> Saved successfully
+                </span>
+              )}
+              {isEditing ? (
+                <Buttons
+                  onCancel={handleDiscard}
+                  onSave={handleSave}
+                  saveLabel="Save Changes"
+                />
+              ) : (
+                <Buttons
+                  showSave={false}
+                  showEdit
+                  onCancel={() => navigate(-1)}
+                  onEdit={handleEdit}
+                />
+              )}
+            </div>
+          )}
+        </div>
+
+        {/* ── Tab bar ─────────────────────────────────────────────────── */}
+        <div style={{ marginBottom: "24px", overflowX: "auto" }}>
+          <TabBar
+            active={tab}
+            onChange={(t) => { setTab(t); setIsEditing(false); setSaved(false); }}
+          />
+        </div>
+
+        {/* ══ TAB: Class Details ══════════════════════════════════════ */}
+        {tab === "details" && (
+          <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
+
+            <div style={card}>
+              <SectionHeader icon={GraduationCap} title="General Information" />
+              <div style={{
+                display: "grid",
+                gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 180px), 1fr))",
+                gap: "24px",
+              }}>
+                <Field label="Class ID">
+                  <input style={inputStyle(!isEditing)} value={isEditing ? draft.classId : form.classId} onChange={handle("classId")} disabled={!isEditing} placeholder="C-001" />
+                </Field>
+                <Field label="Class Name">
+                  <input style={inputStyle(!isEditing)} value={isEditing ? draft.className : form.className} onChange={handle("className")} disabled={!isEditing} placeholder="Advanced B2" />
+                </Field>
+                <Field label="Status">
+                  <select style={{ ...inputStyle(!isEditing), cursor: isEditing ? "pointer" : "default" }} value={isEditing ? draft.status : form.status} onChange={handle("status")} disabled={!isEditing}>
+                    <option>Active</option>
+                    <option>Inactive</option>
+                  </select>
+                </Field>
+                <Field label="Starting Date">
+                  <input type="date" style={inputStyle(!isEditing)} value={isEditing ? draft.startingDate : form.startingDate} onChange={handle("startingDate")} disabled={!isEditing} />
+                </Field>
               </div>
-              <div>
-                <p className="text-[#701366] font-Inter text-base leading-tight">{cls?.name || "—"}</p>
-                <span className={`inline-flex items-center px-3 py-0.5 rounded-full text-xs mt-1 ${statusStyles[cls?.status?.text] || "bg-gray-100 text-gray-600"}`}>
-                  {cls?.status?.text || "Unknown"}
+            </div>
+
+            <div style={card}>
+              <SectionHeader icon={BookOpen} title="Academic Settings" />
+              <div style={{
+                display: "grid",
+                gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 180px), 1fr))",
+                gap: "24px",
+              }}>
+                <Field label="Language">
+                  <select style={{ ...inputStyle(!isEditing), cursor: isEditing ? "pointer" : "default" }} value={isEditing ? draft.language : form.language} onChange={handle("language")} disabled={!isEditing}>
+                    <option>English</option><option>French</option><option>Arabic</option><option>Spanish</option>
+                  </select>
+                </Field>
+                <Field label="Level">
+                  <select style={{ ...inputStyle(!isEditing), cursor: isEditing ? "pointer" : "default" }} value={isEditing ? draft.level : form.level} onChange={handle("level")} disabled={!isEditing}>
+                    {["A1","A2","B1","B2","C1","C2"].map(l => <option key={l}>{l}</option>)}
+                  </select>
+                </Field>
+                <Field label="Teacher">
+                  <select style={{ ...inputStyle(!isEditing), cursor: isEditing ? "pointer" : "default" }} value={isEditing ? draft.teacher : form.teacher} onChange={handle("teacher")} disabled={!isEditing}>
+                    <option>Mr Ahmed</option><option>Mme Sara</option><option>Mr Karim</option>
+                  </select>
+                </Field>
+              </div>
+            </div>
+
+            {!isEditing && (
+              <p style={{
+                margin: 0, fontSize: "12px", color: T.textMuted,
+                padding: "11px 16px", borderRadius: T.radiusSm,
+                background: T.purplePale, border: `1px dashed ${T.purpleBorder}`,
+                display: "inline-block",
+              }}>
+                Click <strong style={{ color: T.purple }}>Edit</strong> to modify these details.
+              </p>
+            )}
+          </div>
+        )}
+
+        {/* ══ TAB: Students ══════════════════════════════════════════ */}
+        {tab === "students" && (
+          <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+
+            <div style={{ display: "flex", gap: "12px", flexWrap: "wrap" }}>
+              <StatCard
+                icon={Users} label="Total Students" value={students.length}
+                colors={{ iconBg: T.purplePale, iconColor: T.purple, textColor: T.purple }}
+              />
+            </div>
+
+            <div style={{
+              display: "flex", alignItems: "center",
+              justifyContent: "space-between", flexWrap: "wrap", gap: "10px",
+            }}>
+              <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                <div style={{
+                  width: "32px", height: "32px", borderRadius: "8px",
+                  background: T.purplePale, display: "flex",
+                  alignItems: "center", justifyContent: "center",
+                }}>
+                  <Users style={{ width: "15px", height: "15px", color: T.purple }} />
+                </div>
+                <span style={{ fontSize: "15px", fontWeight: 500, color: T.text }}>Enrolled Students</span>
+                <span style={{
+                  fontSize: "12px", color: T.purple,
+                  background: T.purplePale, border: `1px solid ${T.purpleBorder}`,
+                  borderRadius: "20px", padding: "2px 10px",
+                }}>
+                  {filteredStudents.length}
                 </span>
               </div>
+              <SearchInput value={search} onChange={e => setSearch(e.target.value)} placeholder="Search student…" />
             </div>
 
-            <div className="grid grid-cols-2" style={{ gap: "18px" }}>
-              <ReadField label="Class Name"    value={cls?.name} />
-              <ReadField label="Language"      value={cls?.language} />
-              <ReadField label="Level"         value={cls?.level} />
-              <ReadField label="Teacher"       value={cls?.teacher} />
-              <ReadField label="Students"      value={cls?.students?.toString()} />
-              <ReadField label="Academic Year" value={cls?.year} />
+            <TableShell headers={["#", "First Name", "Last Name"]} empty="No students found.">
+              {filteredStudents.length > 0 && filteredStudents.map((s, i) => (
+                <Tr key={i}>
+                  <Td muted mono>{String(i + 1).padStart(2, "0")}</Td>
+                  <Td>{s.firstName}</Td>
+                  <Td muted>{s.lastName}</Td>
+                </Tr>
+              ))}
+            </TableShell>
+          </div>
+        )}
+
+        {/* ══ TAB: Sessions ══════════════════════════════════════════ */}
+        {tab === "sessions" && (
+          <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
+            <div style={{ display: "flex", gap: "12px", flexWrap: "wrap" }}>
+              <StatCard
+                icon={BookOpen} label="Total Sessions" value={TOTAL_SESSIONS}
+                colors={{ iconBg: T.purplePale, iconColor: T.purple, textColor: T.purple }}
+              />
+              <StatCard
+                icon={CheckCircle} label="Completed" value={completedCount}
+                colors={{ iconBg: T.greenBg, iconColor: T.green, textColor: T.green }}
+              />
+              <StatCard
+                icon={Clock} label="Remaining" value={remainingCount}
+                colors={{ iconBg: T.amberBg, iconColor: T.amber, textColor: T.amber }}
+              />
             </div>
-          </Card>
-        </div>
+
+            <div style={{
+              display: "flex", alignItems: "center",
+              justifyContent: "space-between", flexWrap: "wrap", gap: "10px",
+            }}>
+              <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                <div style={{
+                  width: "32px", height: "32px", borderRadius: "8px",
+                  background: T.purplePale, display: "flex",
+                  alignItems: "center", justifyContent: "center",
+                }}>
+                  <BookOpen style={{ width: "15px", height: "15px", color: T.purple }} />
+                </div>
+                <span style={{ fontSize: "15px", fontWeight: 500, color: T.text }}>Session List</span>
+              </div>
+              <SearchInput value={sessionSearch} onChange={e => setSesSearch(e.target.value)} placeholder="Search sessions…" />
+            </div>
+
+            <TableShell headers={["Session", "Date", "Status"]} empty="No sessions found.">
+              {filteredSessions.length > 0 && filteredSessions.map((s, i) => (
+                <Tr key={i}>
+                  <Td>{s.session}</Td>
+                  <Td muted mono>{s.date}</Td>
+                  <Td><Badge status={s.status} /></Td>
+                </Tr>
+              ))}
+            </TableShell>
+          </div>
+        )}
+
       </div>
     </DashboardLayout>
   );
-}
+};
+
+export default Classe_information;
