@@ -33,6 +33,7 @@ class InscriptionViewSet(GenericViewSet):
     # POST /inscriptions/
     # ─────────────────────────────────────────
     def create(self, request):
+        print("REQUEST DATA:", request.data)
         student_id = request.data.get('student_id')
         class_id   = request.data.get('class_id')
 
@@ -150,3 +151,21 @@ class InscriptionViewSet(GenericViewSet):
             'previous_inscription_id': current.pk,
             'new_inscription': InscriptionSerializer(new_inscription).data,
         }, status=status.HTTP_201_CREATED)
+    
+
+    def list(self, request):
+        inscriptions = Inscription.objects.select_related(
+            'student__person', 'enrolled_class'
+         
+        ).all().order_by('-inscription_date')
+
+        class_id = request.query_params.get('class_id')
+        if class_id:
+            inscriptions = inscriptions.filter(enrolled_class_id=class_id)
+
+        status_filter = request.query_params.get('status')
+        if status_filter:
+            inscriptions = inscriptions.filter(status=status_filter)
+
+        serializer = InscriptionDetailSerializer(inscriptions, many=True)
+        return Response(serializer.data)

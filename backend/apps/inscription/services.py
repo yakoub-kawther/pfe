@@ -18,8 +18,8 @@ def create_inscription(student_id: int, class_id: int) -> Inscription:
     if enrolled_class.status != 'active':
         raise ValueError(f'Cannot enroll in a class with status "{enrolled_class.status}".')
 
-    if Inscription.objects.filter(student=student, status__in=ACTIVE_STATUSES).exists():
-        raise ValueError('Student already has an active inscription.')
+    # if Inscription.objects.filter(student=student, status__in=ACTIVE_STATUSES).exists():
+    #     raise ValueError('Student already has an active inscription.')
 
     if Inscription.objects.filter(student=student, enrolled_class=enrolled_class).exists():
         raise ValueError('Student is already enrolled in this class.')

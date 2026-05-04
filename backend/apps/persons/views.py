@@ -31,10 +31,15 @@ from .services import (
 class StudentViewSet(viewsets.ViewSet):
     permission_classes = [AllowAny]
     def list(self, request):
-        students = Student.objects.select_related('person').all()
-        serializer = StudentSerializer(students, many=True)
-        
-        return Response(serializer.data)
+       students = Student.objects.select_related('person', 'parent__person').all()
+       serializer = StudentSerializer(students, many=True)
+       return Response(serializer.data)
+
+    def retrieve(self, request, pk=None):
+      student = Student.objects.select_related('person', 'parent__person').filter(pk=pk).first()
+      if not student:
+        return Response({'error': 'Student not found'}, status=status.HTTP_404_NOT_FOUND)
+      return Response(StudentSerializer(student).data)
 
     def create(self, request):
         serializer = StudentCreateSerializer(data=request.data)
@@ -48,15 +53,7 @@ class StudentViewSet(viewsets.ViewSet):
             serializer.errors,
             status=status.HTTP_400_BAD_REQUEST
         )
-    # get one student
-    def retrieve(self, request, pk=None):
-        student = Student.objects.select_related('person').filter(pk=pk).first()
-        if not student:
-            return Response(
-                {'error': 'Student not found'},
-                status=status.HTTP_404_NOT_FOUND
-            )
-        return Response(StudentSerializer(student).data)
+    
 
     def update(self, request, pk=None):
         student = Student.objects.select_related('person').filter(pk=pk).first()
@@ -138,6 +135,7 @@ class EmployeeViewSet(viewsets.ViewSet):
     def list(self, request):
         employees = Employee.objects.select_related('person', 'position').all()
         serializer = EmployeeSerializer(employees, many=True)
+        # print("FIRST EMPLOYEE DATA:", serializer.data[0] if serializer.data else "empty")
         return Response(serializer.data)
 
     def create(self, request):
@@ -182,6 +180,16 @@ class EmployeeViewSet(viewsets.ViewSet):
             status=status.HTTP_400_BAD_REQUEST
         )
 
+    @action(detail=False, methods=['get'], url_path='non-teachers')
+    def non_teachers(self, request):
+        queryset = Employee.objects.filter(
+            teacher__isnull=True
+        ).select_related('person', 'position')
+        serializer = EmployeeSerializer(queryset, many=True)
+        return Response(serializer.data)
+    
+    def partial_update(self, request, pk=None):
+        return self.update(request, pk)
 
 
 class TeacherViewSet(viewsets.ViewSet):
@@ -278,4 +286,18 @@ class TeacherViewSet(viewsets.ViewSet):
             {'error': e.message},
             status=status.HTTP_400_BAD_REQUEST
          )
+    
+    def partial_update(self, request, pk=None):
+       return self.update(request, pk)
 
+
+
+from rest_framework import generics
+
+class EmployeeWithoutTeacherListView(generics.ListAPIView):
+    serializer_class = EmployeeSerializer
+
+    def get_queryset(self):
+        return Employee.objects.filter(
+            teacher__isnull=True
+        ).select_related('person', 'position')

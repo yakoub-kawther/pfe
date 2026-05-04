@@ -5,6 +5,7 @@ from rest_framework.routers import DefaultRouter
 
 
 from .views import (
+    EmployeeWithoutTeacherListView,
     StudentViewSet,
     ParentViewSet,
     EmployeeViewSet,
@@ -19,5 +20,7 @@ router.register('teachers',  TeacherViewSet,  basename='teacher')
 
 
 urlpatterns = [
+    # path('api/persons/employees/non-teachers/', EmployeeWithoutTeacherListView.as_view()),
     path('', include(router.urls)),
+    
 ]

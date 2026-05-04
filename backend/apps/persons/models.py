@@ -24,6 +24,12 @@ class Student(models.Model):
     person        = models.OneToOneField(Person, on_delete=models.CASCADE, primary_key=True)
     date_of_birth = models.DateField()
     special_case  = models.CharField(max_length=255, null=True, blank=True)
+    parent        = models.ForeignKey(          # ← add this
+        'Parent',
+        on_delete=models.SET_NULL,
+        null=True, blank=True,
+        related_name='students'
+    )
 
     
     
@@ -41,7 +47,7 @@ class Parent(models.Model):
         ('mother','Mother'),
         ('other','Other')
     ])
-    students     = models.ManyToManyField(Student, through='ParentStudent')
+    # students     = models.ManyToManyField(Student, through='ParentStudent')
 
     
     
@@ -52,16 +58,16 @@ class Parent(models.Model):
         return self.person.first_name
 
 
-class ParentStudent(models.Model):
-    parent  = models.ForeignKey(Parent, on_delete=models.CASCADE)
-    student = models.ForeignKey(Student, on_delete=models.CASCADE)
+# class ParentStudent(models.Model):
+#     parent  = models.ForeignKey(Parent, on_delete=models.CASCADE)
+#     student = models.ForeignKey(Student, on_delete=models.CASCADE)
 
-    class Meta:
-        db_table = 'parent_student'
-        unique_together = ('parent', 'student')
+#     class Meta:
+#         db_table = 'parent_student'
+#         unique_together = ('parent', 'student')
 
-    def __str__(self):
-        return f"{self.parent} - {self.student}"
+#     def __str__(self):
+#         return f"{self.parent} - {self.student}"
 
 
 

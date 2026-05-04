@@ -1,10 +1,10 @@
 # apps/persons/services.py
 
 from django.db import transaction
-from django.core.exceptions import ValidationError
+from rest_framework.exceptions import ValidationError
 from datetime import date
 
-from .models import Person, Student, Parent, ParentStudent, Employee, Teacher
+from .models import Person, Student, Parent,  Employee, Teacher
 
 
 
@@ -38,79 +38,134 @@ def update_person(person, data):
 @transaction.atomic
 def create_student(data):
     
+    
+    parent_id = data.get('parent_id')
+    parent = Parent.objects.filter(pk=parent_id).first() if parent_id else None
+
     person = create_person(data)
 
     student = Student(
-        person=person,
-        date_of_birth=data['date_of_birth'],
-        special_case=data.get('special_case')
+        person        = person,
+        date_of_birth = data['date_of_birth'],
+        special_case  = data.get('special_case'),
+        parent        = parent,
     )
     student.full_clean()
     student.save()
 
-    #link the parent 
-    parent_id = data.get('parent_id')
-    if parent_id:
-        parent = Parent.objects.filter(pk=parent_id).first()
-        if parent:
-            ParentStudent.objects.get_or_create(
-                parent  = parent,
-                student = student
-            )
-    
     return student
-
-
 
 
 @transaction.atomic
 def update_student(student, data):
-    
-    person = update_person(student.person, data)
+    update_person(student.person, data)
 
-    
     student.date_of_birth = data.get('date_of_birth', student.date_of_birth)
     student.special_case  = data.get('special_case',  student.special_case)
+
+    if 'parent_id' in data:
+        parent_id      = data['parent_id']
+        student.parent = Parent.objects.filter(pk=parent_id).first() if parent_id else None
+
     student.full_clean()
     student.save()
-
-    parent_id = data.get('parent_id')
-    if parent_id:
-     parent = Parent.objects.filter(pk=parent_id).first()
-     if parent:
-        ParentStudent.objects.get_or_create(
-            parent  = parent,
-            student = student
-        )
-
     return student
 
 
+from apps.accounts.services import create_account  
 
+POSITION_ROLE_MAP = {
+    'secretary': 'admin',
+    'manager':   'superadmin',
+}
 
 @transaction.atomic
 def create_employee(data):
-    
-    
-    person = create_person(data)
-
+    person   = create_person(data)
     employee = Employee.objects.create(
         person=person,
-        hire_date=data['hire_date'],
-        position_id=data.get('position_id'),  #
-        status='active'
+        hire_date=data.get('hire_date'),
+        position_id=data.get('position_id'),
+        status=data.get('status', 'active'),
     )
+
+    # ── Auto-create account if position requires it ──
+    position_name = employee.position.name.lower()
+    role          = POSITION_ROLE_MAP.get(position_name)
+
+    if role:
+        username = data.get('username')
+        password = data.get('password')
+
+        if not username or not password:
+            raise ValidationError({
+                'username': 'Username and password are required for this position.'
+            })
+
+        create_account(
+            person=employee,       # ← pass employee (not person)
+            role_name=role,
+            username=username,
+            raw_password=password,
+        )
+
     return employee
 
 @transaction.atomic
 def update_employee(employee, data):
-    person = update_person(employee.person , data)
+    person = update_person(employee.person, data)
 
-    #employee.hire_date = data.get('hire_date', employee.hire_date)
-    employee.position_id = data.get('position_id', employee.position_id)
+    old_position_name = employee.position.name.lower() if employee.position else None
+
+    # Update employee fields
+    employee.hire_date   = data.get('hire_date',    employee.hire_date)
+    employee.status      = data.get('status',       employee.status)
+    if 'position_id' in data:
+        employee.position_id = data['position_id']
     employee.save()
-    return employee
 
+    new_position_name = employee.position.name.lower() if employee.position else None
+    new_role          = POSITION_ROLE_MAP.get(new_position_name)
+    old_role          = POSITION_ROLE_MAP.get(old_position_name)
+
+    from apps.accounts.models import Account
+
+    existing_account = Account.objects.filter(employee=employee).first()
+
+    if new_role:
+        username = data.get('username')
+        password = data.get('password')
+
+        if existing_account:
+            # ── Update existing account ──
+            if username:
+                existing_account.username = username
+            if password:
+                from django.contrib.auth.hashers import make_password
+                existing_account.password_hash = make_password(password)
+            # Update role if position changed
+            if old_role != new_role:
+                from apps.accounts.models import Role
+                existing_account.role = Role.objects.get(name=new_role)
+            existing_account.save()
+        else:
+            
+            if not username or not password:
+                raise ValidationError({
+                    'username': 'Username and password are required for this position.'
+                })
+            create_account(
+                person=employee,
+                role_name=new_role,
+                username=username,
+                raw_password=password,
+            )
+    else:
+        #
+        if existing_account:
+            existing_account.delete()
+
+    return employee
 
 
 @transaction.atomic
@@ -153,14 +208,14 @@ def create_parent(data):
         students = Student.objects.filter(pk__in=student_ids)
         if len(students) != len(student_ids):
             raise ValidationError("Some students not found.")
-        for student in students:
-            ParentStudent.objects.get_or_create(parent=parent, student=student)
+        # for student in students:
+        #     ParentStudent.objects.get_or_create(parent=parent, student=student)
 
     return parent
 
 @transaction.atomic
 def update_parent(parent, data):
-    person = update_person(parent.person, data)
+    update_person(parent.person, data)
 
     parent.relationship = data.get('relationship', parent.relationship)
     parent.save()
@@ -170,10 +225,10 @@ def update_parent(parent, data):
         students = Student.objects.filter(pk__in=student_ids)
         if len(students) != len(student_ids):
             raise ValidationError("Some students not found.")
-        parent.students.set(students)
+        # Update each student's parent FK
+        Student.objects.filter(pk__in=student_ids).update(parent=parent)
 
     return parent
-
 
 
 

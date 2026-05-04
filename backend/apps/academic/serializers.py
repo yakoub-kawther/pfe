@@ -90,6 +90,8 @@ class PositionSerializer(serializers.ModelSerializer):
         fields = ['id', 'name']
 
 
+ # matches your EmployeeSerializer fields
+
 class PositionCreateSerializer(serializers.ModelSerializer):
     class Meta:
         model = Position
@@ -105,10 +107,13 @@ class PositionCreateSerializer(serializers.ModelSerializer):
     
 
 
+
+
 # class part
 
 from rest_framework import serializers
 from django.utils import timezone
+
 
 class ClassCreateSerializer(serializers.ModelSerializer):
     language = serializers.PrimaryKeyRelatedField(queryset=Language.objects.all())

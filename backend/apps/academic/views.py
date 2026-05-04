@@ -8,6 +8,9 @@ from rest_framework.response import Response
 from django.shortcuts import get_object_or_404
 from django.db import transaction
 from django.core.exceptions import ValidationError
+from rest_framework.filters import SearchFilter
+from django_filters.rest_framework import DjangoFilterBackend
+
 
 from .models import Language , Level , Position , Classroom , Class, Schedule
 from .serializers import LanguageSerializer, LanguageCreateSerializer, LevelCreateSerializer , LevelSerializer , ClassroomCreateSerializer , LevelCreateSerializer , PositionCreateSerializer , PositionSerializer , ClassroomSerializer , ClassSerializer , ClassCreateSerializer , ScheduleSerializer , ScheduleCreateSerializer
@@ -15,9 +18,10 @@ from .services import create_language, update_language , get_teacher_busy_times 
 
 # language part
 class LanguageViewSet(viewsets.ModelViewSet):
-    
-    
     queryset = Language.objects.all()
+    filter_backends = [SearchFilter]
+    search_fields   = ['language_name', 'shortcut']
+    
 
     def get_serializer_class(self):
         
@@ -102,6 +106,9 @@ class ClassroomViewSet(viewsets.ModelViewSet):
 class PositionViewSet(viewsets.ModelViewSet):
     queryset = Position.objects.all()
 
+    def get_queryset(self):
+        return Position.objects.exclude(name__iexact='teacher')
+
     def get_serializer_class(self):
         if self.action in ['create', 'update', 'partial_update']:
             
@@ -126,6 +133,9 @@ class PositionViewSet(viewsets.ModelViewSet):
     
 
 
+    
+
+
 # class part 
 
 from rest_framework import viewsets
@@ -133,6 +143,20 @@ from django.db import transaction
 
 class ClassViewSet(viewsets.ModelViewSet):
     queryset = Class.objects.select_related('language', 'level', 'teacher').all()
+
+    filter_backends  = [DjangoFilterBackend, SearchFilter]
+
+    # ?status=active  or  ?status=inactive
+    filterset_fields = ['status']
+
+    # ?search=ahmed  searches across these fields
+    search_fields    = [
+        'name',
+        'language__language_name',
+        'level__level_name',
+        'teacher__employee__person__first_name',
+        'teacher__employee__person__last_name',
+    ]
 
     def get_serializer_class(self):
         if self.action in ['create', 'update', 'partial_update']:

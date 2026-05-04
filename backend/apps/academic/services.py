@@ -220,8 +220,8 @@ def create_schedule(data):
         raise ValidationError("Class has no start date set.")
 
     # Validate start_date is not in the past
-    if start_date < date.today():
-        raise ValidationError("Class start date is in the past.")
+    # if start_date < date.today():
+    #     raise ValidationError("Class start date is in the past.")
 
     # Validate start_date matches day_of_week
     if DAYS[start_date.weekday()] != day_of_week:

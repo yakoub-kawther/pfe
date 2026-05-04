@@ -39,7 +39,9 @@ def send_notification(sender, receivers: list, notification_type: str, title: st
 def send_to_class(sender, class_id: int, notification_type: str, title: str, body: str) -> Notification:
     """Send to all students in a class."""
     receivers = list(
-        Account.objects.filter(student__subscription_id=class_id).distinct()
+        Account.objects.filter(
+            student__inscription__enrolled_class_id=class_id
+        ).distinct()
     )
     return send_notification(sender, receivers, notification_type, title, body)
 

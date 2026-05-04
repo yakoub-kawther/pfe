@@ -18,7 +18,7 @@ class InscriptionSerializer(serializers.ModelSerializer):
     class Meta:
         model  = Inscription
         fields = ['id', 'student', 'enrolled_class', 'inscription_date', 'status']
-        read_only_fields = ['inscription_date', 'student']
+        read_only_fields = ['inscription_date']
 
 
 class InscriptionDetailSerializer(serializers.ModelSerializer):
