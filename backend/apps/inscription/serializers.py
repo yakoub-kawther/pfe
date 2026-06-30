@@ -13,18 +13,30 @@ class ClassSummarySerializer(serializers.ModelSerializer):
 
 
 class InscriptionSerializer(serializers.ModelSerializer):
-    """Minimal — used for create / update responses."""
+    """Minimal — used for create / update responses. Includes payment status."""
+    payment_status = serializers.SerializerMethodField()
+    payment_id     = serializers.SerializerMethodField()
 
     class Meta:
         model  = Inscription
-        fields = ['id', 'student', 'enrolled_class', 'inscription_date', 'status']
+        fields = ['id', 'student', 'enrolled_class', 'inscription_date', 'status', 'payment_id', 'payment_status']
         read_only_fields = ['inscription_date']
+
+    def get_payment_status(self, obj):
+        payment = getattr(obj, 'payment', None)
+        return payment.status if payment else None
+
+    def get_payment_id(self, obj):
+        payment = getattr(obj, 'payment', None)
+        return payment.id if payment else None
 
 
 class InscriptionDetailSerializer(serializers.ModelSerializer):
     """Full detail — used for history & current enrollment."""
-    class_info   = ClassSummarySerializer(source='enrolled_class', read_only=True)
-    student_name = serializers.SerializerMethodField()
+    class_info     = ClassSummarySerializer(source='enrolled_class', read_only=True)
+    student_name   = serializers.SerializerMethodField()
+    payment_status = serializers.SerializerMethodField()
+    payment_id     = serializers.SerializerMethodField()
 
     class Meta:
         model  = Inscription
@@ -35,12 +47,22 @@ class InscriptionDetailSerializer(serializers.ModelSerializer):
             'class_info',
             'inscription_date',
             'status',
+            'payment_id',
+            'payment_status',
         ]
         read_only_fields = ['inscription_date', 'student']
 
     def get_student_name(self, obj):
         person = obj.student.person
         return f"{person.first_name} {person.last_name}"
+
+    def get_payment_status(self, obj):
+        payment = getattr(obj, 'payment', None)
+        return payment.status if payment else None
+
+    def get_payment_id(self, obj):
+        payment = getattr(obj, 'payment', None)
+        return payment.id if payment else None
 
 
 class TransitionSerializer(serializers.Serializer):

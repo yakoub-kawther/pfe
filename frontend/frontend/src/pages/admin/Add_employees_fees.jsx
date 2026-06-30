@@ -1,211 +1,270 @@
-import React, { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import DashboardLayout from "../../layouts/DashboardLayout";
-import { ArrowLeft, Save, Users } from "lucide-react";
+import { apiFetch } from "../../services/api";
 
-const F = "'Inter', sans-serif";
+const today = new Date().toISOString().split("T")[0];
 
-function Field({ label, children, required }) {
-  return (
-    <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-      <label style={{ fontFamily: F, fontSize: "14px", fontWeight: 500, color: "#701366" }}>
-        {label} {required && <span style={{ color: "#dc2626" }}>*</span>}
-      </label>
-      {children}
-    </div>
-  );
-}
+const inp = (hasError) => ({
+  width          : "100%",
+  border         : `1px solid ${hasError ? "#ef4444" : "#e2d0e2"}`,
+  borderRadius   : "8px",
+  padding        : "10px 14px",
+  fontSize       : "14px",
+  color          : "#701366",
+  outline        : "none",
+  boxSizing      : "border-box",
+  fontFamily     : "Inter, sans-serif",
+  backgroundColor: "#fff",
+  transition     : "border-color 0.2s",
+  cursor         : "pointer",
+});
 
-const inputStyle = {
-  fontFamily: F, fontSize: "14px", width: "100%",
-  padding: "12px 16px", borderRadius: "12px",
-  border: "1.5px solid #e8c0e4", outline: "none",
-  color: "#3d0a38", background: "#fff",
-  transition: "border .2s, box-shadow .2s",
-  boxSizing: "border-box",
+const Field = ({ label, children, full = false }) => (
+  <div className="flex flex-col gap-1.5" style={full ? { gridColumn: "1 / -1" } : {}}>
+    {label && <label className="text-[12px] font-medium text-gray-400 uppercase tracking-wide font-Inter">{label}</label>}
+    {children}
+  </div>
+);
+
+const Card = ({ title, children }) => (
+  <div
+    className="bg-white rounded-2xl border border-gray-100"
+    style={{ padding: "24px 28px", boxShadow: "0 1px 6px rgba(0,0,0,0.05)" }}
+  >
+    <h3 className="text-[#701366] font-Inter font-semibold" style={{ fontSize: "15px", marginBottom: "20px", paddingBottom: "12px", borderBottom: "1px solid #f8e0f8" }}>
+      {title}
+    </h3>
+    {children}
+  </div>
+);
+
+const getError = (errors, field) => {
+  const val = errors[field];
+  if (!val) return null;
+  if (Array.isArray(val)) return val[0];
+  if (typeof val === "string") return val;
+  return null;
 };
 
-function TextInput({ value, onChange, placeholder }) {
-  const [focused, setFocused] = useState(false);
-  return (
-    <input
-      value={value} onChange={onChange} placeholder={placeholder}
-      style={{ ...inputStyle, borderColor: focused ? "#701366" : "#e8c0e4", boxShadow: focused ? "0 0 0 3px rgba(112,19,102,.1)" : "none" }}
-      onFocus={() => setFocused(true)}
-      onBlur={() => setFocused(false)}
-    />
-  );
-}
+const MONTHS = [
+  { label: "January 2026",   value: "2026-01" },
+  { label: "February 2026",  value: "2026-02" },
+  { label: "March 2026",     value: "2026-03" },
+  { label: "April 2026",     value: "2026-04" },
+  { label: "May 2026",       value: "2026-05" },
+  { label: "June 2026",      value: "2026-06" },
+  { label: "July 2026",      value: "2026-07" },
+  { label: "August 2026",    value: "2026-08" },
+  { label: "September 2026", value: "2026-09" },
+  { label: "October 2026",   value: "2026-10" },
+  { label: "November 2026",  value: "2026-11" },
+  { label: "December 2026",  value: "2026-12" },
+];
 
-function SelectInput({ value, onChange, children }) {
-  const [focused, setFocused] = useState(false);
-  return (
-    <select
-      value={value} onChange={onChange}
-      style={{ ...inputStyle, borderColor: focused ? "#701366" : "#e8c0e4", boxShadow: focused ? "0 0 0 3px rgba(112,19,102,.1)" : "none", appearance: "none", cursor: "pointer" }}
-      onFocus={() => setFocused(true)}
-      onBlur={() => setFocused(false)}
-    >
-      {children}
-    </select>
-  );
-}
+const emptyForm = { employee_id: "", month: "", amount: "" };
 
 export default function AddEmployeesFees() {
   const navigate = useNavigate();
 
-  const [form, setForm] = useState({
-    name:   "",
-    role:   "",
-    month:  "",
-    salary: "",
-    status: "",
-  });
-  const [errors, setErrors] = useState({});
-  const [submitted, setSubmitted] = useState(false);
+  const [form,      setForm]      = useState(emptyForm);
+  const [errors,    setErrors]    = useState({});
+  const [loading,   setLoading]   = useState(false);
+  const [success,   setSuccess]   = useState(false);
+  const [employees, setEmployees] = useState([]);
 
-  const set = (field) => (e) => setForm((p) => ({ ...p, [field]: e.target.value }));
+  // Fetch employees on mount
+  useEffect(() => {
+    apiFetch("/persons/employees/")
+      .then(r => r.json())
+      .then(data => setEmployees(Array.isArray(data) ? data : (data.results ?? [])))
+      .catch(() => {});
+  }, []);
+
+  const handle = (field) => (e) => {
+    setForm(prev => ({ ...prev, [field]: e.target.value }));
+    setErrors(prev => { const u = { ...prev }; delete u[field]; return u; });
+  };
 
   const validate = () => {
     const e = {};
-    if (!form.name.trim()) e.name   = "Name is required.";
-    if (!form.role)        e.role   = "Please select a role.";
-    if (!form.month)       e.month  = "Please select a month.";
-    if (!form.salary.trim()) e.salary = "Salary is required.";
-    if (!form.status)      e.status = "Please select a status.";
+    if (!form.employee_id) e.employee_id = "Please select an employee.";
+    if (!form.month)       e.month       = "Please select a month.";
+    if (!form.amount)      e.amount      = "Amount is required.";
+    else if (isNaN(Number(form.amount)) || Number(form.amount) <= 0)
+      e.amount = "Please enter a valid amount.";
     return e;
   };
 
-  const handleSubmit = () => {
-    const e = validate();
-    setErrors(e);
-    if (Object.keys(e).length > 0) return;
-    setSubmitted(true);
-    setTimeout(() => navigate("/Fees"), 1400);
+  const handleSave = async () => {
+    const frontendErrors = validate();
+    if (Object.keys(frontendErrors).length > 0) { setErrors(frontendErrors); return; }
+
+    setLoading(true);
+    setErrors({});
+
+    try {
+      const res = await apiFetch("/saleries/", {
+        method: "POST",
+        body: {
+          employee    : Number(form.employee_id),
+          amount      : form.amount,
+          payment_date: `${form.month}-01`,
+          status      : "paid",
+        },
+      });
+
+      if (!res.ok) {
+        const errData = await res.json();
+        const mapped  = {};
+        if (errData.employee)     mapped.employee_id = errData.employee;
+        if (errData.amount)       mapped.amount      = errData.amount;
+        if (errData.payment_date) mapped.month       = errData.payment_date;
+        if (errData.detail)       mapped.submit      = errData.detail;
+        if (errData.error)        mapped.submit      = errData.error;
+        setErrors(mapped);
+        return;
+      }
+
+      setSuccess(true);
+      setTimeout(() => navigate("/Fees"), 2000);
+    } catch {
+      setErrors({ submit: "Network error. Please try again." });
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const months = ["January 2026","February 2026","March 2026","April 2026","May 2026","June 2026","July 2026","August 2026","September 2026","October 2026","November 2026","December 2026"];
-  const roles  = ["Teacher", "Secretariat", "Housemaid", "Agent"];
+  const handleReset = () => {
+    setForm(emptyForm);
+    setErrors({});
+    setSuccess(false);
+  };
 
   return (
     <DashboardLayout>
-      <div style={{ width: "100%", maxWidth: "680px", margin: "30px auto 0", boxSizing: "border-box", paddingBottom: "40px" }}>
+      <div className="w-full pb-10" style={{ padding: "30px clamp(12px, 2vw, 32px)" }}>
 
+        {/* Header */}
+        <div className="flex items-center justify-between mb-8 flex-wrap gap-3">
+          <h1 className="text-2xl text-[#701366] font-Inter font-semibold">Add Employee Salary</h1>
+          <div className="flex gap-2">
+            {/* Cancel */}
+            <button
+              onClick={() => navigate("/Fees")}
+              style={{ padding: "8px 20px", borderRadius: "8px", border: "1.5px solid #e2d0e2", background: "#fff", color: "#701366", fontSize: "13px", fontFamily: "Inter, sans-serif", cursor: "pointer", transition: "all 0.2s" }}
+              onMouseEnter={e => { e.target.style.borderColor = "#701366"; }}
+              onMouseLeave={e => { e.target.style.borderColor = "#e2d0e2"; }}
+            >
+              Cancel
+            </button>
 
-        <div style={{ background: "white", borderRadius: "20px", boxShadow: "0 2px 16px rgba(112,19,102,.08)", overflow: "hidden" }}>
+            {/* Reset */}
+            <button
+              onClick={handleReset}
+              style={{ padding: "8px 20px", borderRadius: "8px", border: "1.5px solid #701366", background: "#fff", color: "#701366", fontSize: "13px", fontFamily: "Inter, sans-serif", cursor: "pointer", transition: "all 0.2s" }}
+              onMouseEnter={e => { e.target.style.background = "#f8e0f8"; }}
+              onMouseLeave={e => { e.target.style.background = "#fff"; }}
+            >
+              Reset
+            </button>
 
-          {/* Header */}
-          <div style={{ background: "linear-gradient(135deg,#8a1a7e 0%,#701366 100%)", padding: "28px 32px", display: "flex", alignItems: "center", gap: "14px" }}>
-            <div style={{ width: "44px", height: "44px", borderRadius: "12px", background: "rgba(255,255,255,.15)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-              <Users size={22} color="white" />
-            </div>
-            <div>
-              <h2 style={{ fontFamily: F, fontSize: "20px", fontWeight: 600, color: "white", margin: 0 }}>Add Employee Fees</h2>
-              <p style={{ fontFamily: F, fontSize: "13px", color: "rgba(255,255,255,.65)", margin: "3px 0 0" }}>Record salary payment for a staff member</p>
-            </div>
-          </div>
-
-          {/* Success Banner */}
-          {submitted && (
-            <div style={{ background: "#dcfce7", color: "#16a34a", fontFamily: F, fontSize: "14px", fontWeight: 500, padding: "14px 32px", borderBottom: "1px solid #bbf7d0", display: "flex", alignItems: "center", gap: "8px" }}>
-              ✓ Payment recorded successfully! Redirecting…
-            </div>
-          )}
-
-          {/* Form */}
-          <div style={{ padding: "32px", display: "flex", flexDirection: "column", gap: "20px" }}>
-
-            {/* Row 1: Name + Role */}
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "20px" }}>
-              <Field label="Name" required>
-                <TextInput value={form.name} onChange={set("name")} placeholder="Full name" />
-                {errors.name && <p style={{ color: "#dc2626", fontSize: "12px", margin: "2px 0 0", fontFamily: F }}>{errors.name}</p>}
-              </Field>
-              <Field label="Role" required>
-                <SelectInput value={form.role} onChange={set("role")}>
-                  <option value="">Select role…</option>
-                  {roles.map((r) => <option key={r} value={r}>{r}</option>)}
-                </SelectInput>
-                {errors.role && <p style={{ color: "#dc2626", fontSize: "12px", margin: "2px 0 0", fontFamily: F }}>{errors.role}</p>}
-              </Field>
-            </div>
-
-            {/* Row 2: Month + Salary */}
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "20px" }}>
-              <Field label="Month" required>
-                <SelectInput value={form.month} onChange={set("month")}>
-                  <option value="">Select month…</option>
-                  {months.map((m) => <option key={m} value={m}>{m}</option>)}
-                </SelectInput>
-                {errors.month && <p style={{ color: "#dc2626", fontSize: "12px", margin: "2px 0 0", fontFamily: F }}>{errors.month}</p>}
-              </Field>
-              <Field label="Salary (DA)" required>
-                <TextInput value={form.salary} onChange={set("salary")} placeholder="e.g. 45,000" />
-                {errors.salary && <p style={{ color: "#dc2626", fontSize: "12px", margin: "2px 0 0", fontFamily: F }}>{errors.salary}</p>}
-              </Field>
-            </div>
-
-            {/* Status */}
-            <Field label="Payment Status" required>
-              <div style={{ display: "flex", gap: "10px" }}>
-                {["Paid", "Unpaid"].map((s) => {
-                  const active = form.status === s;
-                  const colors = { Paid: ["#dcfce7","#16a34a"], Unpaid: ["#fee2e2","#dc2626"] };
-                  return (
-                    <button
-                      key={s} type="button"
-                      onClick={() => setForm((p) => ({ ...p, status: s }))}
-                      style={{
-                        flex: 1, padding: "10px", borderRadius: "10px",
-                        border: `1.5px solid ${active ? colors[s][1] : "#e8c0e4"}`,
-                        background: active ? colors[s][0] : "white",
-                        color: active ? colors[s][1] : "#9c5094",
-                        fontFamily: F, fontSize: "13px", fontWeight: active ? 600 : 400,
-                        cursor: "pointer", transition: "all .15s",
-                      }}
-                    >
-                      ● {s}
-                    </button>
-                  );
-                })}
-              </div>
-              {errors.status && <p style={{ color: "#dc2626", fontSize: "12px", margin: "2px 0 0", fontFamily: F }}>{errors.status}</p>}
-            </Field>
-
-            <div style={{ height: "1px", background: "#f8e0f8" }} />
-
-            {/* Actions */}
-            <div style={{ display: "flex", justifyContent: "flex-end", gap: "12px" }}>
-              <button
-                onClick={() => navigate("/Fees")}
-                style={{ padding: "12px 24px", borderRadius: "12px", border: "1.5px solid #e8c0e4", background: "white", color: "#9c5094", fontFamily: F, fontSize: "14px", cursor: "pointer" }}
-                onMouseEnter={e => e.currentTarget.style.borderColor = "#701366"}
-                onMouseLeave={e => e.currentTarget.style.borderColor = "#e8c0e4"}
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleSubmit}
-                disabled={submitted}
-                style={{
-                  display: "flex", alignItems: "center", gap: "7px",
-                  padding: "12px 28px", borderRadius: "12px", border: "none",
-                  background: submitted ? "#dcfce7" : "linear-gradient(135deg,#8a1a7e 0%,#701366 100%)",
-                  color: submitted ? "#16a34a" : "white",
-                  fontFamily: F, fontSize: "14px", fontWeight: 500,
-                  cursor: submitted ? "default" : "pointer",
-                  boxShadow: submitted ? "none" : "0 4px 14px rgba(112,19,102,.28)",
-                  transition: "all .2s",
-                }}
-                onMouseEnter={e => { if (!submitted) e.currentTarget.style.background = "linear-gradient(135deg,#701366 0%,#4a0d45 100%)"; }}
-                onMouseLeave={e => { if (!submitted) e.currentTarget.style.background = "linear-gradient(135deg,#8a1a7e 0%,#701366 100%)"; }}
-              >
-                <Save size={15} /> {submitted ? "Saved!" : "Save Payment"}
-              </button>
-            </div>
-
+            {/* Save */}
+            <button
+              onClick={handleSave}
+              disabled={loading}
+              style={{ padding: "8px 24px", borderRadius: "8px", border: "1.5px solid #701366", background: loading ? "#a855a0" : "#701366", color: "#fff", fontSize: "13px", fontFamily: "Inter, sans-serif", cursor: loading ? "not-allowed" : "pointer", transition: "all 0.2s", fontWeight: "500" }}
+              onMouseEnter={e => { if (!loading) e.target.style.background = "#5a0f52"; }}
+              onMouseLeave={e => { if (!loading) e.target.style.background = "#701366"; }}
+            >
+              {loading ? "Saving..." : "Save"}
+            </button>
           </div>
         </div>
+
+        {/* Success banner */}
+        {success && (
+          <div style={{ background: "#f0fdf4", color: "#166534", padding: "14px 20px", borderRadius: "10px", marginBottom: "20px", fontSize: "14px", display: "flex", alignItems: "center", gap: "10px", border: "1px solid #bbf7d0" }}>
+            <span style={{ fontSize: "18px" }}>✓</span>
+            Salary recorded successfully! Redirecting...
+          </div>
+        )}
+
+        {/* Error banner */}
+        {errors.submit && (
+          <div style={{ background: "#fef2f2", color: "#991b1b", padding: "12px 20px", borderRadius: "10px", marginBottom: "20px", fontSize: "14px" }}>
+            {errors.submit}
+          </div>
+        )}
+
+        {/* Form — centered narrow card */}
+        <div style={{ maxWidth: "560px" }}>
+          <Card title="Salary Information">
+            <div className="grid grid-cols-1" style={{ gap: "18px" }}>
+
+              <Field label="Employee">
+                <select
+                  style={inp(!!errors.employee_id)}
+                  value={form.employee_id}
+                  onChange={handle("employee_id")}
+                >
+                  <option value="" disabled>Select an employee</option>
+                  {employees.map(e => {
+                    const p = e.person ?? {};
+                    return (
+                      <option key={e.person_id} value={e.person_id}>
+                        {p.first_name} {p.last_name} — {e.position?.name ?? ""}
+                      </option>
+                    );
+                  })}
+                </select>
+                {getError(errors, "employee_id") && (
+                  <span style={{ color: "#ef4444", fontSize: "11px" }}>{getError(errors, "employee_id")}</span>
+                )}
+              </Field>
+
+              <Field label="Month">
+                <select
+                  style={inp(!!errors.month)}
+                  value={form.month}
+                  onChange={handle("month")}
+                >
+                  <option value="" disabled>Select a month</option>
+                  {MONTHS.map(m => (
+                    <option key={m.value} value={m.value}>{m.label}</option>
+                  ))}
+                </select>
+                {getError(errors, "month") && (
+                  <span style={{ color: "#ef4444", fontSize: "11px" }}>{getError(errors, "month")}</span>
+                )}
+              </Field>
+
+              <Field label="Amount (DA)">
+                <input
+                  type="number"
+                  min="0"
+                  style={{ ...inp(!!errors.amount), cursor: "text" }}
+                  value={form.amount}
+                  onChange={handle("amount")}
+                  placeholder="e.g. 45000"
+                />
+                {getError(errors, "amount") && (
+                  <span style={{ color: "#ef4444", fontSize: "11px" }}>{getError(errors, "amount")}</span>
+                )}
+              </Field>
+
+              {/* Status — always paid, just display */}
+              <Field label="Status">
+                <div style={{ display: "inline-flex", alignItems: "center", gap: "6px", padding: "10px 14px", borderRadius: "8px", background: "#dcfce7", color: "#16a34a", fontSize: "14px", fontFamily: "Inter, sans-serif", fontWeight: 500, width: "fit-content" }}>
+                  <span style={{ width: "7px", height: "7px", borderRadius: "50%", background: "#16a34a", display: "inline-block" }} />
+                  Paid
+                </div>
+              </Field>
+
+            </div>
+          </Card>
+        </div>
+
       </div>
     </DashboardLayout>
   );

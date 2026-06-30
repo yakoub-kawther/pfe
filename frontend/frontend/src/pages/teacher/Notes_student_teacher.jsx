@@ -1,34 +1,10 @@
 import { useNavigate, useLocation } from "react-router-dom";
 import Teacher_layout from "../../layouts/Teacher_layout";
+import { useState, useEffect } from "react";
+import { apiFetch } from "../../services/api";
 
-const studentsData = {
-  1: [
-    { id: 1, name: "Amira Benali",    avatar: "AB", exam: 80,  oral: 75 },
-    { id: 2, name: "Karim Meziane",   avatar: "KM", exam: 60,  oral: 65 },
-    { id: 3, name: "Lina Hadj",       avatar: "LH", exam: 10,  oral: 80 },
-    { id: 4, name: "Youcef Brahim",   avatar: "YB", exam: 50,  oral: 55 },
-    { id: 5, name: "Sara Oukaci",     avatar: "SO", exam: 70,  oral: 70 },
-    { id: 6, name: "Omar Ferhat",     avatar: "OF", exam: null,  oral: null },
-  ],
-  2: [
-    { id: 1, name: "Fatima Zouaoui",  avatar: "FZ", exam: 65, oral: 60 },
-    { id: 2, name: "Amine Chaoui",    avatar: "AC", exam: 85, oral: 90 },
-    { id: 3, name: "Nour Bekhti",     avatar: "NB", exam: null, oral: null },
-    { id: 4, name: "Ryad Khelifi",    avatar: "RK", exam: 40, oral: 45 },
-  ],
-  3: [
-    { id: 1, name: "Asma Djaafri",    avatar: "AD", exam: 95,  oral: 85 },
-    { id: 2, name: "Bilal Rahmouni",  avatar: "BR", exam: 55,  oral: 50 },
-    { id: 3, name: "Cylia Moussaoui", avatar: "CM", exam: null, oral: null },
-  ],
-  4: [
-    { id: 1, name: "Dalia Bensalem",  avatar: "DB", exam: 75, oral: 70 },
-    { id: 2, name: "Elias Bouchama",  avatar: "EB", exam: 100, oral: 100 },
-  ],
-};
-
-function getAverage(s) {
-  const vals = [s.exam, s.oral].filter(v => v !== null && v !== undefined);
+function getAverage(oral, written) {
+  const vals = [oral, written].filter(v => v !== null && v !== undefined);
   if (!vals.length) return null;
   return (vals.reduce((a, b) => a + b, 0) / vals.length).toFixed(1);
 }
@@ -41,9 +17,47 @@ function getStatus(avg) {
 }
 
 export default function Notes_students_teacher() {
-  const navigate = useNavigate();
+  const navigate  = useNavigate();
   const { state } = useLocation();
-  const cls = state?.cls;
+  const cls       = state?.cls;
+
+  const [students, setStudents] = useState([]); // inscriptions with notes
+  const [loading,  setLoading]  = useState(true);
+
+  useEffect(() => {
+    if (!cls?.id) return;
+
+    // Fetch inscriptions + notes in parallel
+    Promise.all([
+      apiFetch(`/inscriptions/?class_id=${cls.id}&status=confirmed`).then(r => r.json()),
+      apiFetch(`/notes/class/?class_id=${cls.id}`).then(r => r.json()),
+    ])
+      .then(([inscriptions, notes]) => {
+        const insList  = Array.isArray(inscriptions) ? inscriptions : (inscriptions.results ?? []);
+        const noteList = Array.isArray(notes)        ? notes        : (notes.results ?? []);
+
+        // Map notes by inscription id
+        const notesByInscription = {};
+        noteList.forEach(n => {
+          if (!notesByInscription[n.inscription]) notesByInscription[n.inscription] = {};
+          notesByInscription[n.inscription][n.component] = n;
+        });
+
+        const mapped = insList.map(ins => ({
+          inscriptionId: ins.id,
+          studentId    : ins.student,
+          studentName  : ins.student_name,
+          oral         : notesByInscription[ins.id]?.oral?.mark    ?? null,
+          written      : notesByInscription[ins.id]?.written?.mark ?? null,
+          oralNoteId   : notesByInscription[ins.id]?.oral?.id      ?? null,
+          writtenNoteId: notesByInscription[ins.id]?.written?.id   ?? null,
+        }));
+
+        setStudents(mapped);
+      })
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  }, [cls?.id]);
 
   if (!cls) {
     return (
@@ -55,62 +69,49 @@ export default function Notes_students_teacher() {
     );
   }
 
-  const students = studentsData[cls.id] || [];
-  const graded   = students.filter(s => s.exam !== null).length;
+  const graded = students.filter(s => s.oral !== null || s.written !== null).length;
 
   return (
     <Teacher_layout>
       <div style={{ maxWidth: "1100px", margin: "40px auto", padding: "0 24px", display: "flex", flexDirection: "column", gap: "24px" }}>
 
-        {/* Back + Header */}
-        <div style={{ display: "flex", alignItems: "flex-start", gap: "16px" }}>
-          <div style={{ minWidth: "180px" }}>
-            <p
-              onClick={() => navigate("/Notes_teacher")}
-              style={{ fontSize: "14px", color: "#b48ab0", margin: "0 0 4px", cursor: "pointer", display: "inline-flex", alignItems: "center", gap: "4px" }}
-              onMouseEnter={e => e.currentTarget.style.color = "#701366"}
-              onMouseLeave={e => e.currentTarget.style.color = "#b48ab0"}
-            >
-              ← Back
-            </p>
-            <div>
-              <h2 style={{ fontSize: "24px", color: "#701366", fontFamily: "Inter, sans-serif", margin: 0 }}>
-                {cls.name} — Student Results
-              </h2>
-              <p style={{ fontSize: "13px", color: "#b48ab0", margin: "4px 0 0" }}>
-                {cls.language} · Level {cls.level} · {cls.schedule} · {cls.room}
-              </p>
-            </div>
-          </div>
+        <div>
+          <p onClick={() => navigate("/Notes_teacher")}
+            style={{ fontSize: "14px", color: "#b48ab0", margin: "0 0 4px", cursor: "pointer", display: "inline-flex", alignItems: "center", gap: "4px" }}
+            onMouseEnter={e => e.currentTarget.style.color = "#701366"}
+            onMouseLeave={e => e.currentTarget.style.color = "#b48ab0"}
+          >← Back</p>
+          <h2 style={{ fontSize: "24px", color: "#701366", fontFamily: "Inter, sans-serif", margin: 0 }}>
+            {cls.name} — Student Results
+          </h2>
+          <p style={{ fontSize: "13px", color: "#b48ab0", margin: "4px 0 0" }}>
+            {cls.language?.language_name ?? cls.language} · Level {cls.level?.level_name ?? cls.level}
+          </p>
         </div>
 
-        {/* Stats row */}
         <div style={{ display: "flex", gap: "16px", flexWrap: "wrap" }}>
           {[
             { label: "Total Students", value: students.length },
             { label: "Graded",         value: graded },
             { label: "Pending",        value: students.length - graded },
           ].map(({ label, value }) => (
-            <div key={label} style={{ background: "white", border: "1px solid #f5e0f3", borderRadius: "14px", padding: "16px 24px", display: "flex", alignItems: "center", gap: "12px", boxShadow: "0 1px 6px rgba(112,19,102,0.06)" }}>
-              <div>
-                <div style={{ fontSize: "20px", fontWeight: 500, color: "#701366" }}>{value}</div>
-                <div style={{ fontSize: "12px", color: "#b48ab0" }}>{label}</div>
-              </div>
+            <div key={label} style={{ background: "white", border: "1px solid #f5e0f3", borderRadius: "14px", padding: "16px 24px", boxShadow: "0 1px 6px rgba(112,19,102,0.06)" }}>
+              <div style={{ fontSize: "20px", fontWeight: 500, color: "#701366" }}>{value}</div>
+              <div style={{ fontSize: "12px", color: "#b48ab0" }}>{label}</div>
             </div>
           ))}
         </div>
 
-        {/* Table */}
         <div style={{ background: "white", borderRadius: "18px", boxShadow: "0 2px 12px rgba(112,19,102,0.08)", overflow: "hidden", border: "1px solid #f5e0f3" }}>
           <table style={{ width: "100%", borderCollapse: "collapse", tableLayout: "fixed" }}>
             <thead>
               <tr style={{ background: "linear-gradient(90deg, #f8e0f8 0%, #fdf4fd 100%)", height: "52px" }}>
                 {[
-                  { label: "Student", width: "28%", pl: "28px" },
-                  { label: "Exam ",  width: "14%" },
-                  { label: "Oral",    width: "14%" },
-                  { label: "Average", width: "14%" },
-                  { label: "Status",  width: "16%" },
+                  { label: "Student", width: "30%", pl: "28px" },
+                  { label: "Oral",    width: "16%" },
+                  { label: "Written", width: "16%" },
+                  { label: "Average", width: "16%" },
+                  { label: "Status",  width: "22%" },
                 ].map(({ label, width, pl }) => (
                   <th key={label} style={{ width, paddingLeft: pl || "16px", paddingRight: "16px", fontSize: "13px", fontWeight: 500, textAlign: "left", color: "#701366", letterSpacing: "0.03em", textTransform: "uppercase" }}>
                     {label}
@@ -119,29 +120,31 @@ export default function Notes_students_teacher() {
               </tr>
             </thead>
             <tbody>
-              {students.map((student) => {
-                const avg    = getAverage(student);
+              {loading ? (
+                <tr><td colSpan={5} style={{ textAlign: "center", padding: "40px", color: "#b48ab0", fontSize: "14px" }}>Loading...</td></tr>
+              ) : students.length === 0 ? (
+                <tr><td colSpan={5} style={{ textAlign: "center", padding: "40px", color: "#b48ab0", fontSize: "14px" }}>No students found.</td></tr>
+              ) : students.map(student => {
+                const avg    = getAverage(student.oral, student.written);
                 const status = getStatus(avg);
                 return (
-                  <tr
-                    key={student.id}
+                  <tr key={student.inscriptionId}
                     onClick={() => navigate("/Notes_add_teacher", { state: { cls, student } })}
                     style={{ height: "60px", borderBottom: "1px solid #faeaf9", cursor: "pointer", transition: "background 0.15s" }}
                     onMouseEnter={e => e.currentTarget.style.background = "#fdf6fd"}
                     onMouseLeave={e => e.currentTarget.style.background = "white"}
                   >
-                    <td style={{ paddingLeft: "28px", paddingRight: "16px" }}>
-                      <span style={{ fontSize: "14px", fontWeight: 400, color: "#701366" }}>{student.name}</span>
+                    <td style={{ paddingLeft: "28px", paddingRight: "16px", fontSize: "14px", fontWeight: 400, color: "#701366" }}>{student.studentName}</td>
+                    <td style={{ padding: "0 16px", fontSize: "14px", color: student.oral !== null ? "#701366" : "#d1bbd0" }}>
+                      {student.oral !== null ? `${student.oral}/100` : "—"}
                     </td>
-                    {[student.exam, student.oral].map((val, i) => (
-                      <td key={i} style={{ paddingLeft: "16px", paddingRight: "16px", fontSize: "14px", color: val !== null ? "#701366" : "#d1bbd0" }}>
-                        {val !== null && val !== undefined ? `${val}/100` : "—"}
-                      </td>
-                    ))}
-                    <td style={{ paddingLeft: "16px", paddingRight: "16px", fontSize: "14px", fontWeight: 400, color: avg !== null ? "#701366" : "#d1bbd0" }}>
+                    <td style={{ padding: "0 16px", fontSize: "14px", color: student.written !== null ? "#701366" : "#d1bbd0" }}>
+                      {student.written !== null ? `${student.written}/100` : "—"}
+                    </td>
+                    <td style={{ padding: "0 16px", fontSize: "14px", color: avg !== null ? "#701366" : "#d1bbd0" }}>
                       {avg !== null ? `${avg}/100` : "—"}
                     </td>
-                    <td style={{ paddingLeft: "16px", paddingRight: "16px" }}>
+                    <td style={{ padding: "0 16px" }}>
                       <span style={{ background: status.bg, color: status.color, padding: "4px 12px", borderRadius: "9999px", fontSize: "12px", fontWeight: 400 }}>
                         {status.label}
                       </span>

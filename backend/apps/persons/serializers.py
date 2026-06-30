@@ -71,7 +71,7 @@ class StudentCreateSerializer(PersonSerializer):
 
     def update(self, instance, validated_data):
         from .services import update_student
-        return update_student(instance, validated_data)  # ← use the service
+        return update_student(instance, validated_data)  
 
 
 class ParentCreateSerializer(PersonSerializer):
@@ -228,12 +228,19 @@ class EmployeeSerializer(serializers.ModelSerializer):
 class TeacherSerializer(serializers.ModelSerializer):
     employee = EmployeeSerializer(read_only=True)
     language = LanguageSerializer(read_only=True)
+    account  = serializers.SerializerMethodField()
+
+    def get_account(self, obj):
+     from apps.accounts.models import Account
+     print(f"Teacher employee: {obj.employee}")
+     print(f"Teacher employee pk: {obj.employee.pk}")
+     acc = Account.objects.filter(employee=obj.employee).first()
+     print(f"Account found: {acc}")
+     return {"username": acc.username, "role": acc.role.name} if acc else None
 
     class Meta:
         model = Teacher
-        fields = ['employee', 'qualifications', 'language', 'is_head_teacher']
-
-
+        fields = ['employee', 'qualifications', 'language', 'is_head_teacher', 'account']
 
 class EmployeeWithoutTeacherListView(generics.ListAPIView):
     serializer_class = EmployeeSerializer

@@ -1,20 +1,31 @@
 import { useState, useRef, useEffect } from "react";
-import { Bell, Info } from "lucide-react";
+import { Bell } from "lucide-react";
+import { apiFetch } from "../services/api";
 
-const INITIAL_NOTIFICATIONS = [
-  { id: 1, icon: "bell", sender: "Dr hamza",                    message: "We don't have a session today",       time: "2h",                read: false },
-  { id: 2, icon: "bell", sender: "Updated the Classroom",       message: "English C2 to room 4",                time: "6h",                read: false },
-  { id: 3, icon: "info", sender: "Dr amine",                    message: "you have a test of english Tomorrow",  time: "Today 9:36 am",     read: true  },
-  { id: 4, icon: "info", sender: "Emily Tyler",                 message: "don't forget the test of espagnol",   time: "Tomorrow",          read: true  },
-  { id: 5, icon: "bell", sender: "Updated the prgrm of spanish",message: "",                                    time: "Tomorrow",          read: true  },
-  { id: 6, icon: "bell", sender: "Blake Silve",                 message: "we repport the session of french",    time: "Sep 12 | 10:54 am", read: true  },
-];
+const formatTime = (dateStr) => {
+  if (!dateStr) return "";
+  const diff = Math.floor((Date.now() - new Date(dateStr)) / 60000);
+  if (diff < 60)   return `${diff}m ago`;
+  if (diff < 1440) return `${Math.floor(diff / 60)}h ago`;
+  return new Date(dateStr).toLocaleDateString();
+};
+
+// Map NotificationReceiver object → flat shape the UI needs
+const mapNotif = (nr) => ({
+  id:         nr.id,
+  is_read:    nr.is_read,
+  sender:     nr.sender?.username ?? "System",  
+  message:    nr.body             ?? "",         
+  created_at: nr.sent_at          ?? "",         
+});
 
 export default function NotifDropdown() {
-  const [open, setOpen]                   = useState(false);
-  const [notifications, setNotifications] = useState(INITIAL_NOTIFICATIONS);
-  const ref                               = useRef(null);
+  const [open,          setOpen]          = useState(false);
+  const [notifications, setNotifications] = useState([]);
+  const [loading,       setLoading]       = useState(false);
+  const ref = useRef(null);
 
+  // Close on outside click
   useEffect(() => {
     const handler = (e) => {
       if (ref.current && !ref.current.contains(e.target)) setOpen(false);
@@ -23,16 +34,50 @@ export default function NotifDropdown() {
     return () => document.removeEventListener("mousedown", handler);
   }, []);
 
-  const unread     = notifications.filter((n) => !n.read).length;
-  const markRead   = (id) => setNotifications((prev) => prev.map((n) => (n.id === id ? { ...n, read: true } : n)));
-  const markAllRead = ()  => setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
+  // Fetch when opened
+  useEffect(() => {
+    if (!open) return;
+    let active = true;
+
+    const fetchNotifications = async () => {
+      setLoading(true);
+      try {
+        const r    = await apiFetch("/notifications/");
+        const data = await r.json();
+        console.log("notifications raw:", JSON.stringify(data, null, 2))
+        if (!active) return;
+        const list = Array.isArray(data) ? data : (data.results ?? []);
+        setNotifications(list.map(mapNotif));
+      } catch {
+        // keep whatever was there before on error
+      } finally {
+        if (active) setLoading(false);
+      }
+    };
+
+    fetchNotifications();
+    return () => { active = false; };
+  }, [open]);
+
+  const unread = notifications.filter(n => !n.is_read).length;
+
+  // Optimistic updates — fire & forget, UI updates instantly
+  const markRead = (id) => {
+    apiFetch(`/notifications/${id}/read/`, { method: "POST" }).catch(() => {});
+    setNotifications(prev => prev.map(n => n.id === id ? { ...n, is_read: true } : n));
+  };
+
+  const markAllRead = () => {
+    apiFetch("/notifications/read-all/", { method: "POST" }).catch(() => {});
+    setNotifications(prev => prev.map(n => ({ ...n, is_read: true })));
+  };
 
   return (
     <div ref={ref} style={{ position: "relative", flexShrink: 0 }}>
 
       {/* Bell button */}
       <button
-        onClick={() => setOpen((o) => !o)}
+        onClick={() => { console.log("bell clicked"); setOpen(o => !o); }}
         aria-label="Notifications"
         style={{
           width: "36px", height: "36px", flexShrink: 0,
@@ -57,7 +102,7 @@ export default function NotifDropdown() {
             display: "flex", alignItems: "center", justifyContent: "center",
             pointerEvents: "none", flexShrink: 0,
           }}>
-            {unread}
+            {unread > 9 ? "9+" : unread}
           </span>
         )}
       </button>
@@ -95,32 +140,41 @@ export default function NotifDropdown() {
 
           {/* List */}
           <div style={{ display: "flex", flexDirection: "column", gap: "8px", maxHeight: "288px", overflowY: "auto", paddingRight: "4px" }}>
-            {notifications.map((n) => (
+            {loading ? (
+              Array.from({ length: 3 }).map((_, i) => (
+                <div key={i} style={{ padding: "12px", borderRadius: "12px", background: "white", display: "flex", flexDirection: "column", gap: "6px" }}>
+                  <div style={{ height: "12px", width: "70%", background: "#f3e8f9", borderRadius: "6px", animation: "pulse 1.4s infinite" }} />
+                  <div style={{ height: "10px", width: "40%", background: "#f3e8f9", borderRadius: "6px", animation: "pulse 1.4s infinite" }} />
+                </div>
+              ))
+            ) : notifications.length === 0 ? (
+              <p style={{ textAlign: "center", color: "#701366", fontSize: "13px", opacity: 0.6, margin: "16px 0" }}>No notifications</p>
+            ) : notifications.map(n => (
               <div
                 key={n.id}
-                onClick={() => markRead(n.id)}
+                onClick={() => !n.is_read && markRead(n.id)}
                 style={{
                   display: "flex", gap: "12px", padding: "12px",
-                  borderRadius: "12px", cursor: "pointer",
-                  background: n.read ? "rgba(255,255,255,0.5)" : "white",
-                  boxShadow: n.read ? "none" : "0 1px 4px rgba(0,0,0,0.06)",
+                  borderRadius: "12px", cursor: n.is_read ? "default" : "pointer",
+                  background: n.is_read ? "rgba(255,255,255,0.5)" : "white",
+                  boxShadow: n.is_read ? "none" : "0 1px 4px rgba(0,0,0,0.06)",
                   transition: "background 0.15s",
                   boxSizing: "border-box",
                 }}
               >
                 <div style={{ marginTop: "2px", flexShrink: 0, color: "#701366" }}>
-                  {n.icon === "bell"
-                    ? <Bell style={{ width: "14px", height: "14px" }} />
-                    : <Info style={{ width: "14px", height: "14px" }} />}
+                  <Bell style={{ width: "14px", height: "14px" }} />
                 </div>
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <p style={{ fontSize: "12px", color: "#1f2937", lineHeight: "1.4", margin: 0 }}>
                     <span style={{ fontWeight: 700 }}>{n.sender}</span>
                     {n.message ? ` ${n.message}` : ""}
                   </p>
-                  <p style={{ fontSize: "10px", color: "#9ca3af", marginTop: "2px", marginBottom: 0 }}>{n.time}</p>
+                  <p style={{ fontSize: "10px", color: "#9ca3af", marginTop: "2px", marginBottom: 0 }}>
+                    {formatTime(n.created_at)}
+                  </p>
                 </div>
-                {!n.read && (
+                {!n.is_read && (
                   <div style={{ width: "8px", height: "8px", borderRadius: "50%", background: "#701366", marginTop: "4px", flexShrink: 0 }} />
                 )}
               </div>
@@ -128,22 +182,26 @@ export default function NotifDropdown() {
           </div>
 
           {/* Footer */}
-          <button
-            onClick={markAllRead}
-            style={{
-              marginTop: "12px", width: "100%",
-              background: "none", border: "none", cursor: "pointer",
-              fontSize: "12px", color: "#701366", fontWeight: 600,
-              textAlign: "center",
-            }}
-            onMouseEnter={e => e.currentTarget.style.textDecoration = "underline"}
-            onMouseLeave={e => e.currentTarget.style.textDecoration = "none"}
-          >
-            Mark all as read
-          </button>
+          {!loading && unread > 0 && (
+            <button
+              onClick={markAllRead}
+              style={{
+                marginTop: "12px", width: "100%",
+                background: "none", border: "none", cursor: "pointer",
+                fontSize: "12px", color: "#701366", fontWeight: 600,
+                textAlign: "center",
+              }}
+              onMouseEnter={e => e.currentTarget.style.textDecoration = "underline"}
+              onMouseLeave={e => e.currentTarget.style.textDecoration = "none"}
+            >
+              Mark all as read
+            </button>
+          )}
 
         </div>
       )}
+
+      <style>{`@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }`}</style>
     </div>
   );
 }

@@ -139,19 +139,26 @@ class ClassCreateSerializer(serializers.ModelSerializer):
     def update(self, instance, validated_data):
         from .services import update_class
         return update_class(instance, validated_data)
+    
 
 class ClassSerializer(serializers.ModelSerializer):
-    language = LanguageSerializer(read_only=True)
-    level    = LevelSerializer(read_only=True)
-    teacher  = serializers.StringRelatedField(read_only=True)
+    language_name = serializers.CharField(source='language.language_name', read_only=True)
+    level_name    = serializers.CharField(source='level.level_name', read_only=True)
+    teacher_name  = serializers.SerializerMethodField()
 
     class Meta:
         model  = Class
         fields = [
-            'id', 'name', 'language', 'level',
-            'teacher', 'start_date', 'status'
+            'id', 'name',
+            'language', 'language_name',
+            'level', 'level_name',
+            'teacher', 'teacher_name',
+            'start_date', 'status'
         ]
 
+    def get_teacher_name(self, obj):
+        person = obj.teacher.employee.person
+        return f"{person.first_name} {person.last_name}"
 
 
 # ──────────────────────────────
@@ -202,3 +209,13 @@ class SessionSerializer(serializers.ModelSerializer):
     class Meta:
         model  = Session
         fields = ['id', 'schedule', 'session_date', 'status']
+
+
+class SessionDetailSerializer(serializers.ModelSerializer):
+    start_time  = serializers.TimeField(source='schedule.start_time', read_only=True)
+    end_time    = serializers.TimeField(source='schedule.end_time',   read_only=True)
+    classroom   = serializers.CharField(source='schedule.classroom.name', read_only=True)
+
+    class Meta:
+        model  = Session
+        fields = ['id', 'session_date', 'status', 'start_time', 'end_time', 'classroom']

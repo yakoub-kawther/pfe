@@ -9,26 +9,36 @@ from .models import Inscription
 ACTIVE_STATUSES = ('confirmed',)
 
 
-
-
+@transaction.atomic
 def create_inscription(student_id: int, class_id: int) -> Inscription:
-    student       = get_object_or_404(Student, pk=student_id)
+    from apps.payments.models import Payment
+
+    student        = get_object_or_404(Student, pk=student_id)
     enrolled_class = get_object_or_404(Class, pk=class_id)
+
+    i = Inscription.objects.latest('inscription_date')
+    print(i)
+    print(Payment.objects.filter(inscription=i).exists())
 
     if enrolled_class.status != 'active':
         raise ValueError(f'Cannot enroll in a class with status "{enrolled_class.status}".')
 
-    # if Inscription.objects.filter(student=student, status__in=ACTIVE_STATUSES).exists():
-    #     raise ValueError('Student already has an active inscription.')
-
     if Inscription.objects.filter(student=student, enrolled_class=enrolled_class).exists():
         raise ValueError('Student is already enrolled in this class.')
 
-    return Inscription.objects.create(
+    inscription = Inscription.objects.create(
         student=student,
         enrolled_class=enrolled_class,
         status=Inscription.STATUS_CONFIRMED,
     )
+
+    Payment.objects.create(
+        inscription=inscription,
+        amount=0,
+        status=Payment.Status.PENDING,
+    )
+
+    return inscription
 
 
 def update_inscription(inscription_id: int, data: dict) -> Inscription:
@@ -65,8 +75,6 @@ def cancel_inscription(inscription_id: int) -> Inscription:
     return inscription
 
 
-
-
 def get_student_history(student_id: int):
     student = get_object_or_404(Student, pk=student_id)
 
@@ -92,10 +100,11 @@ def get_student_current(student_id: int) -> Inscription | None:
     )
 
 
-
 def _transition_student(student_id: int, new_class_id: int, transition_type: str) -> Inscription:
-    student    = get_object_or_404(Student, pk=student_id)
-    new_class  = get_object_or_404(Class, pk=new_class_id)
+    from apps.payments.models import Payment
+
+    student   = get_object_or_404(Student, pk=student_id)
+    new_class = get_object_or_404(Class, pk=new_class_id)
 
     if new_class.status != 'active':
         raise ValueError(f'Target class status is "{new_class.status}". Must be active.')
@@ -121,6 +130,12 @@ def _transition_student(student_id: int, new_class_id: int, transition_type: str
             student=student,
             enrolled_class=new_class,
             status=Inscription.STATUS_CONFIRMED,
+        )
+
+        Payment.objects.create(
+            inscription=new_inscription,
+            amount=0,
+            status=Payment.Status.PENDING,
         )
 
     return current, new_inscription

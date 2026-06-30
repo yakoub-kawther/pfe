@@ -275,7 +275,7 @@ class TeacherViewSet(viewsets.ViewSet):
     
 
 
-    # Already handled through:
+    
     @action(detail=True, methods=['post'])
     def deactivate(self, request, pk=None):
         try:

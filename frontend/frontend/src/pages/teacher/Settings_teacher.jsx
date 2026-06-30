@@ -1,7 +1,7 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Teacher_layout from "../../layouts/Teacher_layout";
 import Buttons from "../../components/Buttons";
-
+import { apiFetch } from "../../services/api";
 
 const Card = ({ title, icon, children }) => (
   <div
@@ -10,9 +10,7 @@ const Card = ({ title, icon, children }) => (
   >
     <div className="flex items-center gap-2 mb-6">
       {icon && <span className="text-[#701366] text-lg">{icon}</span>}
-      <h3 className="text-[#701366] font-Inter" style={{ fontSize: "16px" }}>
-        {title}
-      </h3>
+      <h3 className="text-[#701366] font-Inter" style={{ fontSize: "16px" }}>{title}</h3>
     </div>
     {children}
   </div>
@@ -21,37 +19,23 @@ const Card = ({ title, icon, children }) => (
 const ReadField = ({ label, value }) => (
   <div className="flex flex-col gap-1.5">
     {label && <label className="text-[13px] text-gray-500 font-Inter">{label}</label>}
-    <div
-      style={{
-        width: "100%",
-        border: "1px solid #e2d0e2",
-        borderRadius: "8px",
-        padding: "10px 14px",
-        fontSize: "14px",
-        color: "#701366",
-        boxSizing: "border-box",
-        fontFamily: "Inter, sans-serif",
-        backgroundColor: "#faf5fa",
-        minHeight: "40px",
-      }}
-    >
+    <div style={{ width: "100%", border: "1px solid #e2d0e2", borderRadius: "8px", padding: "10px 14px", fontSize: "14px", color: "#701366", boxSizing: "border-box", fontFamily: "Inter, sans-serif", backgroundColor: "#faf5fa", minHeight: "40px" }}>
       {value || <span style={{ color: "#c9a8c9" }}>—</span>}
     </div>
   </div>
 );
 
-
 function getStrength(pw) {
   if (!pw) return null;
   let score = 0;
-  if (pw.length >= 8)            score++;
-  if (/[A-Z]/.test(pw))         score++;
-  if (/[0-9]/.test(pw))         score++;
-  if (/[^A-Za-z0-9]/.test(pw))  score++;
-  if (score <= 1) return { label: "Weak",   color: "#ef4444", width: "25%" };
-  if (score === 2) return { label: "Fair",   color: "#f97316", width: "50%" };
-  if (score === 3) return { label: "Good",   color: "#eab308", width: "75%" };
-  return              { label: "Strong", color: "#22c55e", width: "100%" };
+  if (pw.length >= 8)           score++;
+  if (/[A-Z]/.test(pw))        score++;
+  if (/[0-9]/.test(pw))        score++;
+  if (/[^A-Za-z0-9]/.test(pw)) score++;
+  if (score <= 1) return { label: "Weak",   color: "#ef4444", width: "25%"  };
+  if (score === 2) return { label: "Fair",   color: "#f97316", width: "50%"  };
+  if (score === 3) return { label: "Good",   color: "#eab308", width: "75%"  };
+  return             { label: "Strong", color: "#22c55e", width: "100%" };
 }
 
 const DIRECTOR_EMAIL = "yousraztn.contact@gmail.com";
@@ -78,32 +62,11 @@ const PwField = ({ label, field, form, setForm, show, onToggle }) => (
         value={form[field]}
         onChange={(e) => setForm((f) => ({ ...f, [field]: e.target.value }))}
         placeholder="••••••••"
-        style={{
-          width: "100%",
-          border: "1px solid #e2d0e2",
-          borderRadius: "8px",
-          padding: "10px 40px 10px 14px",
-          fontSize: "14px",
-          color: "#333",
-          boxSizing: "border-box",
-          fontFamily: "Inter, sans-serif",
-          backgroundColor: "#fff",
-          minHeight: "40px",
-          outline: "none",
-          transition: "border-color 0.2s",
-        }}
+        style={{ width: "100%", border: "1px solid #e2d0e2", borderRadius: "8px", padding: "10px 40px 10px 14px", fontSize: "14px", color: "#333", boxSizing: "border-box", fontFamily: "Inter, sans-serif", backgroundColor: "#fff", minHeight: "40px", outline: "none", transition: "border-color 0.2s" }}
         onFocus={(e) => (e.target.style.borderColor = "#701366")}
         onBlur={(e)  => (e.target.style.borderColor = "#e2d0e2")}
       />
-      <button
-        type="button"
-        onClick={() => onToggle(field)}
-        style={{
-          position: "absolute", right: "12px", top: "50%",
-          transform: "translateY(-50%)", background: "none", border: "none",
-          cursor: "pointer", color: "#a07aa0", padding: 0, display: "flex",
-        }}
-      >
+      <button type="button" onClick={() => onToggle(field)} style={{ position: "absolute", right: "12px", top: "50%", transform: "translateY(-50%)", background: "none", border: "none", cursor: "pointer", color: "#a07aa0", padding: 0, display: "flex" }}>
         <Eye visible={show[field]} />
       </button>
     </div>
@@ -111,60 +74,69 @@ const PwField = ({ label, field, form, setForm, show, onToggle }) => (
 );
 
 export default function Settings() {
-  const manager = {
-    name:  "Ahmed Benali",
-    email: "drahmed.benali@school.dz",
-    role:  "Teacher",
-  };
-
+  const [me,      setMe]      = useState(null);
   const [form,    setForm]    = useState({ current: "", next: "", confirm: "" });
   const [show,    setShow]    = useState({ current: false, next: false, confirm: false });
   const [success, setSuccess] = useState("");
   const [error,   setError]   = useState("");
 
-  const strength = getStrength(form.next);
-  const toggle = (field) => setShow((s) => ({ ...s, [field]: !s[field] }));
+  useEffect(() => {
+    apiFetch("/account/me/")
+      .then(res => res.json())
+      .then(data => setMe(data))
+      .catch(() => {});
+  }, []);
 
-  const handleSave = () => {
+  const strength = getStrength(form.next);
+  const toggle   = (field) => setShow((s) => ({ ...s, [field]: !s[field] }));
+
+  const handleSave = async () => {
     setError(""); setSuccess("");
     if (!form.current) return setError("Please enter your current password.");
     if (form.next.length < 8) return setError("New password must be at least 8 characters.");
     if (form.next !== form.confirm) return setError("Passwords do not match.");
-    setSuccess("Password updated successfully!");
-    setForm({ current: "", next: "", confirm: "" });
+
+    try {
+      const res = await apiFetch("/account/reset-password/", {
+        method: "POST",
+        body: {
+          old_password: form.current,
+          new_password: form.next,
+        },
+      });
+
+      if (!res.ok) {
+        const err = await res.json();
+        return setError(err.detail || "Failed to update password.");
+      }
+
+      setSuccess("Password updated successfully!");
+      setForm({ current: "", next: "", confirm: "" });
+    } catch {
+      setError("Network error. Please try again.");
+    }
   };
 
   return (
     <Teacher_layout>
-      {/* w-full + clamp padding replaces max-w-5xl mx-auto */}
-      <div style={{ maxWidth: "1100px", margin: "40px auto",fontFamily: "Inter, sans-serif", padding: "0 24px", display: "flex", flexDirection: "column", gap: "24px" }}>
+      <div style={{ maxWidth: "1100px", margin: "40px auto", fontFamily: "Inter, sans-serif", padding: "0 24px", display: "flex", flexDirection: "column", gap: "24px" }}>
 
         {/* Header */}
         <div className="flex items-center justify-between mb-8">
-            <h2 style={{ fontSize: "24px", color: "#701366", fontFamily: "Inter, sans-serif", margin: 0 }}>
-            Settings
-            </h2>
+          <h2 style={{ fontSize: "24px", color: "#701366", fontFamily: "Inter, sans-serif", margin: 0 }}>Settings</h2>
         </div>
 
-        {/* Two-column grid → single column on narrow */}
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 380px), 1fr))",
-            gap: "24px",
-            alignItems: "start",
-            marginTop: "30px",
-          }}
-        >
-          {/* LEFT column */}
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 380px), 1fr))", gap: "24px", alignItems: "start", marginTop: "30px" }}>
+
+          {/* LEFT */}
           <div className="flex flex-col" style={{ gap: "24px" }}>
 
             {/* Account Info */}
             <Card title="Account Information">
               <div className="grid grid-cols-1" style={{ gap: "16px", marginTop: "20px" }}>
-                <ReadField label="Full Name" value={manager.name} />
-                <ReadField label="Email"     value={manager.email} />
-                <ReadField label="Role"      value={manager.role} />
+                <ReadField label="Full Name" value={me?.full_name} />
+                <ReadField label="Username"  value={me?.username}  />
+                <ReadField label="Role"      value={me?.role}      />
               </div>
               <p className="text-[11px] text-gray-400 font-Inter mt-4">
                 * Account details can only be updated by the system administrator.
@@ -173,45 +145,21 @@ export default function Settings() {
 
             {/* Support */}
             <Card title="Support">
-              <a
-                href={`https://mail.google.com/mail/?view=cm&to=${DIRECTOR_EMAIL}&subject=Support%20Request`}
-                target="_blank" rel="noreferrer"
-                style={{ textDecoration: "none", display: "block", marginBottom: "14px", marginTop: "10px" }}
-              >
+              <a href={`https://mail.google.com/mail/?view=cm&to=${DIRECTOR_EMAIL}&subject=Support%20Request`} target="_blank" rel="noreferrer" style={{ textDecoration: "none", display: "block", marginBottom: "14px", marginTop: "10px" }}>
                 <div
-                  style={{
-                    background: "linear-gradient(135deg, #701366 0%, #9c1e8e 100%)",
-                    borderRadius: "14px",
-                    padding: "10px 20px",
-                    display: "flex",
-                    alignItems: "center",
-                    gap: "14px",
-                    cursor: "pointer",
-                    transition: "opacity 0.2s, transform 0.2s",
-                  }}
+                  style={{ background: "linear-gradient(135deg, #701366 0%, #9c1e8e 100%)", borderRadius: "14px", padding: "10px 20px", display: "flex", alignItems: "center", gap: "14px", cursor: "pointer", transition: "opacity 0.2s, transform 0.2s" }}
                   onMouseEnter={e => { e.currentTarget.style.opacity = "0.9"; e.currentTarget.style.transform = "translateY(-2px)"; }}
                   onMouseLeave={e => { e.currentTarget.style.opacity = "1";   e.currentTarget.style.transform = "translateY(0)"; }}
                 >
-                  <div style={{
-                    width: "42px", height: "42px", borderRadius: "50%",
-                    background: "rgba(255,255,255,0.18)",
-                    display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0,
-                  }}>
+                  <div style={{ width: "42px", height: "42px", borderRadius: "50%", background: "rgba(255,255,255,0.18)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
                     <svg xmlns="http://www.w3.org/2000/svg" width="19" height="19" fill="none" viewBox="0 0 24 24" stroke="white" strokeWidth="2">
                       <rect x="2" y="4" width="20" height="16" rx="2"/>
                       <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/>
                     </svg>
                   </div>
                   <div style={{ flex: 1, minWidth: 0 }}>
-                    <p style={{ color: "rgba(255,255,255,0.7)", fontSize: "12px", fontFamily: "Inter, sans-serif", marginBottom: "3px" }}>
-                      Contact Director
-                    </p>
-                    <p style={{
-                      color: "white", fontSize: "12.5px", fontFamily: "Inter, sans-serif", fontWeight: 400,
-                      overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
-                    }}>
-                      {DIRECTOR_EMAIL}
-                    </p>
+                    <p style={{ color: "rgba(255,255,255,0.7)", fontSize: "12px", fontFamily: "Inter, sans-serif", marginBottom: "3px" }}>Contact Director</p>
+                    <p style={{ color: "white", fontSize: "12.5px", fontFamily: "Inter, sans-serif", fontWeight: 400, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{DIRECTOR_EMAIL}</p>
                   </div>
                   <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" fill="none" viewBox="0 0 24 24" stroke="rgba(255,255,255,0.6)" strokeWidth="2.5" style={{ flexShrink: 0 }}>
                     <path d="M5 12h14M12 5l7 7-7 7"/>
@@ -236,10 +184,7 @@ export default function Settings() {
               {form.next && strength && (
                 <div>
                   <div style={{ height: "4px", background: "#f0e6f0", borderRadius: "99px", overflow: "hidden" }}>
-                    <div style={{
-                      height: "100%", width: strength.width, background: strength.color,
-                      borderRadius: "99px", transition: "width 0.35s ease, background 0.35s ease",
-                    }} />
+                    <div style={{ height: "100%", width: strength.width, background: strength.color, borderRadius: "99px", transition: "width 0.35s ease, background 0.35s ease" }} />
                   </div>
                   <p className="text-[11px] font-Inter mt-1" style={{ color: strength.color }}>{strength.label}</p>
                 </div>
@@ -251,9 +196,9 @@ export default function Settings() {
                 {[
                   ["At least 8 characters",  form.next.length >= 8],
                   ["One uppercase letter",    /[A-Z]/.test(form.next)],
-                  ["One number",              /[0-9]/.test(form.next)],
-                  ["One special character",   /[^A-Za-z0-9]/.test(form.next)],
-                  ["Passwords match",         form.next && form.next === form.confirm],
+                  ["One number",             /[0-9]/.test(form.next)],
+                  ["One special character",  /[^A-Za-z0-9]/.test(form.next)],
+                  ["Passwords match",        form.next && form.next === form.confirm],
                 ].map(([rule, ok]) => (
                   <li key={rule} className="flex items-center gap-1.5">
                     <span style={{ color: ok ? "#22c55e" : "#d1b3d1", fontSize: "12px" }}>{ok ? "✓" : "○"}</span>
@@ -274,6 +219,7 @@ export default function Settings() {
               </div>
             </div>
           </Card>
+
         </div>
       </div>
     </Teacher_layout>

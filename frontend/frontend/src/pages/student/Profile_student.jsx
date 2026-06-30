@@ -1,5 +1,6 @@
-import { useLocation } from "react-router-dom";
+import { useState, useEffect } from "react";
 import Student_layout from "../../layouts/Student_layout";
+import { apiFetch } from "../../services/api";
 
 // ── Read-only field ──────────────────────────────────────────────────────────
 const ReadField = ({ label, value, full = false }) => (
@@ -11,7 +12,7 @@ const ReadField = ({ label, value, full = false }) => (
   </div>
 );
 
-// ── Gender  ────────────────────────────────────────────────
+// ── Gender ───────────────────────────────────────────────────────────────────
 const GenderField = ({ value }) => {
   const val = value?.toLowerCase();
   return (
@@ -29,7 +30,7 @@ const GenderField = ({ value }) => {
   );
 };
 
-// ── Relationship  ─────────────────────────────────────────
+// ── Relationship ─────────────────────────────────────────────────────────────
 const RelationshipField = ({ value }) => {
   const fixed   = ["Father", "Mother", "Other"];
   const isOther = value && !["father", "mother"].includes(value.toLowerCase());
@@ -64,13 +65,66 @@ const Card = ({ title, children }) => (
   </div>
 );
 
-// ── Page ─────────────────────────────────────────────────────────────────────
+// ── Page 
 const Profile_student = () => {
-  const { state }  = useLocation();
-  const student    = state?.student;
-  const nameParts  = student?.name?.split(" ") || [];
-  const firstName  = nameParts[0] || "";
-  const lastName   = nameParts.slice(1).join(" ") || "";
+  const [student, setStudent] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error,   setError]   = useState(null);
+
+  useEffect(() => {
+    apiFetch("/account/me/")
+      .then(r => r.json())
+      .then(account => {
+        const personId = account?.person_id ?? null;
+        if (!personId) throw new Error("Could not resolve student ID.");
+        return apiFetch(`/persons/students/${personId}/`);
+      })
+      .then(r => r.json())
+      .then(data => setStudent(data))
+      .catch(err => setError(err.message || "Failed to load profile."))
+      .finally(() => setLoading(false));
+  }, []);
+
+  // ── Map API response fields ──────────────────────────────────────────────
+  // Adjust these paths to match your actual API response structure.
+  //
+  // Expected shape (example):
+  // {
+  //   person:     { first_name, last_name, gender, dob, phone, email, address },
+  //   class_name: "...",   ← or "class_group", "grade", etc.
+  //   special_case: "...",
+  //   status:     "Active" | "Inactive",
+  //   parent: {
+  //     first_name, last_name, relationship, phone
+  //   },
+  //   account: { username }
+  // }
+
+  const person      = student?.person ?? {};
+  const firstName   = person.first_name  ?? "";
+  const lastName    = person.last_name   ?? "";
+  const fullName    = `${firstName} ${lastName}`.trim();
+  const status      = student?.status ?? "";
+
+  // Parent — adjust key names to match your serializer
+  const parent      = student?.parent ?? student?.guardian ?? {};
+
+  // ── Loading / Error states ───────────────────────────────────────────────
+  if (loading) return (
+    <Student_layout>
+      <div style={{ textAlign: "center", padding: "80px", color: "#b48ab0", fontFamily: "Inter, sans-serif" }}>
+        Loading...
+      </div>
+    </Student_layout>
+  );
+
+  if (error) return (
+    <Student_layout>
+      <div style={{ textAlign: "center", padding: "80px", color: "#dc2626", fontFamily: "Inter, sans-serif" }}>
+        {error}
+      </div>
+    </Student_layout>
+  );
 
   return (
     <Student_layout>
@@ -88,12 +142,12 @@ const Profile_student = () => {
               {/* Avatar + name + status */}
               <div style={{ display: "flex", alignItems: "center", gap: "16px", marginBottom: "20px" }}>
                 <div style={{ width: "52px", height: "52px", borderRadius: "50%", background: "#f8e0f8", color: "#701366", fontSize: "20px", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-                  {student?.name?.charAt(0) || "S"}
+                  {firstName.charAt(0) || "S"}
                 </div>
                 <div>
-                  <p style={{ color: "#701366", fontSize: "16px", margin: "0 0 4px 0" }}>{student?.name || "—"}</p>
-                  <span style={{ display: "inline-flex", alignItems: "center", padding: "2px 12px", borderRadius: "9999px", fontSize: "12px", background: student?.status === "Active" ? "#dcfce7" : "#fee2e2", color: student?.status === "Active" ? "#15803d" : "#dc2626" }}>
-                    {student?.status || "Unknown"}
+                  <p style={{ color: "#701366", fontSize: "16px", margin: "0 0 4px 0" }}>{fullName || "—"}</p>
+                  <span style={{ display: "inline-flex", alignItems: "center", padding: "2px 12px", borderRadius: "9999px", fontSize: "12px", background: status === "Active" ? "#dcfce7" : "#fee2e2", color: status === "Active" ? "#15803d" : "#dc2626" }}>
+                    {status || "Unknown"}
                   </span>
                 </div>
               </div>
@@ -101,9 +155,10 @@ const Profile_student = () => {
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "20px" }}>
                 <ReadField label="First Name"    value={firstName} />
                 <ReadField label="Last Name"     value={lastName} />
-                <GenderField                     value={student?.gender} />
-                <ReadField label="Date of Birth" value={student?.dob} />
-                <ReadField label="Class"         value={student?.class} />
+                <GenderField                     value={person.gender} />
+                <ReadField label="Date of Birth" value={person.dob ?? student?.dob} />
+                {/* Adjust key: class_name / class_group / grade depending on your model */}
+                
                 <ReadField label="Special Case"  value={student?.special_case} />
               </div>
             </Card>
@@ -111,10 +166,11 @@ const Profile_student = () => {
             {/* Parent Details */}
             <Card title="Parent Details">
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "20px" }}>
-                <ReadField label="Parent First Name" value={student?.parent_first_name} />
-                <ReadField label="Parent Last Name"  value={student?.parent_last_name} />
-                <RelationshipField                   value={student?.relationship} />
-                <ReadField label="Parent Contact" value={student?.parent_phone} full />
+                <ReadField label="Parent First Name" value={parent.first_name} />
+                <ReadField label="Parent Last Name"  value={parent.last_name} />
+                <RelationshipField                   value={parent.relationship} />
+                {/* Adjust key: phone / contact / phone_number depending on your model */}
+                <ReadField label="Parent Contact" value={parent.phone ?? parent.contact ?? parent.phone_number} full />
               </div>
             </Card>
 
@@ -124,19 +180,14 @@ const Profile_student = () => {
           <div style={{ display: "flex", flexDirection: "column", gap: "28px", minWidth: 0 }}>
 
             {/* Account */}
-            <Card title="Account Information">
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "20px" }}>
-                <ReadField label="Username" value={student?.username} />
-                <ReadField label="Password" value="••••••••" />
-              </div>
-            </Card>
+            
 
             {/* Contact */}
             <Card title="Contact Details">
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "20px" }}>
-                <ReadField label="Phone"   value={student?.phone} />
-                <ReadField label="Email"   value={student?.email} />
-                <ReadField label="Address" value={student?.address} full />
+                <ReadField label="Phone"   value={person.phone} />
+                <ReadField label="Email"   value={person.email} />
+                <ReadField label="Address" value={person.address} full />
               </div>
             </Card>
 

@@ -15,7 +15,7 @@ class Person(models.Model):
 
     class Meta:
         db_table = 'person'
-
+        
     def __str__(self):
         return f"{self.first_name} {self.last_name}"
 
@@ -35,6 +35,7 @@ class Student(models.Model):
     
     class Meta:
         db_table = 'student'
+        ordering = ['-person__id']
 
     def __str__(self):
         return self.person.first_name
@@ -53,6 +54,7 @@ class Parent(models.Model):
     
     class Meta:
         db_table = 'parent'
+        ordering = ['-person__id']
 
     def __str__(self):
         return self.person.first_name
@@ -87,7 +89,7 @@ class Employee(models.Model):
     
     class Meta:
         db_table = 'employee'
-
+        ordering = ['-person__id']
     def __str__(self):
         return self.person.first_name
 
@@ -100,6 +102,7 @@ class Teacher(models.Model):
 
     class Meta:
         db_table = 'teacher'
+        ordering = ['-employee__person__id']
 
     def __str__(self):
         return self.employee.person.first_name

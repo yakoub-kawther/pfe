@@ -1,50 +1,67 @@
+import { useState, useEffect } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import Student_layout from "../../layouts/Student_layout";
-
-
-const attendanceByClass = {
-  1: [
-    { date: "2026-04-10", status: { text: "Present", color: "green" } },
-    { date: "2026-04-14", status: { text: "Present", color: "green" } },
-    { date: "2026-04-16", status: { text: "Absent",  color: "red"   } },
-    { date: "2026-04-21", status: { text: "Present", color: "green" } },
-    { date: "2026-04-23", status: { text: "Absent",  color: "red"   } },
-  ],
-  3: [
-    { date: "2026-04-09", status: { text: "Present", color: "green" } },
-    { date: "2026-04-11", status: { text: "Absent",  color: "red"   } },
-    { date: "2026-04-16", status: { text: "Present", color: "green" } },
-    { date: "2026-04-18", status: { text: "Present", color: "green" } },
-    { date: "2026-04-23", status: { text: "Present", color: "green" } },
-  ],
-};
+import { apiFetch } from "../../services/api";
 
 const statusStyles = {
-  green: "bg-green-100 text-green-600",
-  red:   "bg-red-100 text-red-600",
+  present: "bg-green-100 text-green-600",
+  absent:  "bg-red-100 text-red-600",
 };
+
+const statusLabel = (s) => s.charAt(0).toUpperCase() + s.slice(1);
 
 export default function Attendance_detail_student() {
   const { state }  = useLocation();
   const navigate   = useNavigate();
   const cls        = state?.cls;
+  const studentId  = state?.studentId; // pass this when navigating
 
-  const attendanceData = attendanceByClass[cls?.id] || [];
+  const [attendanceData, setAttendanceData] = useState([]);
+  const [loading,        setLoading]        = useState(false);
+  const [error,          setError]          = useState(null);
 
-  const total      = attendanceData.length;
-  const present    = attendanceData.filter(a => a.status.text === "Present").length;
-  const percent    = total > 0 ? Math.round((present / total) * 100) : 0;
+  // ── Fetch attendance ──────────────────────────────────────
+  useEffect(() => {
+    console.log("cls:", cls, "studentId:", studentId);
 
-  const radius      = 60;
-  const stroke      = 12;
+    if (!cls?.id || !studentId) {
+    console.log("missing cls.id or studentId — skipping fetch");  // ← add this
+    return;
+  }
+
+    const fetch = async () => {
+      setLoading(true);
+      try {
+        const res  = await apiFetch(`/attendance/student/${studentId}/class/${cls.id}/`);
+        const data = await res.json();
+        console.log("attendance response:", data);
+        setAttendanceData(Array.isArray(data) ? data : (data.results ?? []));
+      } catch {
+        console.log("attendance error:");
+        setError("Failed to load attendance.");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetch();
+  }, [cls?.id, studentId]);
+
+  // ── Stats ─────────────────────────────────────────────────
+  const total   = attendanceData.length;
+  const present = attendanceData.filter(a => a.status === "present").length;
+  const percent = total > 0 ? Math.round((present / total) * 100) : 0;
+
+  const radius       = 60;
+  const stroke       = 12;
   const circumference = 2 * Math.PI * radius;
-  const offset      = circumference - (percent / 100) * circumference;
+  const offset       = circumference - (percent / 100) * circumference;
 
   return (
     <Student_layout>
       <div className="flex flex-col gap-6" style={{ maxWidth: "1100px", margin: "40px auto", padding: "0 24px" }}>
 
-        {/* Header + back button */}
+        {/* Header */}
         <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
           <button
             onClick={() => navigate(-1)}
@@ -62,6 +79,13 @@ export default function Attendance_detail_student() {
           </div>
         </div>
 
+        {/* Error */}
+        {error && (
+          <div style={{ color: "#dc2626", background: "#fee2e2", borderRadius: "8px", padding: "10px 16px", fontSize: "13px" }}>
+            {error}
+          </div>
+        )}
+
         {/* Main */}
         <div className="flex flex-col lg:flex-row gap-6">
 
@@ -70,26 +94,36 @@ export default function Attendance_detail_student() {
             <div className="overflow-x-auto">
               <table className="w-full text-sm" style={{ minWidth: "360px" }}>
                 <thead>
-                  <tr className="bg-[#F8E0F8] h-12  text-[#701366] text-left">
-                    <th style={{ paddingLeft: "30px" }} className="py-3  whitespace-nowrap">Date</th>
+                  <tr className="bg-[#F8E0F8] h-12 text-[#701366] text-left">
+                    <th style={{ paddingLeft: "30px" }} className="py-3 whitespace-nowrap">Date</th>
                     <th className="px-4 py-3 whitespace-nowrap">Status</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-[#f8e0f8]">
-                  {attendanceData.length === 0 ? (
+                  {loading ? (
+                    <tr>
+                      <td colSpan={2} style={{ textAlign: "center", padding: "40px", color: "#b48ab0", fontSize: "14px" }}>
+                        Loading...
+                      </td>
+                    </tr>
+                  ) : attendanceData.length === 0 ? (
                     <tr>
                       <td colSpan={2} style={{ textAlign: "center", padding: "40px", color: "#b48ab0", fontSize: "14px" }}>
                         No attendance records found.
                       </td>
                     </tr>
-                  ) : attendanceData.map((item, idx) => (
-                    <tr key={idx} className="hover:bg-[#fffafe] h-12">
+                  ) : attendanceData.map((item) => (
+                    <tr key={item.id} className="hover:bg-[#fffafe] h-12">
                       <td style={{ paddingLeft: "30px" }} className="py-3 text-[#701366] whitespace-nowrap">
-                        {item.date}
+                        {/* ✅ session_date from StudentAttendanceSerializer */}
+                        {item.session_date
+                          ? new Date(item.session_date).toLocaleDateString()
+                          : "—"}
                       </td>
                       <td className="px-4 whitespace-nowrap">
-                        <span className={`px-3 py-1 rounded-full text-xs font-Inter ${statusStyles[item.status.color]}`}>
-                          ● {item.status.text}
+                        {/* ✅ status from Attendance.Status */}
+                        <span className={`px-3 py-1 rounded-full text-xs font-Inter ${statusStyles[item.status] ?? "bg-gray-100 text-gray-600"}`}>
+                          ● {statusLabel(item.status)}
                         </span>
                       </td>
                     </tr>
@@ -131,7 +165,7 @@ export default function Attendance_detail_student() {
               </div>
             </div>
 
-            {/* Summary counts */}
+            {/* Summary */}
             <div style={{ marginTop: "20px", display: "flex", gap: "24px", fontSize: "13px", color: "#701366" }}>
               <div style={{ textAlign: "center" }}>
                 <div style={{ fontSize: "20px", fontWeight: 500 }}>{present}</div>

@@ -8,15 +8,15 @@ from .models import Account
 class AccountJWTAuthentication(JWTAuthentication):
 
     def authenticate(self, request):
-        print(">>> authenticate called")
+        # print(">>> authenticate called")
         result = super().authenticate(request)
-        print(">>> authenticate result:", result)
+        # print(">>> authenticate result:", result)
         return result
 
     def get_user(self, validated_token):
-        print(">>> get_user called")
+        # print(">>> get_user called")
         account_id = validated_token.get('account_id')
-        print(">>> account_id:", account_id)
+        # print(">>> account_id:", account_id)
         if not account_id:
             raise InvalidToken('Token contained no recognizable user identification')
         try:

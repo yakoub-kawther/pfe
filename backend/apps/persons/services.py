@@ -103,7 +103,7 @@ def create_employee(data):
             })
 
         create_account(
-            person=employee,       # ← pass employee (not person)
+            person=employee,       
             role_name=role,
             username=username,
             raw_password=password,
@@ -137,7 +137,7 @@ def update_employee(employee, data):
         password = data.get('password')
 
         if existing_account:
-            # ── Update existing account ──
+            
             if username:
                 existing_account.username = username
             if password:

@@ -1,18 +1,7 @@
-import { useNavigate, useLocation } from "react-router-dom";
+import { useState, useEffect } from "react";
 import Student_layout from "../../layouts/Student_layout";
 import Searchbar from "../../components/Searchbar";
-import { useState } from "react";
-
-// All classes — in real app filter by logged-in student from backend
-const classesData = [
-  { id: 1, name: "Eng-A2", language: "English", level: "A2", schedule: "Mon / Wed 10:00", room: "Room 1" },
-  { id: 2, name: "Eng-B1", language: "English", level: "B1", schedule: "Tue / Thu 14:00", room: "Room 2" },
-  { id: 3, name: "Fr-A1",  language: "French",  level: "A1", schedule: "Mon / Fri 09:00", room: "Room 3" },
-  { id: 4, name: "Eng-C1", language: "English", level: "C1", schedule: "Wed / Fri 11:00", room: "Room 4" },
-];
-
-// Simulate which class IDs belong to the logged-in student
-const myClassIds = [1, 3];
+import { apiFetch } from "../../services/api";
 
 const levelColors = {
   A1: { bg: "#e0f2fe", color: "#0369a1" },
@@ -23,20 +12,92 @@ const levelColors = {
   C2: { bg: "#ffe4e6", color: "#be123c" },
 };
 
+const extractLevel = (className = "") => {
+  const match = className.match(/\b([ABC][12])\b/i);
+  return match ? match[1].toUpperCase() : null;
+};
+
+// Safe fetch helper
+const safeFetch = async (path) => {
+  const res = await apiFetch(path);
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(`${res.status} ${res.statusText} — ${path}\n${text.slice(0, 200)}`);
+  }
+  return res.json();
+};
+
+// Group flat notes list by inscription → one row per class
+// Each note has: id, inscription, component ("oral"/"written"), mark, class_name, student_name
+const groupByInscription = (notes) => {
+  const map = {};
+  for (const n of notes) {
+    const key = n.inscription;
+    if (!map[key]) {
+      map[key] = {
+        inscription_id: n.inscription,
+        class_name:     n.class_name,
+        level:          extractLevel(n.class_name),
+        oral:           null,
+        written:        null,
+      };
+    }
+    const comp = n.component?.toLowerCase();
+    if (comp === "oral")    map[key].oral    = n.mark;
+    if (comp === "written") map[key].written = n.mark;
+  }
+  return Object.values(map);
+};
+
+const getAverage = (oral, written) => {
+  const vals = [oral, written].filter(v => v !== null && v !== undefined);
+  if (!vals.length) return null;
+  return (vals.reduce((a, b) => a + b, 0) / vals.length).toFixed(1);
+};
+
+const ScoreCell = ({ val }) => (
+  <td style={{ padding: "12px 16px", fontSize: "14px", color: val !== null && val !== undefined ? "#701366" : "#d1bbd0" }}>
+    {val !== null && val !== undefined ? `${val}/100` : "—"}
+  </td>
+);
+
 export default function Notes_student() {
-  const navigate  = useNavigate();
-  const { state } = useLocation();
+  const [rows,    setRows]    = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error,   setError]   = useState(null);
+  const [search,  setSearch]  = useState("");
 
-  // In real app: get current student from auth context or location state
-  const currentStudent = state?.student;
+  useEffect(() => {
+    safeFetch("/account/me/")
+      .then(account => {
+        const studentId = account?.person_id ?? null;
+        if (!studentId) throw new Error("Could not resolve student ID.");
+        return safeFetch(`/notes/student/?student_id=${studentId}`);
+      })
+      .then(data => setRows(groupByInscription(data)))
+      .catch(err => setError(err.message || "Failed to load results."))
+      .finally(() => setLoading(false));
+  }, []);
 
-  const [search, setSearch] = useState("");
+  const filtered = rows.filter(r =>
+    r.class_name?.toLowerCase().includes(search.toLowerCase())
+  );
 
-  // Only show the student's own classes
-  const myClasses = classesData.filter(c => myClassIds.includes(c.id));
-  const filtered  = myClasses.filter((c) =>
-    c.name.toLowerCase().includes(search.toLowerCase()) ||
-    c.language.toLowerCase().includes(search.toLowerCase())
+  if (loading) return (
+    <Student_layout>
+      <div style={{ textAlign: "center", padding: "80px", color: "#b48ab0", fontFamily: "Inter, sans-serif" }}>
+        Loading...
+      </div>
+    </Student_layout>
+  );
+
+  if (error) return (
+    <Student_layout>
+      <div style={{ textAlign: "center", padding: "80px", fontFamily: "Inter, sans-serif" }}>
+        <p style={{ color: "#dc2626", fontWeight: 500 }}>Failed to load results</p>
+        <pre style={{ fontSize: "12px", color: "#9ca3af", whiteSpace: "pre-wrap", maxWidth: "600px", margin: "12px auto 0" }}>{error}</pre>
+      </div>
+    </Student_layout>
   );
 
   return (
@@ -47,11 +108,13 @@ export default function Notes_student() {
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: "16px" }}>
           <div>
             <h2 style={{ fontSize: "24px", color: "#701366", margin: 0 }}>My Results</h2>
-            <p style={{ fontSize: "13px", color: "#b48ab0", margin: "4px 0 0" }}>Select a class to view your grades</p>
+            <p style={{ fontSize: "13px", color: "#b48ab0", margin: "4px 0 0" }}>
+              Your grades across all enrolled classes
+            </p>
           </div>
           <div style={{ flex: 1, maxWidth: "380px", minWidth: "200px" }}>
             <Searchbar
-              placeholder="Search by class or language..."
+              placeholder="Search by class..."
               showAdd={false}
               onSearchChange={(val) => setSearch(val)}
             />
@@ -64,11 +127,12 @@ export default function Notes_student() {
             <thead>
               <tr style={{ background: "linear-gradient(90deg, #f8e0f8 0%, #fdf4fd 100%)", height: "52px" }}>
                 {[
-                  { label: "Class",    width: "20%", pl: "28px" },
-                  { label: "Language", width: "20%" },
-                  { label: "Level",    width: "14%" },
-                  { label: "Schedule", width: "28%" },
-                  { label: "Room",     width: "18%" },
+                  { label: "Class",    width: "22%", pl: "28px" },
+                  { label: "Level",    width: "12%" },
+                  { label: "Oral",     width: "16%" },
+                  { label: "Written",  width: "16%" },
+                  { label: "Average",  width: "16%" },
+                  { label: "Result",   width: "18%" },
                 ].map(({ label, width, pl }) => (
                   <th key={label} style={{ width, paddingLeft: pl || "16px", paddingRight: "16px", fontSize: "12px", fontWeight: 500, textAlign: "left", color: "#701366", letterSpacing: "0.03em", textTransform: "uppercase" }}>
                     {label}
@@ -79,33 +143,58 @@ export default function Notes_student() {
             <tbody>
               {filtered.length === 0 ? (
                 <tr>
-                  <td colSpan={5} style={{ textAlign: "center", padding: "40px", color: "#b48ab0", fontSize: "14px" }}>
-                    No classes found.
+                  <td colSpan={6} style={{ textAlign: "center", padding: "40px", color: "#b48ab0", fontSize: "14px" }}>
+                    No results found.
                   </td>
                 </tr>
-              ) : filtered.map((cls) => {
-                const lc = levelColors[cls.level] || { bg: "#f3f4f6", color: "#374151" };
+              ) : filtered.map((row) => {
+                const avg    = getAverage(row.oral, row.written);
+                const passed = avg !== null ? Number(avg) >= 50 : null;
+                const lc     = levelColors[row.level] || { bg: "#f3f4f6", color: "#374151" };
+
                 return (
-                  <tr
-                    key={cls.id}
-                    onClick={() => navigate("/Notes_students_student", { state: { cls, student: currentStudent } })}
-                    style={{ height: "56px", borderBottom: "1px solid #faeaf9", cursor: "pointer", transition: "background 0.15s" }}
-                    onMouseEnter={e => e.currentTarget.style.background = "#fdf6fd"}
-                    onMouseLeave={e => e.currentTarget.style.background = "white"}
-                  >
-                    <td style={{ paddingLeft: "28px", paddingRight: "16px", fontSize: "14px", fontWeight: 500, color: "#701366" }}>{cls.name}</td>
-                    <td style={{ padding: "12px 16px", fontSize: "14px", color: "#701366" }}>{cls.language}</td>
-                    <td style={{ padding: "12px 16px" }}>
-                      <span style={{ background: lc.bg, color: lc.color, padding: "4px 12px", borderRadius: "9999px", fontSize: "12px", fontWeight: 600 }}>
-                        {cls.level}
-                      </span>
+                  <tr key={row.inscription_id} style={{ height: "56px", borderBottom: "1px solid #faeaf9" }}>
+
+                    {/* Class name */}
+                    <td style={{ paddingLeft: "28px", paddingRight: "16px", fontSize: "14px", fontWeight: 500, color: "#701366" }}>
+                      {row.class_name || "—"}
                     </td>
-                    <td style={{ padding: "12px 16px", fontSize: "14px", color: "#701366" }}>{cls.schedule}</td>
+
+                    {/* Level badge */}
                     <td style={{ padding: "12px 16px" }}>
-                      <span style={{ background: "#fdf4fd", border: "1px solid #f0d8ee", borderRadius: "8px", padding: "3px 10px", fontSize: "12px", color: "#701366" }}>
-                        {cls.room}
-                      </span>
+                      {row.level ? (
+                        <span style={{ background: lc.bg, color: lc.color, padding: "4px 12px", borderRadius: "9999px", fontSize: "12px", fontWeight: 600 }}>
+                          {row.level}
+                        </span>
+                      ) : <span style={{ color: "#d1bbd0" }}>—</span>}
                     </td>
+
+                    {/* Oral */}
+                    <ScoreCell val={row.oral} />
+
+                    {/* Written */}
+                    <ScoreCell val={row.written} />
+
+                    {/* Average */}
+                    <ScoreCell val={avg} />
+
+                    {/* Result */}
+                    <td style={{ padding: "12px 16px" }}>
+                      {passed === null ? (
+                        <span style={{ background: "#f3f4f6", color: "#6b7280", padding: "4px 12px", borderRadius: "9999px", fontSize: "12px", fontWeight: 600 }}>
+                          Pending
+                        </span>
+                      ) : passed ? (
+                        <span style={{ background: "#dcfce7", color: "#15803d", padding: "4px 12px", borderRadius: "9999px", fontSize: "12px", fontWeight: 600 }}>
+                          Pass
+                        </span>
+                      ) : (
+                        <span style={{ background: "#fee2e2", color: "#dc2626", padding: "4px 12px", borderRadius: "9999px", fontSize: "12px", fontWeight: 600 }}>
+                          Fail
+                        </span>
+                      )}
+                    </td>
+
                   </tr>
                 );
               })}

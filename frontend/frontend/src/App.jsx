@@ -142,10 +142,11 @@ function App() {
         <Route path="/Inscriptions" element={<Inscriptions/>} />
         <Route path="/Add_student_payment" element={<Add_student_payment/>} />
         <Route path="/Add_employees_fees" element={<Add_employees_fees/>} />
-         <Route path="/Edit_classes" element={<Edit_classes />} />
-          <Route path="/Add_position" element={<Add_position />} />
-          <Route path="/Edit_position" element={<Edit_position />} />
-          <Route path="/Positions" element={<Positions />} />
+        <Route path="/Edit_classes" element={<Edit_classes />} />
+        <Route path="/Add_position" element={<Add_position />} />
+        <Route path="/Edit_position" element={<Edit_position />} />
+        <Route path="/Positions" element={<Positions />} />
+        {/* <Route path="/Salaries"  element={<Salaries />}  /> */}
 
 
  {/* Secretary Routes */}

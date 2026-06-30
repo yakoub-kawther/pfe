@@ -19,7 +19,7 @@ from .services import (
     promote_student,
     repeat_student,
 )
-from apps.accounts.permissions import IsAdminOrSuperAdmin
+from apps.accounts.permissions import IsNotStudent, IsAdminOrSuperAdmin
 
 
 class InscriptionViewSet(GenericViewSet):
@@ -27,32 +27,30 @@ class InscriptionViewSet(GenericViewSet):
     def get_permissions(self):
         if self.action in ('history', 'current'):
             return [IsAuthenticated()]
-        return [IsAuthenticated(), IsAdminOrSuperAdmin()]
+        return [IsAuthenticated(), IsNotStudent()]
 
     # ─────────────────────────────────────────
     # POST /inscriptions/
     # ─────────────────────────────────────────
     def create(self, request):
-        print("REQUEST DATA:", request.data)
-        student_id = request.data.get('student_id')
-        class_id   = request.data.get('class_id')
+      student_id = request.data.get('student_id')
+      class_id   = request.data.get('class_id')
 
-        if not student_id or not class_id:
-            return Response(
-                {'detail': 'student_id and class_id are required.'},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
-
-        try:
-            inscription = create_inscription(student_id, class_id)
-        except ValueError as e:
-            return Response({'detail': str(e)}, status=status.HTTP_400_BAD_REQUEST)
-
+      if not student_id or not class_id:
         return Response(
-            InscriptionSerializer(inscription).data,
-            status=status.HTTP_201_CREATED,
+            {'detail': 'student_id and class_id are required.'},
+            status=status.HTTP_400_BAD_REQUEST,
         )
 
+      try:
+        inscription = create_inscription(student_id, class_id)
+      except ValueError as e:
+        return Response({'detail': str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+      return Response(
+        InscriptionSerializer(inscription).data,
+        status=status.HTTP_201_CREATED,
+    )
     # ─────────────────────────────────────────
     # PATCH /inscriptions/{id}/
     # ─────────────────────────────────────────
@@ -119,7 +117,7 @@ class InscriptionViewSet(GenericViewSet):
         try:
             current, new_inscription = promote_student(
                 student_id,
-                serializer.validated_data['new_class_id']
+                serializer.validated_data['new_class_id'],
             )
         except ValueError as e:
             return Response({'detail': str(e)}, status=status.HTTP_400_BAD_REQUEST)
@@ -141,7 +139,7 @@ class InscriptionViewSet(GenericViewSet):
         try:
             current, new_inscription = repeat_student(
                 student_id,
-                serializer.validated_data['new_class_id']
+                serializer.validated_data['new_class_id'],
             )
         except ValueError as e:
             return Response({'detail': str(e)}, status=status.HTTP_400_BAD_REQUEST)
@@ -151,13 +149,18 @@ class InscriptionViewSet(GenericViewSet):
             'previous_inscription_id': current.pk,
             'new_inscription': InscriptionSerializer(new_inscription).data,
         }, status=status.HTTP_201_CREATED)
-    
 
+    # ─────────────────────────────────────────
+    # GET /inscriptions/
+    # ─────────────────────────────────────────
     def list(self, request):
-        inscriptions = Inscription.objects.select_related(
-            'student__person', 'enrolled_class'
-         
-        ).all().order_by('-inscription_date')
+        inscriptions = (
+            Inscription.objects
+            .select_related('student__person', 'enrolled_class__level', 'enrolled_class__language')
+            .prefetch_related('payment')   # avoids N+1 for payment_id / payment_status
+            .all()
+            .order_by('-inscription_date')
+        )
 
         class_id = request.query_params.get('class_id')
         if class_id:
@@ -167,5 +170,4 @@ class InscriptionViewSet(GenericViewSet):
         if status_filter:
             inscriptions = inscriptions.filter(status=status_filter)
 
-        serializer = InscriptionDetailSerializer(inscriptions, many=True)
-        return Response(serializer.data)
+        return Response(InscriptionDetailSerializer(inscriptions, many=True).data)

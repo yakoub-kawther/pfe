@@ -26,6 +26,7 @@ class TokenSerializer(serializers.Serializer):
 class AccountSerializer(serializers.ModelSerializer):
     full_name = serializers.SerializerMethodField()
     role = serializers.CharField(source='role.name', read_only=True)
+    person_id   = serializers.SerializerMethodField()
 
     class Meta:
         model = Account
@@ -35,7 +36,8 @@ class AccountSerializer(serializers.ModelSerializer):
             'role',
             'full_name',
             'status',
-            'created_at'
+            'created_at',
+             'person_id'
         ]
         read_only_fields = fields
 
@@ -45,7 +47,13 @@ class AccountSerializer(serializers.ModelSerializer):
         if obj.employee:
             return f"{obj.employee.person.first_name} {obj.employee.person.last_name}"
         return None
-
+    
+    def get_person_id(self, obj):   # 👈 add this
+        if obj.employee:
+            return obj.employee.person_id
+        if obj.student:
+            return obj.student.person_id
+        return None
 
 
 

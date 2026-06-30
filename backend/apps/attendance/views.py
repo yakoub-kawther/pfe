@@ -30,7 +30,7 @@ class AttendanceViewSet(GenericViewSet):
 
     def get_permissions(self):
      if self.action in ('session_attendance', 'student_attendance',
-                       'class_summary', 'absent_students', 'absence_rate'):
+                       'class_summary', 'absent_students', 'absence_rate' , 'list'):
         return [IsAuthenticated()]
      return [IsAuthenticated(), IsNotStudent()]
 

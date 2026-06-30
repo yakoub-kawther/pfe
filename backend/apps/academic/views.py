@@ -142,12 +142,13 @@ from rest_framework import viewsets
 from django.db import transaction
 
 class ClassViewSet(viewsets.ModelViewSet):
+    # avoid N+1 quieries
     queryset = Class.objects.select_related('language', 'level', 'teacher').all()
 
     filter_backends  = [DjangoFilterBackend, SearchFilter]
 
     # ?status=active  or  ?status=inactive
-    filterset_fields = ['status']
+    filterset_fields = ['status' , 'teacher']
 
     # ?search=ahmed  searches across these fields
     search_fields    = [
@@ -244,10 +245,21 @@ class ScheduleViewSet(viewsets.ModelViewSet):
             status=status.HTTP_400_BAD_REQUEST
         )
     
+
+
+    def list(self, request):
+      class_id = request.query_params.get('class_obj')
+      qs = Schedule.objects.select_related('classroom').all()
+      if class_id:
+        qs = qs.filter(class_obj_id=class_id)
+      serializer = ScheduleSerializer(qs, many=True)
+      return Response(serializer.data)
+
+
 from .serializers import SessionSerializer
 from .services import get_class_progress
 from .models import Session
-
+from .serializers import SessionDetailSerializer
 class SessionViewSet(viewsets.ModelViewSet):
     queryset         = Session.objects.all()
     serializer_class = SessionSerializer
@@ -264,3 +276,15 @@ class SessionViewSet(viewsets.ModelViewSet):
             )
 
         return Response(get_class_progress(class_id))
+    
+
+    # in your sessions list view
+    def list(self, request):
+      class_id = request.query_params.get('class_obj')
+      sessions = Session.objects.select_related(
+        'schedule__classroom'
+      ).all()
+      if class_id:
+        sessions = sessions.filter(schedule__class_obj_id=class_id)
+      serializer = SessionDetailSerializer(sessions, many=True)
+      return Response(serializer.data)
