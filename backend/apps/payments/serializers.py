@@ -5,30 +5,42 @@ from apps.payments.models import Payment
 class PaymentSerializer(serializers.ModelSerializer):
 
     inscription_id = serializers.IntegerField(source='inscription.id', read_only=True)
+    student_id     = serializers.IntegerField(source='inscription.student_id', read_only=True)
     student_name   = serializers.SerializerMethodField()
-    level_name     = serializers.SerializerMethodField()
+    language       = serializers.SerializerMethodField()
+    class_name     = serializers.SerializerMethodField()
 
     class Meta:
         model = Payment
         fields = [
             'id',
             'inscription_id',
+            'student_id',
             'student_name',
-            'level_name',
+            'language',
+            'class_name',
             'amount',
             'status',
             'payment_date',
+            'remark',
         ]
         read_only_fields = fields
 
     def get_student_name(self, obj):
-        # Student.first_name doesn't exist — name lives on student.person
         person = obj.inscription.student.person
         return f"{person.first_name} {person.last_name}"
 
-    def get_level_name(self, obj):
-        # Inscription has no 'level' field — the class FK is 'enrolled_class'
-        return str(obj.inscription.enrolled_class)
+    def get_language(self, obj):
+        return str(obj.inscription.enrolled_class.language)
+
+    def get_class_name(self, obj):
+        return obj.inscription.enrolled_class.name
+
+class PaymentUpdateSerializer(serializers.Serializer):
+
+    amount = serializers.DecimalField(max_digits=10, decimal_places=2, min_value=0, required=False)
+    status = serializers.ChoiceField(choices=Payment.Status.choices, required=False)
+    remark = serializers.CharField(required=False, allow_blank=True)
 
 
 class PaymentCreateSerializer(serializers.Serializer):

@@ -13,7 +13,7 @@ from apps.inscription.models import Inscription
 
 
 
-def create_payment(inscription_id: int, amount: Decimal, method: str = None) -> Payment:
+def create_payment(inscription_id: int, amount: Decimal, method: str = None, remark: str = '') -> Payment:
     try:
         inscription = Inscription.objects.get(id=inscription_id)
     except Inscription.DoesNotExist:
@@ -28,6 +28,7 @@ def create_payment(inscription_id: int, amount: Decimal, method: str = None) -> 
         inscription=inscription,
         amount=amount,
         status=Payment.Status.PENDING,
+        remark=remark,
     )
 
     return payment
@@ -117,11 +118,10 @@ def get_pending_payments() -> list:
     payments = (
         Payment.objects
         .filter(status=Payment.Status.PENDING)
-        .select_related('inscription', 'inscription__student', 'inscription__level')
+        .select_related('inscription', 'inscription__student', 'inscription__enrolled_class')
         .order_by('payment_date')
     )
     return list(payments)
-
 
 
 
@@ -186,3 +186,34 @@ def _send_payment_confirmation_notification(payment: Payment) -> None:
 def _month_name(month: int) -> str:
     import calendar
     return calendar.month_name[month]
+
+
+
+
+
+@transaction.atomic
+def update_payment(payment_id: int, amount: Decimal = None, status: str = None, remark: str = None) -> Payment:
+    payment = _get_payment_or_raise(payment_id)
+
+    fields = []
+    if amount is not None:
+        payment.amount = amount
+        fields.append('amount')
+
+    if status is not None:
+        was_paid = payment.status == Payment.Status.PAID
+        payment.status = status
+        fields.append('status')
+
+        if status == Payment.Status.PAID and not was_paid:
+            payment.payment_date = timezone.now()
+            fields.append('payment_date')
+
+    if remark is not None:
+        payment.remark = remark
+        fields.append('remark')
+
+    if fields:
+        payment.save(update_fields=fields)
+
+    return payment

@@ -275,4 +275,24 @@ def get_class_progress(class_id) -> dict:
 def complete_session(session) -> Session:
     session.status = 'completed'
     session.save(update_fields=['status'])
+
+    _maybe_complete_class(session.schedule.class_obj)
+
     return session
+
+
+def _maybe_complete_class(class_obj) -> None:
+    """
+    If every session across all of this class's schedules is completed,
+    mark the class itself as 'completed'. Only touches classes that are
+    still 'active' — won't silently override a manually cancelled class.
+    """
+    if class_obj.status != 'active':
+        return
+
+    sessions = Session.objects.filter(schedule__class_obj=class_obj)
+    all_done = sessions.exists() and not sessions.exclude(status='completed').exists()
+
+    if all_done:
+        class_obj.status = 'completed'
+        class_obj.save(update_fields=['status'])

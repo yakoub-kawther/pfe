@@ -28,6 +28,11 @@ class Payment(models.Model):
         default=Status.PENDING
     )
 
+    remark = models.TextField(
+        blank=True,
+        default=''
+    )
+
     class Meta:
         db_table = 'payment'
 

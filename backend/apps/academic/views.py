@@ -263,7 +263,24 @@ from .serializers import SessionDetailSerializer
 class SessionViewSet(viewsets.ModelViewSet):
     queryset         = Session.objects.all()
     serializer_class = SessionSerializer
-    http_method_names = ['get', 'head', 'options']  # block POST/PUT/DELETE
+    http_method_names = ['get', 'head', 'options', 'patch']
+
+    @action(detail=True, methods=['patch'])
+    def complete(self, request, pk=None):
+        from .services import complete_session
+        session = self.get_object()
+        session = complete_session(session)
+        return Response(SessionSerializer(session).data)
+
+    def partial_update(self, request, *args, **kwargs):
+        # Block the default PATCH /sessions/<id>/ so every status change
+        # goes through complete_session() — that's what triggers the
+        # class-completion check. Bypassing it would leave classes stuck
+        # 'active' forever even after every session is done.
+        return Response(
+            {'detail': 'Use PATCH /sessions/<id>/complete/ instead.'},
+            status=status.HTTP_405_METHOD_NOT_ALLOWED,
+        )
 
     @action(detail=False, methods=['get'])
     def progress(self, request):
@@ -276,9 +293,7 @@ class SessionViewSet(viewsets.ModelViewSet):
             )
 
         return Response(get_class_progress(class_id))
-    
 
-    # in your sessions list view
     def list(self, request):
       class_id = request.query_params.get('class_obj')
       sessions = Session.objects.select_related(
