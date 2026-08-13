@@ -8,6 +8,7 @@ class PaymentSerializer(serializers.ModelSerializer):
     student_id     = serializers.IntegerField(source='inscription.student_id', read_only=True)
     student_name   = serializers.SerializerMethodField()
     language       = serializers.SerializerMethodField()
+    level          = serializers.SerializerMethodField()
     class_name     = serializers.SerializerMethodField()
 
     class Meta:
@@ -18,6 +19,7 @@ class PaymentSerializer(serializers.ModelSerializer):
             'student_id',
             'student_name',
             'language',
+            'level',
             'class_name',
             'amount',
             'status',
@@ -33,8 +35,12 @@ class PaymentSerializer(serializers.ModelSerializer):
     def get_language(self, obj):
         return str(obj.inscription.enrolled_class.language)
 
+    def get_level(self, obj):
+        return str(obj.inscription.enrolled_class.level)
+
     def get_class_name(self, obj):
         return obj.inscription.enrolled_class.name
+
 
 class PaymentUpdateSerializer(serializers.Serializer):
 

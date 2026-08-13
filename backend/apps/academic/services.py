@@ -1,20 +1,20 @@
 from django.db import transaction, IntegrityError
 from rest_framework.validators import ValidationError
-from .models import Language , Level , Position , Classroom , Class , Schedule , Session
+from .models import Language, Level, Position, Classroom, Class, Schedule, Session
 from datetime import date, timedelta
 
 
 # languages part
 
 def create_language(data):
-        try:
-          language = Language.objects.create(
-            language_name = data.get('language_name'),
-            shortcut      = data.get('shortcut')
-         )
-          return language
-        except IntegrityError:
-          raise ValidationError("Language already exists.")
+    try:
+        language = Language.objects.create(
+            language_name=data.get('language_name'),
+            shortcut=data.get('shortcut')
+        )
+        return language
+    except IntegrityError:
+        raise ValidationError("Language already exists.")
 
 
 @transaction.atomic
@@ -29,22 +29,19 @@ def update_language(language, data):
     return language
 
 
-
 # levels part
+
 @transaction.atomic
 def create_level(data):
-    
-    
     try:
         return Level.objects.create(level_name=data['level_name'])
-        
     except IntegrityError:
         raise ValidationError("level already exists.")
 
-@transaction.atomic   
+
+@transaction.atomic
 def update_level(level, data):
     level.level_name = data.get('level_name', level.level_name)
-    
     try:
         level.save()
     except IntegrityError:
@@ -53,6 +50,7 @@ def update_level(level, data):
 
 
 # classrooms part
+
 @transaction.atomic
 def create_classroom(data):
     try:
@@ -62,24 +60,22 @@ def create_classroom(data):
         )
     except IntegrityError:
         raise ValidationError("Classroom with this name already exists.")
-    
-    
 
 
 @transaction.atomic
-def update_classroom(classroom , data):
+def update_classroom(classroom, data):
     classroom.name = data.get('name', classroom.name)
     classroom.capacity = data.get('capacity', classroom.capacity)
-    
     try:
         classroom.save()
     except IntegrityError:
         raise ValidationError("Classroom with this name already exists.")
-  
+
     return classroom
 
 
 # position part
+
 def create_position(data):
     try:
         return Position.objects.create(
@@ -87,6 +83,7 @@ def create_position(data):
         )
     except IntegrityError:
         raise ValidationError("Position with this name already exists.")
+
 
 @transaction.atomic
 def update_position(position, data):
@@ -96,17 +93,34 @@ def update_position(position, data):
     except IntegrityError:
         raise ValidationError("Position with this name already exists.")
     return position
-     
 
 
-# class part 
+# class part
 
+from datetime import date
+
+def get_current_academic_year():
+    return date.today().year
+
+MAX_NAME_ATTEMPTS = 30
+
+def build_class_name_base(language, level, teacher):
+    person = teacher.employee.person
+    last_name = person.last_name.strip().title().replace(" ", "")
+    lang_code = (language.shortcut or language.language_name[:2]).upper()
+    return f"{lang_code}-{level.level_name.upper()}-{last_name}"
+
+
+def generate_class_name(language, level, teacher):
+    """Used by the suggest_name preview endpoint -- best-effort, not reserved."""
+    base = build_class_name_base(language, level, teacher)
+    existing = Class.objects.filter(name__startswith=f"{base}-").count()
+    return f"{base}-{existing + 1:02d}"
 
 
 @transaction.atomic
 def create_class(data):
-    # Validate required fields are present
-    required_fields = ['teacher', 'language', 'name', 'level', 'start_date']
+    required_fields = ['teacher', 'language', 'name', 'level']
     missing = [f for f in required_fields if f not in data or data[f] is None]
     if missing:
         raise ValidationError(f"Missing required fields: {', '.join(missing)}")
@@ -114,22 +128,37 @@ def create_class(data):
     teacher = data['teacher']
     class_lang = data['language']
 
-    # Validate teacher-language compatibility
     if teacher.language_id != class_lang.id:
         raise ValidationError("Teacher cannot be assigned to this class.")
 
-    # Isolate DB errors to the create call only
-    try:
-        return Class.objects.create(
-            name=data['name'],
-            language=class_lang,
-            level=data['level'],
-            teacher=teacher,
-            start_date=data['start_date'],
-            status=data.get('status', 'active'),
-        )
-    except IntegrityError:
-        raise ValidationError("A class with this name and start date already exists.")
+    requested_name = data['name']
+
+    # Lock rows sharing this class's base name pattern so concurrent
+    # requests serialize here instead of racing on the same suffix.
+    base = build_class_name_base(class_lang, data['level'], teacher)
+    Class.objects.select_for_update().filter(name__startswith=f"{base}-")
+
+    name = requested_name
+    for attempt in range(MAX_NAME_ATTEMPTS):
+        try:
+            return Class.objects.create(
+                name=name,
+                language=class_lang,
+                level=data['level'],
+                teacher=teacher,
+                start_date=data.get('start_date'),
+                academic_year=get_current_academic_year(),
+                status=data.get('status', 'scheduled'),
+            )
+        except IntegrityError:
+            # The DB is the real referee here: if `name` collided (whether
+            # from a race or the user editing the suggestion into an
+            # existing name), bump the suffix and retry rather than fail.
+            attempt_num = attempt + 2  # start at -02 since -01 (or requested_name) just collided
+            name = f"{base}-{attempt_num:02d}"
+
+    raise ValidationError("Could not generate a unique class name, please try again.")
+
 
 
 @transaction.atomic
@@ -146,45 +175,35 @@ def update_class(class_obj, data):
     return class_obj
 
 
-
-
 # schedule part
-
 
 def get_active_classes():
     return Class.objects.filter(
         status='active'
-    ).select_related('language', 'level', 'teacher') 
-
+    ).select_related('language', 'level', 'teacher')
 
 
 def get_teacher_busy_times(class_id):
-    
     class_obj = Class.objects.filter(pk=class_id).first()
     if not class_obj:
         raise ValidationError("Class not found.")
-    
-    
-    
+
     busy_times = Schedule.objects.filter(
-    class_obj__teacher=class_obj.teacher,
-    class_obj__status='active'
+        class_obj__teacher=class_obj.teacher,
+        class_obj__status='active'
     ).exclude(
-    class_obj=class_obj
+        class_obj=class_obj
     ).values('day_of_week', 'start_time', 'end_time')
 
     return list(busy_times)
 
 
-
-
 def get_available_classrooms(day_of_week, start_time, end_time):
-    
     busy_classrooms = Schedule.objects.filter(
-        day_of_week    = day_of_week,
-        start_time__lt = end_time,
-        end_time__gt   = start_time,
-        class_obj__status = 'active'
+        day_of_week=day_of_week,
+        start_time__lt=end_time,
+        end_time__gt=start_time,
+        class_obj__status='active'
     ).values_list('classroom_id', flat=True)
 
     return Classroom.objects.exclude(id__in=busy_classrooms)
@@ -192,9 +211,8 @@ def get_available_classrooms(day_of_week, start_time, end_time):
 
 MAX_SESSIONS = 12
 
-from datetime import timedelta
-
 DAYS = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday']
+
 
 def generate_sessions(schedule) -> None:
     start_date = schedule.class_obj.start_date
@@ -206,29 +224,59 @@ def generate_sessions(schedule) -> None:
         )
 
 
+def get_next_weekday_date(day_of_week, from_date=None):
+    """
+    Return the next date (>= from_date, defaults to today) that falls on
+    day_of_week. If from_date already IS that weekday, returns from_date.
+    """
+    from_date = from_date or date.today()
+    target = DAYS.index(day_of_week)
+    days_ahead = (target - from_date.weekday()) % 7
+    return from_date + timedelta(days=days_ahead)
+
+
+def get_weekday_date_in_week(day_of_week, week_start=None):
+    """
+    Return the date for `day_of_week` within the week containing `week_start`.
+    Defaults to the current week. Unlike get_next_weekday_date, this can
+    return a date in the past relative to today (e.g. today is Thursday,
+    day_of_week is 'monday' -> returns this week's Monday, already gone).
+    """
+    monday = week_start or (date.today() - timedelta(days=date.today().weekday()))
+    return monday + timedelta(days=DAYS.index(day_of_week))
+
+
 @transaction.atomic
 def create_schedule(data):
+    # not a Schedule model field -- pop it now so it never reaches
+    # Schedule.objects.create(**data) below
+    start_this_week = data.pop('start_this_week', False)
+
     if data['start_time'] >= data['end_time']:
         raise ValidationError("End time must be after start time.")
 
-    class_obj  = data['class_obj']
-    start_date = class_obj.start_date
+    class_obj = data['class_obj']
     day_of_week = data['day_of_week'].lower()
 
-    # Validate start_date is set
-    if not start_date:
-        raise ValidationError("Class has no start date set.")
+    if day_of_week not in DAYS:
+        raise ValidationError("Invalid day_of_week.")
 
-    # Validate start_date is not in the past
-    # if start_date < date.today():
-    #     raise ValidationError("Class start date is in the past.")
+    if class_obj.start_date is None:
+        # First schedule for this class -> derive start_date, will activate below
+        if start_this_week:
+            class_obj.start_date = get_weekday_date_in_week(day_of_week)
+        else:
+            class_obj.start_date = get_next_weekday_date(day_of_week)
+    else:
+        # Class already has a start_date -> keep it aligned with day_of_week
+        if DAYS[class_obj.start_date.weekday()] != day_of_week:
+            raise ValidationError(
+                f"Start date {class_obj.start_date} is a "
+                f"{DAYS[class_obj.start_date.weekday()].capitalize()}, "
+                f"but schedule day is {day_of_week.capitalize()}."
+            )
 
-    # Validate start_date matches day_of_week
-    if DAYS[start_date.weekday()] != day_of_week:
-        raise ValidationError(
-            f"Start date {start_date} is a {DAYS[start_date.weekday()].capitalize()}, "
-            f"but schedule day is {day_of_week.capitalize()}."
-        )
+    start_date = class_obj.start_date
 
     # Teacher conflict
     if Schedule.objects.filter(
@@ -251,12 +299,18 @@ def create_schedule(data):
         raise ValidationError("Classroom is already booked at this time.")
 
     schedule = Schedule.objects.create(**data)
+
+    if class_obj.status == 'scheduled':
+        class_obj.status = 'active'
+    class_obj.save(update_fields=['start_date', 'status'])
+
     generate_sessions(schedule)
     return schedule
 
+
 def get_class_progress(class_id) -> dict:
-    sessions  = Session.objects.filter(schedule__class_obj__id=int(class_id))
-    total     = sessions.count()
+    sessions = Session.objects.filter(schedule__class_obj__id=int(class_id))
+    total = sessions.count()
     completed = sessions.filter(status='completed').count()
 
     if MAX_SESSIONS == 0:
@@ -265,9 +319,9 @@ def get_class_progress(class_id) -> dict:
         progress = round((completed / MAX_SESSIONS) * 100, 1)
 
     return {
-        'total':            total,
-        'completed':        completed,
-        'remaining':        MAX_SESSIONS - completed,
+        'total': total,
+        'completed': completed,
+        'remaining': MAX_SESSIONS - completed,
         'progress_percent': progress,
     }
 
@@ -285,7 +339,7 @@ def _maybe_complete_class(class_obj) -> None:
     """
     If every session across all of this class's schedules is completed,
     mark the class itself as 'completed'. Only touches classes that are
-    still 'active' — won't silently override a manually cancelled class.
+    still 'active' -- won't silently override a manually cancelled class.
     """
     if class_obj.status != 'active':
         return
@@ -296,3 +350,6 @@ def _maybe_complete_class(class_obj) -> None:
     if all_done:
         class_obj.status = 'completed'
         class_obj.save(update_fields=['status'])
+
+
+

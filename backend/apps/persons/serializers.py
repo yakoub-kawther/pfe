@@ -148,14 +148,21 @@ class TeacherCreateSerializer(EmployeeCreateSerializer):
 
 #read serializers
 
+from django.db import models
+from rest_framework import serializers
+from apps.persons.models import Student
+
+
 class StudentSerializer(serializers.ModelSerializer):
-    person            = PersonSerializer(read_only=True)
-    parent_name       = serializers.SerializerMethodField()
-    parent_id         = serializers.IntegerField(source='parent.person_id', read_only=True, allow_null=True)
-    parent_phone      = serializers.SerializerMethodField()
-    parent_relationship = serializers.SerializerMethodField()
-    class_name        = serializers.SerializerMethodField()
-    username          = serializers.SerializerMethodField()
+    person                 = PersonSerializer(read_only=True)
+    parent_name            = serializers.SerializerMethodField()
+    parent_id              = serializers.IntegerField(source='parent.person_id', read_only=True, allow_null=True)
+    parent_phone           = serializers.SerializerMethodField()
+    parent_relationship    = serializers.SerializerMethodField()
+    class_name              = serializers.SerializerMethodField()
+    username                = serializers.SerializerMethodField()
+    languages_count         = serializers.SerializerMethodField()
+    attendance_percentage   = serializers.SerializerMethodField()
 
     class Meta:
         model  = Student
@@ -163,6 +170,7 @@ class StudentSerializer(serializers.ModelSerializer):
             'person', 'date_of_birth', 'special_case',
             'parent_id', 'parent_name', 'parent_phone', 'parent_relationship',
             'class_name', 'username',
+            'languages_count', 'attendance_percentage',
         ]
 
     def get_parent_name(self, obj):
@@ -181,14 +189,14 @@ class StudentSerializer(serializers.ModelSerializer):
         return None
 
     def get_class_name(self, obj):
-      from apps.inscription.models import Inscription
-      inscription = Inscription.objects.filter(
-        student=obj,
-        status='confirmed'
-       ).select_related('enrolled_class').first()
-      if inscription:
-        return inscription.enrolled_class.name
-      return None
+        from apps.inscription.models import Inscription
+        inscription = Inscription.objects.filter(
+            student=obj,
+            status='confirmed'
+        ).select_related('enrolled_class').first()
+        if inscription:
+            return inscription.enrolled_class.name
+        return None
 
     def get_username(self, obj):
         from apps.accounts.models import Account
@@ -196,6 +204,26 @@ class StudentSerializer(serializers.ModelSerializer):
         if account:
             return account.username
         return None
+
+    def get_languages_count(self, obj):
+        from apps.inscription.models import Inscription
+        return Inscription.objects.filter(
+            student=obj,
+            status='confirmed'
+        ).values('enrolled_class__language').distinct().count()
+
+    def get_attendance_percentage(self, obj):
+        from apps.attendance.models import Attendance
+
+        stats = Attendance.objects.filter(student=obj).aggregate(
+            total=models.Count('id'),
+            present=models.Count('id', filter=models.Q(status=Attendance.Status.PRESENT))
+        )
+
+        if not stats['total']:
+            return 0
+
+        return round((stats['present'] / stats['total']) * 100, 1)
     
 
 class ParentSerializer(serializers.ModelSerializer):
@@ -207,22 +235,21 @@ class ParentSerializer(serializers.ModelSerializer):
 
 
 class EmployeeSerializer(serializers.ModelSerializer):
-    person   = PersonSerializer(read_only=True)
+    person = PersonSerializer(read_only=True)
     position = PositionSerializer(read_only=True)
-    account  = serializers.SerializerMethodField()
+    account = serializers.SerializerMethodField()
 
     def get_account(self, obj):
-     from apps.accounts.models import Account
-     print(f"Looking for account with employee_id={obj.person_id}")
-     acc = Account.objects.filter(employee=obj).first()
-     print(f"Found: {acc}")
-     if acc:
-        return {"username": acc.username, "role": acc.role.name}
-     return None
+        from apps.accounts.models import Account
+        acc = Account.objects.filter(employee=obj).first()
+        if acc:
+            return {"username": acc.username, "role": acc.role.name}
+        return None
 
     class Meta:
         model = Employee
-        fields = ['person_id', 'person', 'position', 'hire_date', 'end_date', 'status' ,'account']
+        fields = ['person_id', 'person', 'position', 'hire_date', 'end_date', 'status', 'account']
+
 
 
 class TeacherSerializer(serializers.ModelSerializer):
@@ -232,10 +259,9 @@ class TeacherSerializer(serializers.ModelSerializer):
 
     def get_account(self, obj):
      from apps.accounts.models import Account
-     print(f"Teacher employee: {obj.employee}")
-     print(f"Teacher employee pk: {obj.employee.pk}")
+     
      acc = Account.objects.filter(employee=obj.employee).first()
-     print(f"Account found: {acc}")
+     
      return {"username": acc.username, "role": acc.role.name} if acc else None
 
     class Meta:

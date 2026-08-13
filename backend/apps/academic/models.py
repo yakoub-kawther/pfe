@@ -34,23 +34,25 @@ class Classroom(models.Model):
 
 
 class Class(models.Model):
-    name       = models.CharField(max_length=50)
-    language   = models.ForeignKey(Language, on_delete=models.RESTRICT)
-    level      = models.ForeignKey(Level, on_delete=models.RESTRICT)
-    teacher    = models.ForeignKey('persons.Teacher', on_delete=models.RESTRICT)
-    start_date = models.DateField()
-    status     = models.CharField(max_length=10, choices=[
+    name          = models.CharField(max_length=50, unique=True)   # ← the actual guarantee
+    language      = models.ForeignKey(Language, on_delete=models.RESTRICT)
+    level         = models.ForeignKey(Level, on_delete=models.RESTRICT)
+    teacher       = models.ForeignKey('persons.Teacher', on_delete=models.RESTRICT)
+    start_date    = models.DateField(null=True, blank=True)
+    academic_year = models.PositiveIntegerField(editable=False, null=True, blank=True)
+    status        = models.CharField(max_length=10, choices=[
         ('active','Active'),
         ('completed','Completed'),
-        ('cancelled','Cancelled')
-    ], default='active')
+        ('cancelled','Cancelled'),
+        ('scheduled','Scheduled')
+    ], default='scheduled')
 
     class Meta:
         db_table = 'class'
-        unique_together = ('name', 'start_date')
+        # name is now globally unique on its own, so name+start_date is redundant — dropped
+        
 
-    def __str__(self):
-        return self.name
+        
 
 
 class Schedule(models.Model):

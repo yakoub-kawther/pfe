@@ -7,44 +7,40 @@ from rest_framework import viewsets, status
 from rest_framework.response import Response
 from django.shortcuts import get_object_or_404
 from django.db import transaction
-from django.core.exceptions import ValidationError
+
+# never actually caught anything from the service layer.
+from rest_framework.exceptions import ValidationError
 from rest_framework.filters import SearchFilter
 from django_filters.rest_framework import DjangoFilterBackend
+from rest_framework.decorators import action
 
 
-from .models import Language , Level , Position , Classroom , Class, Schedule
-from .serializers import LanguageSerializer, LanguageCreateSerializer, LevelCreateSerializer , LevelSerializer , ClassroomCreateSerializer , LevelCreateSerializer , PositionCreateSerializer , PositionSerializer , ClassroomSerializer , ClassSerializer , ClassCreateSerializer , ScheduleSerializer , ScheduleCreateSerializer
-from .services import create_language, update_language , get_teacher_busy_times , get_available_classrooms 
+from .models import Language, Level, Position, Classroom, Class, Schedule
+from .serializers import LanguageSerializer, LanguageCreateSerializer, LevelCreateSerializer, LevelSerializer, ClassroomCreateSerializer, LevelCreateSerializer, PositionCreateSerializer, PositionSerializer, ClassroomSerializer, ClassSerializer, ClassCreateSerializer, ScheduleSerializer, ScheduleCreateSerializer
+from .services import create_language, update_language, get_teacher_busy_times, get_available_classrooms
 
 # language part
 class LanguageViewSet(viewsets.ModelViewSet):
     queryset = Language.objects.all()
     filter_backends = [SearchFilter]
     search_fields   = ['language_name', 'shortcut']
-    
 
     def get_serializer_class(self):
-        
         if self.action in ['create', 'update', 'partial_update']:
             return LanguageCreateSerializer
         return LanguageSerializer
 
     def perform_create(self, serializer):
-        
-        
         language = create_language(serializer.validated_data)
         serializer.instance = language
         return language
 
     def perform_update(self, serializer):
-        
         language = update_language(serializer.instance, serializer.validated_data)
         return language
 
     def get_object(self):
-        
         return get_object_or_404(Language, pk=self.kwargs.get('pk'))
-    
 
 
 # level part
@@ -53,53 +49,49 @@ class LevelViewSet(viewsets.ModelViewSet):
 
     def get_serializer_class(self):
         if self.action in ['create', 'update', 'partial_update']:
-            
             return LevelCreateSerializer
         from .serializers import LevelSerializer
         return LevelSerializer
-    
 
     def perform_create(self, serializer):
         from .services import create_level
         level = create_level(serializer.validated_data)
         serializer.instance = level
         return level
-    
+
     def perform_update(self, serializer):
         from .services import update_level
         level = update_level(serializer.instance, serializer.validated_data)
         return level
-    
+
     def get_object(self):
         return get_object_or_404(Level, pk=self.kwargs.get('pk'))
-    
- # calassroom part
+
+# calassroom part
 
 class ClassroomViewSet(viewsets.ModelViewSet):
     queryset = Classroom.objects.all()
 
     def get_serializer_class(self):
         if self.action in ['create', 'update', 'partial_update']:
-            
             return ClassroomCreateSerializer
         from .serializers import ClassroomSerializer
         return ClassroomSerializer
-
 
     def perform_create(self, serializer):
         from .services import create_classroom
         classroom = create_classroom(serializer.validated_data)
         serializer.instance = classroom
         return classroom
-    
+
     def perform_update(self, serializer):
         from .services import update_classroom
         classroom = update_classroom(serializer.instance, serializer.validated_data)
         return classroom
-    
+
     def get_object(self):
         return get_object_or_404(Classroom, pk=self.kwargs.get('pk'))
-   
+
 
 # position part
 
@@ -111,32 +103,25 @@ class PositionViewSet(viewsets.ModelViewSet):
 
     def get_serializer_class(self):
         if self.action in ['create', 'update', 'partial_update']:
-            
             return PositionCreateSerializer
-        
         return PositionSerializer
-
 
     def perform_create(self, serializer):
         from .services import create_position
         position = create_position(serializer.validated_data)
         serializer.instance = position
         return position
-    
+
     def perform_update(self, serializer):
         from .services import update_position
         position = update_position(serializer.instance, serializer.validated_data)
         return position
-    
+
     def get_object(self):
         return get_object_or_404(Position, pk=self.kwargs.get('pk'))
-    
 
 
-    
-
-
-# class part 
+# class part
 
 from rest_framework import viewsets
 from django.db import transaction
@@ -148,7 +133,7 @@ class ClassViewSet(viewsets.ModelViewSet):
     filter_backends  = [DjangoFilterBackend, SearchFilter]
 
     # ?status=active  or  ?status=inactive
-    filterset_fields = ['status' , 'teacher']
+    filterset_fields = ['status', 'teacher']
 
     # ?search=ahmed  searches across these fields
     search_fields    = [
@@ -165,28 +150,61 @@ class ClassViewSet(viewsets.ModelViewSet):
         return ClassSerializer
 
     def perform_create(self, serializer):
+        # create_class can raise ValidationError (e.g. teacher/language
+        # mismatch, duplicate name+start_date). Left uncaught, DRF's default
+        # exception handler still turns it into a 400 automatically since
+        # it's an APIException subclass -- but we handle it explicitly for
+        # a consistent {'error': ...} response shape across the app.
         from .services import create_class
-        with transaction.atomic():
-            class_obj = create_class(serializer.validated_data)
-        serializer.instance = class_obj
+        try:
+            with transaction.atomic():
+                class_obj = create_class(serializer.validated_data)
+            serializer.instance = class_obj
+        except ValidationError as e:
+            raise ValidationError({'error': e.detail})
 
     def perform_update(self, serializer):
         from .services import update_class
-        with transaction.atomic():
-            class_obj = update_class(serializer.instance, serializer.validated_data)
-        serializer.instance = class_obj
+        try:
+            with transaction.atomic():
+                class_obj = update_class(serializer.instance, serializer.validated_data)
+            serializer.instance = class_obj
+        except ValidationError as e:
+            raise ValidationError({'error': e.detail})
 
 
+    @action(detail=False, methods=['get'])
+    def suggest_name(self, request):
+        from .services import generate_class_name
+        from apps.persons.models import Teacher
 
+        language_id = request.query_params.get('language')
+        level_id    = request.query_params.get('level')
+        teacher_id  = request.query_params.get('teacher')
+
+        if not all([language_id, level_id, teacher_id]):
+            return Response(
+                {'error': 'language, level and teacher are required'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        language = get_object_or_404(Language, pk=language_id)
+        level    = get_object_or_404(Level, pk=level_id)
+        teacher  = get_object_or_404(Teacher, pk=teacher_id)
+
+        return Response({'name': generate_class_name(language, level, teacher)})
+
+
+    
 
 
 from rest_framework.decorators import action
 
 class ScheduleViewSet(viewsets.ModelViewSet):
 
-   
-    queryset = Schedule.objects.all() 
+    queryset = Schedule.objects.all()
     serializer_class = ScheduleSerializer
+
     # ── Step 2: Get teacher busy times ──
     @action(detail=False, methods=['get'])
     def teacher_busy(self, request):
@@ -201,7 +219,7 @@ class ScheduleViewSet(viewsets.ModelViewSet):
             return Response(busy_times)
         except ValidationError as e:
             return Response(
-                {'error': e.message},
+                {'error': e.detail},
                 status=status.HTTP_400_BAD_REQUEST
             )
 
@@ -224,36 +242,47 @@ class ScheduleViewSet(viewsets.ModelViewSet):
         serializer = ClassroomSerializer(classrooms, many=True)
         return Response(serializer.data)
 
+
+
+    @action(detail=False, methods=['get'])
+    def schedulable_classes(self, request):
+        classes = Class.objects.filter(
+            status='scheduled'
+        ).select_related('language', 'level', 'teacher')
+        serializer = ClassSerializer(classes, many=True)
+        return Response(serializer.data)
+
     # ── Step 4: Create schedule ──
     def create(self, request):
+        # ScheduleCreateSerializer now also accepts an optional
+        # write-only `start_this_week` bool, forwarded through to
+        # services.create_schedule via validated_data.
         serializer = ScheduleCreateSerializer(data=request.data)
-        
+
         if serializer.is_valid():
             try:
-             schedule = serializer.save()
-             return Response(
-                ScheduleSerializer(schedule).data,
-                status=status.HTTP_201_CREATED
-             )
-            except ValidationError as e:  # ← catch service errors
-             return Response(
-                {'error': e.message},
-                status=status.HTTP_400_BAD_REQUEST
-             )
+                schedule = serializer.save()
+                return Response(
+                    ScheduleSerializer(schedule).data,
+                    status=status.HTTP_201_CREATED
+                )
+            except ValidationError as e:  # ← now correctly catches service errors
+                return Response(
+                    {'error': e.detail},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
         return Response(
             serializer.errors,
             status=status.HTTP_400_BAD_REQUEST
         )
-    
-
 
     def list(self, request):
-      class_id = request.query_params.get('class_obj')
-      qs = Schedule.objects.select_related('classroom').all()
-      if class_id:
-        qs = qs.filter(class_obj_id=class_id)
-      serializer = ScheduleSerializer(qs, many=True)
-      return Response(serializer.data)
+        class_id = request.query_params.get('class_obj')
+        qs = Schedule.objects.select_related('classroom').all()
+        if class_id:
+            qs = qs.filter(class_obj_id=class_id)
+        serializer = ScheduleSerializer(qs, many=True)
+        return Response(serializer.data)
 
 
 from .serializers import SessionSerializer
@@ -295,11 +324,11 @@ class SessionViewSet(viewsets.ModelViewSet):
         return Response(get_class_progress(class_id))
 
     def list(self, request):
-      class_id = request.query_params.get('class_obj')
-      sessions = Session.objects.select_related(
-        'schedule__classroom'
-      ).all()
-      if class_id:
-        sessions = sessions.filter(schedule__class_obj_id=class_id)
-      serializer = SessionDetailSerializer(sessions, many=True)
-      return Response(serializer.data)
+        class_id = request.query_params.get('class_obj')
+        sessions = Session.objects.select_related(
+            'schedule__classroom'
+        ).all()
+        if class_id:
+            sessions = sessions.filter(schedule__class_obj_id=class_id)
+        serializer = SessionDetailSerializer(sessions, many=True)
+        return Response(serializer.data)
