@@ -37,6 +37,10 @@ import Edit_classes from "./pages/admin/Edit_classes";
 import Add_position from "./pages/admin/Add_position";
 import Edit_position from "./pages/admin/Edit_position";
 import Positions from "./pages/admin/Positions";
+import Salaries from "./pages/admin/Salaries";
+import Employee_payment from "./pages/admin/Employee_payment";
+import Classe_students from "./pages/admin/Classe_students";
+import Class_sessions from "./pages/admin/Classe_sessions";
 
 import Dashboard_secretary from "./pages/secretary/Dashboard_secretary";
 import Secretary_sidebar from "./components/Sidebar/Secretary_sidebar";
@@ -130,6 +134,8 @@ function App() {
         <Route path="/Teacher_payment" element={<Teacher_payment />} />
         <Route path="/Edit_employee" element={<Edit_employee />} />
         <Route path="/Employee_profile" element={<Employee_profile />} />
+        <Route path="/Employee_payment" element={<Employee_payment />} />
+        <Route path="/Classe_students" element={<Classe_students />} />
         <Route path="/Add_employee" element={<Add_employee />} />
         <Route path="/Classes_information" element={<Classes_information />} />
         <Route path="/Add_classe" element={<Add_classe />} />
@@ -146,7 +152,8 @@ function App() {
         <Route path="/Add_position" element={<Add_position />} />
         <Route path="/Edit_position" element={<Edit_position />} />
         <Route path="/Positions" element={<Positions />} />
-        {/* <Route path="/Salaries"  element={<Salaries />}  /> */}
+        <Route path="/Salaries"  element={<Salaries />}  />
+        <Route path="/Classe_sessions" element={<Class_sessions />} />
 
 
  {/* Secretary Routes */}

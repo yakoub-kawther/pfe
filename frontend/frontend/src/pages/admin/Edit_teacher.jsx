@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
+import { ArrowLeft } from "lucide-react";
 import DashboardLayout from "../../layouts/DashboardLayout";
 import { apiFetch } from "../../services/api";
 
@@ -22,23 +23,26 @@ const inp = (hasError) => ({
 const sel = (hasError) => ({ ...inp(hasError), cursor: "pointer" });
 
 const Field = ({ label, children, full = false }) => (
-  <div className="flex flex-col gap-1.5" style={full ? { gridColumn: "1 / -1" } : {}}>
-    {label ? <label className="text-[13px] text-gray-500 font-Inter">{label}</label> : null}
+  <div style={{ display: "flex", flexDirection: "column", gap: "6px", ...(full ? { gridColumn: "1 / -1" } : {}), minWidth: 0 }}>
+    {label ? <label style={{ fontSize: "13px", color: "#6b7280", fontFamily: "Inter, sans-serif" }}>{label}</label> : null}
     {children}
   </div>
 );
 
 const Card = ({ title, children }) => (
-  <div
-    className="bg-white rounded-2xl border border-gray-100 min-w-0"
-    style={{ padding: "24px 28px", boxShadow: "0 1px 6px rgba(0,0,0,0.05)" }}
-  >
-    <h2 className="text-[#701366] font-Inter" style={{ fontSize: "16px", marginBottom: "20px" }}>
-      {title}
-    </h2>
+  <div style={{ background: "white", borderRadius: "16px", border: "1px solid #f3f4f6", padding: "24px 28px", boxShadow: "0 1px 6px rgba(0,0,0,0.05)", boxSizing: "border-box", width: "100%", minWidth: 0 }}>
+    <h3 style={{ fontSize: "19px", fontWeight: 700, color: "#701366", fontFamily: "Inter, sans-serif", marginBottom: "20px", margin: "0 0 20px 0" }}>{title}</h3>
     {children}
   </div>
 );
+
+const backBtnStyle = {
+  width: "36px", height: "32px", flexShrink: 0,
+  display: "inline-flex", alignItems: "center", justifyContent: "center",
+  borderRadius: "8px", cursor: "pointer",
+  border: "1px solid #701366", transition: "background 0.15s, color 0.15s",
+  background: "white", color: "#701366",
+};
 
 const getError = (errors, field) => {
   const val = errors[field];
@@ -157,14 +161,32 @@ const Edit_teacher = () => {
 
   return (
     <DashboardLayout>
-      <div className="w-full mx-auto pb-10" style={{ padding: "30px clamp(12px, 2vw, 32px)" }}>
+      <div style={{ display: "flex", flexDirection: "column", gap: "24px", width: "100%", minWidth: 0, boxSizing: "border-box" }}>
 
         {/* Header */}
-        <div className="flex items-center justify-between mb-8 flex-wrap gap-3">
-          <h1 className="text-2xl text-[#701366] font-Inter">
-            Edit Teacher — <span>{person.first_name} {person.last_name}</span>
-          </h1>
-          <div className="flex gap-2">
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: "14px" }}>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "flex-start", gap: "14px", direction: "ltr" }}>
+            <button
+              onClick={() => navigate("/Teachers")}
+              style={backBtnStyle}
+              onMouseEnter={e => { e.currentTarget.style.background = "#701366"; e.currentTarget.style.color = "white"; }}
+              onMouseLeave={e => { e.currentTarget.style.background = "white";   e.currentTarget.style.color = "#701366"; }}
+            >
+              <ArrowLeft size={16} />
+            </button>
+            <h1 style={{
+              fontSize: "32px",
+              fontWeight: 700,
+              color: "#701366",
+              margin: 0,
+              letterSpacing: "-0.02em",
+              lineHeight: 1.2,
+            }}>
+              Edit Teacher
+            </h1>
+          </div>
+
+          <div style={{ display: "flex", gap: "8px" }}>
             <button
               onClick={() => navigate("/Teachers")}
               style={{ padding: "8px 20px", borderRadius: "8px", border: "1.5px solid #e2d0e2", background: "#fff", color: "#701366", fontSize: "13px", fontFamily: "Inter, sans-serif", cursor: "pointer" }}
@@ -176,7 +198,7 @@ const Edit_teacher = () => {
             <button
               onClick={handleSave}
               disabled={loading}
-              style={{ padding: "8px 24px", borderRadius: "8px", border: "1.5px solid #701366", background: loading ? "#a855a0" : "#701366", color: "#fff", fontSize: "13px", fontFamily: "Inter, sans-serif", cursor: loading ? "not-allowed" : "pointer", fontWeight: "500" }}
+              style={{ padding: "8px 24px", borderRadius: "8px", border: "1.5px solid #701366", background: loading ? "#a855a0" : "#701366", color: "#fff", fontSize: "13px", fontFamily: "Inter, sans-serif", cursor: loading ? "not-allowed" : "pointer", fontWeight: "600" }}
               onMouseEnter={e => { if (!loading) e.target.style.background = "#5a0f52"; }}
               onMouseLeave={e => { if (!loading) e.target.style.background = "#701366"; }}
             >
@@ -187,7 +209,7 @@ const Edit_teacher = () => {
 
         {/* Success banner */}
         {success && (
-          <div style={{ background: "#f0fdf4", color: "#166534", padding: "14px 20px", borderRadius: "10px", marginBottom: "20px", fontSize: "14px", display: "flex", alignItems: "center", gap: "10px", border: "1px solid #bbf7d0" }}>
+          <div style={{ background: "#f0fdf4", color: "#166534", padding: "14px 20px", borderRadius: "10px", fontSize: "14px", display: "flex", alignItems: "center", gap: "10px", border: "1px solid #bbf7d0" }}>
             <span style={{ fontSize: "18px" }}>✓</span>
             Teacher updated successfully! Redirecting...
           </div>
@@ -195,17 +217,18 @@ const Edit_teacher = () => {
 
         {/* Error banner */}
         {errors.error && (
-          <div style={{ background: "#fef2f2", color: "#991b1b", padding: "12px 20px", borderRadius: "10px", marginBottom: "20px", fontSize: "14px" }}>
+          <div style={{ background: "#fef2f2", color: "#991b1b", padding: "12px 20px", borderRadius: "10px", fontSize: "14px" }}>
             {errors.error}
           </div>
         )}
 
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(340px, 1fr))", gap: "24px", alignItems: "start", marginTop: "30px" }}>
+        {/* Cards grid */}
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "24px", alignItems: "start", minWidth: 0 }}>
 
           {/* LEFT */}
-          <div className="flex flex-col" style={{ gap: "24px" }}>
-            <Card title="Basic Information">
-              <div className="grid grid-cols-2" style={{ gap: "18px" }}>
+          <div style={{ display: "flex", flexDirection: "column", gap: "24px", minWidth: 0 }}>
+            <Card title="Personal Information">
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "18px" }}>
 
                 <Field label="First Name">
                   <input style={inp(!!errors.first_name)} value={form.firstName} onChange={handle("firstName")} placeholder="First Name" />
@@ -218,9 +241,9 @@ const Edit_teacher = () => {
                 </Field>
 
                 <Field label="Gender">
-                  <div className="flex items-center gap-5 text-[14px] text-[#701366]" style={{ padding: "6px 0" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: "20px", fontSize: "14px", color: "#701366", padding: "6px 0" }}>
                     {["Male", "Female"].map((g) => (
-                      <label key={g} className="flex items-center gap-2 cursor-pointer">
+                      <label key={g} style={{ display: "flex", alignItems: "center", gap: "8px", cursor: "pointer" }}>
                         <input type="radio" name="gender" checked={gender === g} onChange={() => setGender(g)} style={{ accentColor: "#701366", width: "15px", height: "15px" }} />
                         {g}
                       </label>
@@ -233,10 +256,14 @@ const Edit_teacher = () => {
                   {getError(errors, "hire_date") && <span style={{ color: "#ef4444", fontSize: "11px" }}>{getError(errors, "hire_date")}</span>}
                 </Field>
 
-                <Field label="Head Teacher ?">
-                  <div className="flex items-center gap-2 text-[14px] text-[#701366]" style={{ padding: "6px 0" }}>
-                    <input type="checkbox" id="headTeacher" checked={headTeacher} onChange={(e) => setHeadTeacher(e.target.checked)} style={{ accentColor: "#701366", width: "15px", height: "15px" }} />
-                    <label htmlFor="headTeacher" className="cursor-pointer font-Inter">YES</label>
+                <Field label="Head Teacher">
+                  <div style={{ display: "flex", alignItems: "center", height: "40px" }}>
+                    <input
+                      type="checkbox"
+                      checked={headTeacher}
+                      onChange={(e) => setHeadTeacher(e.target.checked)}
+                      style={{ width: "18px", height: "18px", accentColor: "#701366", cursor: "pointer" }}
+                    />
                   </div>
                 </Field>
 
@@ -251,7 +278,7 @@ const Edit_teacher = () => {
             </Card>
 
             <Card title="Teaching Information">
-              <div className="flex flex-col" style={{ gap: "18px" }}>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "18px" }}>
                 <Field label="Language">
                   <select style={sel(!!errors.language_id)} value={form.language} onChange={handle("language")}>
                     <option value="" disabled>Select a language</option>
@@ -262,7 +289,7 @@ const Edit_teacher = () => {
                   {getError(errors, "language_id") && <span style={{ color: "#ef4444", fontSize: "11px" }}>{getError(errors, "language_id")}</span>}
                 </Field>
 
-                <Field label="Qualifications">
+                <Field label="Qualifications" full>
                   <textarea
                     style={{ ...inp(false), minHeight: "110px", resize: "vertical", lineHeight: "1.6" }}
                     value={form.qualifications}
@@ -275,21 +302,10 @@ const Edit_teacher = () => {
           </div>
 
           {/* RIGHT */}
-          <div className="flex flex-col min-w-0" style={{ gap: "24px" }}>
-
-            <Card title="Login / Account Details">
-              <div className="grid grid-cols-2" style={{ gap: "18px" }}>
-                <Field label="Username">
-                  <input style={inp(false)} value={form.username} onChange={handle("username")} placeholder="New Username" />
-                </Field>
-                <Field label="Password">
-                  <input type="password" style={inp(false)} value={form.password} onChange={handle("password")} placeholder="New Password" />
-                </Field>
-              </div>
-            </Card>
+          <div style={{ display: "flex", flexDirection: "column", gap: "24px", minWidth: 0 }}>
 
             <Card title="Contact Information">
-              <div className="grid grid-cols-2" style={{ gap: "18px" }}>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "18px" }}>
                 <Field label="Phone">
                   <input style={inp(!!errors.phone)} value={form.phone} onChange={handle("phone")} placeholder="0XXXXXXXXX" maxLength={10} />
                   {getError(errors, "phone") && <span style={{ color: "#ef4444", fontSize: "11px" }}>{getError(errors, "phone")}</span>}
@@ -300,6 +316,17 @@ const Edit_teacher = () => {
                 </Field>
                 <Field label="Address" full>
                   <input style={inp(false)} value={form.address} onChange={handle("address")} placeholder="Street, City, ZIP" />
+                </Field>
+              </div>
+            </Card>
+
+            <Card title="Account Information">
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "18px" }}>
+                <Field label="Username">
+                  <input style={inp(false)} value={form.username} onChange={handle("username")} placeholder="New Username" />
+                </Field>
+                <Field label="Password">
+                  <input type="password" style={inp(false)} value={form.password} onChange={handle("password")} placeholder="New Password" />
                 </Field>
               </div>
             </Card>

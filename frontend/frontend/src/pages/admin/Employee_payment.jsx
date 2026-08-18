@@ -52,36 +52,41 @@ const formatDate = (dateStr) => {
   return new Date(dateStr).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" });
 };
 
-export default function Payment_teacher() {
+export default function Employee_payment() {
   const { state } = useLocation();
   const navigate  = useNavigate();
-  const teacher = state?.teacher;
-  const employeeId = teacher?.employee?.person_id;
+  const employee = state?.employee;
+  const employeeId = employee?.person_id;
 
-  const [year, setYear]       = useState(CURRENT_YEAR);
+  const [year, setYear]         = useState(CURRENT_YEAR);
   const [salaries, setSalaries] = useState([]);
   const [loading, setLoading]   = useState(true);
 
-  const teacherTabs = [
-    { name: "Profile", path: "/Teacher_profile", state: { teacher } },
-    { name: "Classes", path: "/Teacher_classes", state: { teacher } },
-    { name: "Payment", path: "/Teacher_payment", state: { teacher } },
+  const employeeTabs = [
+    { name: "Profile", path: "/Employee_profile", state: { employee } },
+    { name: "Payment", path: "/Employee_payment", state: { employee } },
   ];
 
   useEffect(() => {
     if (!employeeId) {
       // eslint-disable-next-line react-hooks/set-state-in-effect
       setLoading(false);
-
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setSalaries([]);
       return;
     }
-
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setLoading(true);
     apiFetch(`/salaries/employee/${employeeId}/?year=${year}`)
-      .then((r) => r.json())
+      .then((r) => {
+        if (!r.ok) throw new Error(`Request failed: ${r.status}`);
+        return r.json();
+      })
       .then((data) => setSalaries(data.salaries ?? []))
-      .catch(() => setSalaries([]))
+      .catch((err) => {
+        console.error(err);
+        setSalaries([]);
+      })
       .finally(() => setLoading(false));
   }, [employeeId, year]);
 
@@ -90,7 +95,7 @@ export default function Payment_teacher() {
     .sort((a, b) => a.month - b.month)
     .map((s) => ({
       month: MONTH_NAMES[s.month - 1] ?? s.month,
-      amount: `${s.amount} DA`,
+      amount: s.amount != null ? `${s.amount} DA` : "—",
       paymentDate: formatDate(s.payment_date),
       status: s.status === "paid" ? "Paid" : "Pending",
     }));
@@ -99,10 +104,10 @@ export default function Payment_teacher() {
   const paid    = paymentData.filter((p) => p.status === "Paid").length;
   const percent = total > 0 ? Math.round((paid / total) * 100) : 0;
 
-  const radius      = 60;
-  const stroke      = 12;
-  const circumference = 2 * Math.PI * radius;
-  const offset      = circumference - (percent / 100) * circumference;
+  const radius        = 60;
+  const stroke         = 12;
+  const circumference  = 2 * Math.PI * radius;
+  const offset         = circumference - (percent / 100) * circumference;
 
   return (
     <DashboardLayout>
@@ -111,7 +116,7 @@ export default function Payment_teacher() {
         {/* Header */}
         <div style={{ display: "flex", alignItems: "center", justifyContent: "flex-start", gap: "14px", direction: "ltr" }}>
           <button
-            onClick={() => navigate("/Teachers")}
+            onClick={() => navigate("/Employees")}
             style={backBtnStyle}
             onMouseEnter={e => { e.currentTarget.style.background = "#701366"; e.currentTarget.style.color = "white"; }}
             onMouseLeave={e => { e.currentTarget.style.background = "white";   e.currentTarget.style.color = "#701366"; }}
@@ -127,14 +132,14 @@ export default function Payment_teacher() {
               letterSpacing: "-0.02em",
               lineHeight: 1.2,
             }}>
-              Teacher Profile
+              Employee Profile
             </h1>
           </div>
         </div>
 
         {/* Tabs */}
         <div style={{ display: "flex", alignItems: "center", width: "100%", flexShrink: 0, minWidth: 0 }}>
-          <Tabs tabs={teacherTabs} />
+          <Tabs tabs={employeeTabs} />
         </div>
 
         {/* Year selector */}

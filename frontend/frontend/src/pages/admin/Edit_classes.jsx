@@ -44,9 +44,9 @@ export default function Edit_classes() {
 
   const [form, setForm] = useState({
     name:      cls?.name      || "",
-    language:  cls?.language  || "",
-    level:     cls?.level     || "",
-    teacher:   cls?.teacher   || "",
+    language: cls?.language_name || "",
+    level: cls?.level_name || "",
+    teacher: cls?.teacher_name || "",
     students:  cls?.students  || "",
     year:      cls?.year      || "",
     classroom: cls?.classroom || "",

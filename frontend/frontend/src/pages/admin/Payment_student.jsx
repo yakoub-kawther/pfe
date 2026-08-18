@@ -1,31 +1,68 @@
 import React, { useState, useEffect } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
+import { ArrowLeft, Loader2 } from "lucide-react";
 import DashboardLayout from "../../layouts/DashboardLayout";
 import Tabs from "../../components/Tabs";
-import { useLocation } from "react-router-dom";
 import { apiFetch } from "../../services/api";
-import { Loader2 } from "lucide-react";
 
-const statusStyles = {
-  paid:      { background: "#dcfce7", color: "#16a34a" },
-  pending:   { background: "#fef9c3", color: "#ca8a04" },
-  confirmed: { background: "#dcfce7", color: "#16a34a" },
-  overdue:   { background: "#fee2e2", color: "#dc2626" },
-  cancelled: { background: "#fee2e2", color: "#dc2626" },
+const F = "Inter, sans-serif";
+
+const thStyle = {
+  padding   : "12px 16px",
+  fontSize  : "14px",
+  fontWeight: 500,
+  textAlign : "center",
+  whiteSpace: "nowrap",
+  color     : "#701366",
+  fontFamily: F,
 };
 
-const getStatusStyle = (s = "") => statusStyles[s.toLowerCase()] ?? statusStyles.pending;
+const tdStyle = {
+  padding   : "12px 16px",
+  fontSize  : "14px",
+  color     : "#701366",
+  whiteSpace: "nowrap",
+  textAlign : "center",
+  fontFamily: F,
+};
+
+const statusStyle = (status) => {
+  const s = (status ?? "").toLowerCase();
+  let background = "#fdecea";
+  let color      = "#c92c2c";
+  if (["paid", "confirmed"].includes(s)) {
+    background = "#e6f7ec";
+    color      = "#1a7f4b";
+  } else if (s === "pending") {
+    background = "#fef9c3";
+    color      = "#ca8a04";
+  }
+  return {
+    padding: "4px 10px",
+    borderRadius: "999px",
+    fontSize: "12px",
+    fontWeight: 600,
+    display: "inline-block",
+    background,
+    color,
+    textTransform: "capitalize",
+  };
+};
+
+const backBtnStyle = {
+  width: "36px", height: "32px", flexShrink: 0,
+  display: "inline-flex", alignItems: "center", justifyContent: "center",
+  borderRadius: "8px", cursor: "pointer",
+  border: "1px solid #701366", transition: "background 0.15s, color 0.15s",
+  background: "white", color: "#701366",
+};
 
 const fmt = (label) =>
   label ? label.charAt(0).toUpperCase() + label.slice(1) : "—";
 
-// Extract level code (A1, B2, etc.) from level_name string
-const extractLevel = (name = "") => {
-  const m = name.match(/\b([ABC][12])\b/i);
-  return m ? m[1].toUpperCase() : name || "—";
-};
-
 export default function Payment_student() {
   const { state } = useLocation();
+  const navigate  = useNavigate();
   const student = state?.student;
 
   const studentTabs = [
@@ -47,15 +84,12 @@ export default function Payment_student() {
 
   useEffect(() => {
     const studentId = student?.person?.id ?? student?.id;
-    console.log("fetching URL:", `/payments/student/${student?.person?.id}/`);
     if (!studentId) { setLoading(false); return; }
     const load = async () => {
       try {
         const res = await apiFetch(`/payments/student/${studentId}/`);
-        console.log("status:", res.status);
         if (!res.ok) throw new Error(`Error ${res.status}`);
         const data = await res.json();
-        console.log("data:", JSON.stringify(data).slice(0, 300));
         setPayments(Array.isArray(data) ? data : []);
       } catch (err) {
         setError(err.message || "Failed to load payments.");
@@ -95,9 +129,6 @@ export default function Payment_student() {
     setModalBusy(true);
     setModalError(null);
     try {
-      // Optionally update amount first via PATCH if changed
-      // const res = await apiFetch(`/payments/${selected.id}/confirm/`, { method: "PATCH" });
-      // Confirm the payment
       const res = await apiFetch(`/payments/${selected.id}/confirm/`, { method: "PATCH" });
       if (!res.ok) throw new Error("Failed to confirm payment.");
       const updated = await res.json();
@@ -128,113 +159,133 @@ export default function Payment_student() {
 
   return (
     <DashboardLayout>
-      <div className="flex flex-col gap-6">
+      <div style={{ display: "flex", flexDirection: "column", gap: "24px", width: "100%", minWidth: 0, boxSizing: "border-box" }}>
 
-        {/* TITLE */}
-        <h2 className="text-2xl font-Inter text-[#701366]">All Payments</h2>
+        {/* Header */}
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "flex-start", gap: "14px", direction: "ltr" }}>
+          <button
+            onClick={() => navigate("/Students")}
+            style={backBtnStyle}
+            onMouseEnter={e => { e.currentTarget.style.background = "#701366"; e.currentTarget.style.color = "white"; }}
+            onMouseLeave={e => { e.currentTarget.style.background = "white";   e.currentTarget.style.color = "#701366"; }}
+          >
+            <ArrowLeft size={16} />
+          </button>
+          <div>
+            <h1 style={{
+              fontSize: "32px",
+              fontWeight: 700,
+              color: "#701366",
+              margin: 0,
+              letterSpacing: "-0.02em",
+              lineHeight: 1.2,
+            }}>
+              Payments
+            </h1>
+          </div>
+        </div>
 
-        {/* TABS */}
-        <Tabs tabs={studentTabs} />
+        {/* Tabs */}
+        <div style={{ display: "flex", alignItems: "center", width: "100%", flexShrink: 0, minWidth: 0 }}>
+          <Tabs tabs={studentTabs} />
+        </div>
 
         {/* MAIN CONTENT */}
-        <div className="flex flex-col lg:flex-row gap-6">
+        <div style={{ display: "flex", gap: "24px", flexWrap: "wrap" }}>
 
           {/* TABLE */}
-          <div className="w-full lg:w-2/3 bg-white rounded-2xl shadow-sm overflow-hidden">
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm" style={{ minWidth: "420px" }}>
-                <thead>
-                  <tr className="bg-[#F8E0F8] h-12 text-[#701366] text-left">
-                    <th className="py-3 whitespace-nowrap" style={{ paddingLeft: "30px" }}>Language</th>
-                    <th className="px-4 py-3 whitespace-nowrap">Class</th>
-                    <th className="px-4 py-3 whitespace-nowrap">Level</th>
-                    <th className="px-4 py-3 whitespace-nowrap">Amount</th>
-                    <th className="px-4 py-3 whitespace-nowrap">Status</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-[#f8e0f8]">
+          <div style={{ flex: 2, minWidth: "320px", background: "white", borderRadius: "16px", boxShadow: "0 1px 4px rgba(0,0,0,0.06)", overflow: "hidden", boxSizing: "border-box" }}>
+            <table style={{ width: "100%", borderCollapse: "collapse", tableLayout: "fixed" }}>
+              <thead>
+                <tr style={{ background: "#F8E0F8", height: "48px" }}>
+                  <th style={{ ...thStyle, width: "22%" }}>Language</th>
+                  <th style={{ ...thStyle, width: "22%" }}>Class</th>
+                  <th style={{ ...thStyle, width: "16%" }}>Level</th>
+                  <th style={{ ...thStyle, width: "20%" }}>Amount</th>
+                  <th style={{ ...thStyle, width: "20%" }}>Status</th>
+                </tr>
+              </thead>
+              <tbody>
 
-                  {loading && (
-                    <tr>
-                      <td colSpan={5} className="text-center py-8">
-                        <div className="flex items-center justify-center gap-2 text-[#701366] opacity-60">
-                          <Loader2 className="w-4 h-4 animate-spin" />
-                          <span>Loading...</span>
-                        </div>
+                {loading && (
+                  <tr>
+                    <td colSpan={5} style={{ textAlign: "center", padding: "32px" }}>
+                      <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "8px", color: "#701366", opacity: 0.6 }}>
+                        <Loader2 style={{ width: "16px", height: "16px", animation: "spin 1s linear infinite" }} />
+                        <span style={{ fontSize: "14px" }}>Loading...</span>
+                      </div>
+                    </td>
+                  </tr>
+                )}
+
+                {!loading && error && (
+                  <tr>
+                    <td colSpan={5} style={{ textAlign: "center", padding: "32px", color: "#dc2626", fontSize: "14px" }}>{error}</td>
+                  </tr>
+                )}
+
+                {!loading && !error && payments.length === 0 && (
+                  <tr>
+                    <td colSpan={5} style={{ textAlign: "center", padding: "32px", color: "#701366", opacity: 0.5, fontSize: "14px" }}>No payments found.</td>
+                  </tr>
+                )}
+
+                {!loading && !error && payments.map((p) => {
+                  const isPending = ["pending", "overdue"].includes(p.status?.toLowerCase());
+                  const language  = p.language   ?? "—";
+                  const className = p.class_name ?? "—";
+                  const level     = p.level      ?? "—";
+
+                  return (
+                    <tr
+                      key={p.id}
+                      onClick={() => openModal(p)}
+                      style={{
+                        height: "48px",
+                        borderBottom: "1px solid #f8e0f8",
+                        transition: "background 0.1s",
+                        cursor: isPending ? "pointer" : "default",
+                        background: "white",
+                      }}
+                      onMouseEnter={e => { if (isPending) e.currentTarget.style.background = "#fffafe"; }}
+                      onMouseLeave={e => { e.currentTarget.style.background = "white"; }}
+                      title={isPending ? "Click to update payment" : ""}
+                    >
+                      <td style={tdStyle}>{language}</td>
+                      <td style={tdStyle}>{className}</td>
+                      <td style={tdStyle}>
+                        <span style={{   padding: "3px 10px", borderRadius: "9999px", fontSize: "12px", fontWeight: 600 }}>
+                          {level}
+                        </span>
+                      </td>
+                      <td style={{ ...tdStyle, fontWeight: 600 }}>
+                        {p.amount ? `${Number(p.amount).toLocaleString("fr-DZ")} DA` : "—"}
+                      </td>
+                      <td style={tdStyle}>
+                        <span style={statusStyle(p.status)}>
+                          {fmt(p.status)}
+                        </span>
                       </td>
                     </tr>
-                  )}
-
-                  {!loading && error && (
-                    <tr>
-                      <td colSpan={5} className="text-center py-8 text-red-500 text-sm">{error}</td>
-                    </tr>
-                  )}
-
-                  {!loading && !error && payments.length === 0 && (
-                    <tr>
-                      <td colSpan={5} className="text-center py-8 text-[#701366] opacity-50 text-sm">No payments found.</td>
-                    </tr>
-                  )}
-
-                  {!loading && !error && payments.map((p) => {
-                    const isPending = ["pending", "overdue"].includes(p.status?.toLowerCase());
-                    const language  = p.level_name ?? p.inscription?.enrolled_class?.language ?? "—";
-                    const className = p.class_name ?? p.inscription?.enrolled_class?.name ?? "—";
-                    const level     = extractLevel(p.level_name ?? "");
-                    const style     = getStatusStyle(p.status);
-
-                    return (
-                      <tr
-                        key={p.id}
-                        onClick={() => openModal(p)}
-                        className="transition-colors h-12"
-                        style={{
-                          cursor: isPending ? "pointer" : "default",
-                          background: "white",
-                        }}
-                        onMouseEnter={e => { if (isPending) e.currentTarget.style.background = "#fffafe"; }}
-                        onMouseLeave={e => { e.currentTarget.style.background = "white"; }}
-                        title={isPending ? "Click to update payment" : ""}
-                      >
-                        <td className="py-3 text-[#701366] whitespace-nowrap" style={{ paddingLeft: "30px" }}>
-                          {language}
-                        </td>
-                        <td className="px-4 py-3 text-[#701366] whitespace-nowrap">{className}</td>
-                        <td className="px-4 py-3 whitespace-nowrap">
-                          <span style={{ background: "#f0f9ff", color: "#0369a1", padding: "3px 10px", borderRadius: "9999px", fontSize: "12px", fontWeight: 600 }}>
-                            {level}
-                          </span>
-                        </td>
-                        <td className="px-4 py-3 text-[#701366] whitespace-nowrap font-medium">
-                          {p.amount ? `${Number(p.amount).toLocaleString("fr-DZ")} DA` : "—"}
-                        </td>
-                        <td className="px-4 py-3 whitespace-nowrap">
-                          <span style={{ display: "inline-flex", alignItems: "center", gap: "4px", padding: "3px 12px", borderRadius: "9999px", fontSize: "12px", fontWeight: 500, ...style }}>
-                            ● {fmt(p.status)}
-                          </span>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
+                  );
+                })}
+              </tbody>
+            </table>
           </div>
 
           {/* DONUT */}
-          <div className="w-full lg:w-1/3 bg-white rounded-2xl shadow-sm p-6 flex flex-col items-center justify-center">
-            <h3 className="text-[#701366] font-Inter text-xl mb-4">Payments Rate</h3>
-            <div className="flex gap-4 text-xs mb-4">
-              <div className="flex items-center gap-1 text-[#f2c94c]">
-                <span className="w-2 h-2 bg-[#f2c94c] rounded-full"></span> Unpaid
+          <div style={{ flex: 1, minWidth: "260px", background: "white", borderRadius: "16px", boxShadow: "0 1px 4px rgba(0,0,0,0.06)", padding: "24px", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", boxSizing: "border-box" }}>
+            <h3 style={{ fontSize: "19px", fontWeight: 700, color: "#701366", marginBottom: "16px", flexShrink: 0, fontFamily: F }}>Payments Rate</h3>
+            <div style={{ display: "flex", gap: "16px", fontSize: "12px", marginBottom: "16px", flexShrink: 0 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: "4px", color: "#ca8a04" }}>
+                <span style={{ width: "8px", height: "8px", background: "#fde68a", borderRadius: "50%", display: "inline-block", flexShrink: 0 }} /> Unpaid
               </div>
-              <div className="flex items-center gap-1 text-[#701366]">
-                <span className="w-2 h-2 bg-[#701366] rounded-full"></span> Paid
+              <div style={{ display: "flex", alignItems: "center", gap: "4px", color: "#701366" }}>
+                <span style={{ width: "8px", height: "8px", background: "#701366", borderRadius: "50%", display: "inline-block", flexShrink: 0 }} /> Paid
               </div>
             </div>
-            <div className="relative w-40 h-40">
-              <svg className="w-full h-full" viewBox="0 0 150 150">
+            <div style={{ position: "relative", width: "160px", height: "160px", flexShrink: 0 }}>
+              <svg style={{ width: "100%", height: "100%" }} viewBox="0 0 150 150">
                 <circle cx="75" cy="75" r={radius} stroke="#eee" strokeWidth={stroke} fill="none" />
                 <circle cx="75" cy="75" r={radius} stroke="#701366" strokeWidth={stroke} fill="none"
                   strokeDasharray={circumference} strokeDashoffset={offset}
@@ -244,12 +295,12 @@ export default function Payment_student() {
                   strokeDashoffset={circumference - ((100 - percent) / 100) * circumference}
                   strokeLinecap="round" transform={`rotate(${(percent / 100) * 360 - 90} 75 75)`} />
               </svg>
-              <div className="absolute inset-0 flex items-center justify-center">
-                <span className="text-xl font-Inter text-[#701366]">{percent}%</span>
+              <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                <span style={{ fontSize: "20px", fontWeight: 700, color: "#701366" }}>{percent}%</span>
               </div>
             </div>
             {!loading && (
-              <p className="text-xs text-[#b48ab0] mt-4">{paid} of {total} payments confirmed</p>
+              <p style={{ fontSize: "12px", color: "#b48ab0", marginTop: "16px" }}>{paid} of {total} payments confirmed</p>
             )}
           </div>
 
@@ -268,7 +319,7 @@ export default function Payment_student() {
           >
             <h3 style={{ fontSize: "18px", color: "#701366", margin: "0 0 6px" }}>Update Payment</h3>
             <p style={{ fontSize: "13px", color: "#b48ab0", margin: "0 0 24px" }}>
-              Inscription #{selected.inscription_id ?? selected.id} — {selected.level_name ?? ""}
+              Inscription #{selected.inscription_id ?? selected.id} — {selected.class_name ?? ""}
             </p>
 
             {/* Amount field */}

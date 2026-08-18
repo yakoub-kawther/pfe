@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import DashboardLayout from "../../layouts/DashboardLayout";
 import { apiFetch } from "../../services/api";
-import { Loader2 } from "lucide-react";
+import { Loader2, ChevronLeft, ChevronRight, Plus, SquarePen, Trash2 } from "lucide-react";
 
 // ──────────────────────────────────────────────────────
 // CONSTANTS
@@ -23,9 +23,37 @@ const DAY_COLORS = [
   { bg: "#fff3e0", border: "#ff7043", tag: "#ff7043", text: "#bf360c" },
 ];
 
+/* ── Add/Edit modal input styles — copied verbatim from Classes.jsx
+   (AddClassModal / EditClassModal) so both modals look identical. ── */
+const inp = {
+  width: "100%",
+  border: "1px solid #e2d0e2",
+  borderRadius: "8px",
+  padding: "10px 14px",
+  fontSize: "14px",
+  color: "#701366",
+  outline: "none",
+  boxSizing: "border-box",
+  fontFamily: "Inter, sans-serif",
+  backgroundColor: "#fff",
+};
+const sel = { ...inp, cursor: "pointer" };
+
+const Field = ({ label, children, full = false }) => (
+  <div style={{ display: "flex", flexDirection: "column", gap: "6px", ...(full ? { gridColumn: "1 / -1" } : {}) }}>
+    {label && <label style={{ fontSize: "13px", color: "#6b7280", fontFamily: "Inter, sans-serif" }}>{label}</label>}
+    {children}
+  </div>
+);
+
 // ──────────────────────────────────────────────────────
 // NORMALIZE API schedule → internal event shape
 // ──────────────────────────────────────────────────────
+// NOTE: `classStatus` tries a few likely field names from the API so
+// completed classes can be filtered out of the calendar. If your
+// `/academic/schedules/` payload exposes the related class's status
+// under a different key (e.g. nested like `class_obj_detail.status`),
+// update the fallbacks below to match your actual response shape.
 function normalizeSchedule(s) {
   const dow       = DOW_API.indexOf(s.day_of_week.toLowerCase());
   const startHour = parseInt(s.start_time.split(":")[0], 10);
@@ -37,7 +65,13 @@ function normalizeSchedule(s) {
     startHour,
     duration : endHour - startHour,
     room     : s.classroom?.name ?? s.classroom ?? "",
-    // keep raw for edit/delete
+    classStatus: (
+      s.class_status ??
+      s.class_obj_status ??
+      s.status ??
+      s.class_obj_detail?.status ??
+      ""
+    ).toString().toLowerCase(),
     raw: s,
   };
 }
@@ -92,7 +126,8 @@ function dowIndex(date)    { return (date.getDay() + 6) % 7; }
 function pad(n)            { return String(n).padStart(2, "0"); }
 
 // ──────────────────────────────────────────────────────
-// EVENT POPUP
+// EVENT POPUP (the small floating card when you click an event block —
+// separate from the Add/Edit Schedule modal below)
 // ──────────────────────────────────────────────────────
 function EventPopup({ ev, anchorRect, onClose, onDelete, onEdit }) {
   const popupRef = useRef(null);
@@ -108,29 +143,70 @@ function EventPopup({ ev, anchorRect, onClose, onDelete, onEdit }) {
   return (
     <div ref={popupRef} style={{
       position: "fixed",
-      top : anchorRect ? Math.min(anchorRect.bottom + 8, window.innerHeight - 180) : "50%",
-      left: anchorRect ? Math.min(anchorRect.left,       window.innerWidth  - 230) : "50%",
-      zIndex: 200, background: "white", borderRadius: 14,
-      boxShadow: "0 8px 32px rgba(112,19,102,0.18)",
-      padding: "16px", width: 220, border: `2px solid ${c.border}33`,
+      top : anchorRect ? Math.min(anchorRect.bottom + 8, window.innerHeight - 190) : "50%",
+      left: anchorRect ? Math.min(anchorRect.left,       window.innerWidth  - 240) : "50%",
+      zIndex: 200,
+      background: "white",
+      borderRadius: "16px",
+      boxShadow: "0 4px 20px rgba(112,19,102,0.16)",
+      padding: "18px",
+      width: 224,
+      boxSizing: "border-box",
     }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 10 }}>
         <div>
-          <div style={{ fontSize: 14, fontWeight: 500, color: c.text }}>{ev.title}</div>
-          <div style={{ fontSize: 11, color: "#999", marginTop: 2 }}>
+          <div style={{ fontSize: "14px", fontWeight: 600, color: "#701366" }}>{ev.title}</div>
+          <div style={{ fontSize: "11px", color: "#701366", opacity: 0.55, marginTop: 3 }}>
             {DOW_FULL[ev.dow]} · {pad(ev.startHour)}:00 – {pad(ev.startHour + ev.duration)}:00
           </div>
-          <div style={{ fontSize: 11, color: "#999" }}>{ev.room}</div>
+          {ev.room && <div style={{ fontSize: "11px", color: "#701366", opacity: 0.55 }}>{ev.room}</div>}
         </div>
-        <button onClick={onClose} style={{ background: "none", border: "none", fontSize: 18, color: "#bbb", cursor: "pointer", lineHeight: 1, padding: 0 }}>×</button>
-      </div>
-      <div style={{ height: 3, borderRadius: 2, background: c.border, marginBottom: 12 }} />
-      <div style={{ display: "flex", gap: 8 }}>
-        <button onClick={() => onEdit(ev)} style={{ flex: 1, padding: "7px 0", borderRadius: 9, border: "1.5px solid #701366", background: "white", color: "#701366", fontSize: 12, cursor: "pointer" }}>
-          Edit
+        <button
+          onClick={onClose}
+          style={{ background: "none", border: "none", fontSize: "18px", color: "#701366", opacity: 0.4, cursor: "pointer", lineHeight: 1, padding: 0 }}
+        >
+          ×
         </button>
-        <button onClick={() => { onDelete(ev.id); onClose(); }} style={{ flex: 1, padding: "7px 0", borderRadius: 9, border: "1.5px solid #e91e63", background: "#fce4ec", color: "#880e4f", fontSize: 12, cursor: "pointer" }}>
-          Delete
+      </div>
+
+      <span
+        style={{
+          display: "inline-block", fontSize: "10px", fontWeight: 600,
+          color: c.text, background: c.bg, border: `1px solid ${c.border}55`,
+          borderRadius: "999px", padding: "2px 9px", marginBottom: "14px",
+        }}
+      >
+        {ev.room || "No room"}
+      </span>
+
+      <div style={{ display: "flex", gap: "8px" }}>
+        <button
+          aria-label="Edit"
+          onClick={() => onEdit(ev)}
+          style={{
+            flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: "6px",
+            padding: "7px 0", borderRadius: "8px", border: "1px solid #701366",
+            background: "white", color: "#701366", fontSize: "12px", fontWeight: 600,
+            cursor: "pointer", transition: "background 0.15s, color 0.15s",
+          }}
+          onMouseEnter={(e) => { e.currentTarget.style.background = "#701366"; e.currentTarget.style.color = "white"; }}
+          onMouseLeave={(e) => { e.currentTarget.style.background = "white";   e.currentTarget.style.color = "#701366"; }}
+        >
+          <SquarePen size={14} /> Edit
+        </button>
+        <button
+          aria-label="Delete"
+          onClick={() => { onDelete(ev.id); onClose(); }}
+          style={{
+            flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: "6px",
+            padding: "7px 0", borderRadius: "8px", border: "1px solid #c92c2c",
+            background: "white", color: "#c92c2c", fontSize: "12px", fontWeight: 600,
+            cursor: "pointer", transition: "background 0.15s, color 0.15s",
+          }}
+          onMouseEnter={(e) => { e.currentTarget.style.background = "#c92c2c"; e.currentTarget.style.color = "white"; }}
+          onMouseLeave={(e) => { e.currentTarget.style.background = "white";   e.currentTarget.style.color = "#c92c2c"; }}
+        >
+          <Trash2 size={14} /> Delete
         </button>
       </div>
     </div>
@@ -277,7 +353,10 @@ function MonthView({ cursor, events, today, onEventClick }) {
 }
 
 // ──────────────────────────────────────────────────────
-// ADD / EDIT EVENT MODAL
+// ADD / EDIT SCHEDULE MODAL
+// Rebuilt to match Classes.jsx's AddClassModal / EditClassModal exactly:
+// same 20px-radius card, same header/× close, same Field/inp/sel
+// components, same grid layout and footer button styling.
 // ──────────────────────────────────────────────────────
 function EventModal({ initial, onClose, onSave, classes, classrooms, loadingOptions }) {
   const isEdit = !!initial;
@@ -297,11 +376,9 @@ function EventModal({ initial, onClose, onSave, classes, classrooms, loadingOpti
   const [saving, setSaving]   = useState(false);
   const [error,  setError]    = useState("");
 
-  // Available classrooms filtered by availability
   const [availableRooms, setAvailableRooms] = useState(classrooms);
   const [loadingRooms,   setLoadingRooms]   = useState(false);
 
-  // Fetch available classrooms whenever day/time changes
   useEffect(() => {
     if (!form.day || !form.startHour || !form.endHour) return;
     setLoadingRooms(true);
@@ -313,6 +390,9 @@ function EventModal({ initial, onClose, onSave, classes, classrooms, loadingOpti
       .catch(() => setAvailableRooms(classrooms))
       .finally(() => setLoadingRooms(false));
   }, [form.day, form.startHour, form.endHour, classrooms]);
+
+  const handle = (field) => (e) =>
+    setForm((prev) => ({ ...prev, [field]: e.target.value }));
 
   const handleSave = async () => {
     if (!form.class_obj || !form.day || !form.classroom) { setError("All fields are required."); return; }
@@ -355,61 +435,99 @@ function EventModal({ initial, onClose, onSave, classes, classrooms, loadingOpti
     }
   };
 
-  const inputStyle = { width: "100%", border: "1.5px solid #e0d6f0", borderRadius: 10, padding: "9px 12px", fontSize: 11.5, marginBottom: 12, outline: "none", color: "#1a1a2e", background: "white", boxSizing: "border-box" };
-  const labelStyle = { fontSize: 10, fontWeight: 500, color: "#701366", marginBottom: 4, textTransform: "uppercase", letterSpacing: "0.05em", display: "block" };
-
   return (
-    <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.4)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 100 }}>
-      <div style={{ background: "white", borderRadius: 18, padding: 24, width: 340, boxShadow: "0 8px 40px rgba(112,19,102,0.18)", maxHeight: "90vh", overflowY: "auto" }}>
-        <div style={{ fontSize: "1.3rem", color: "#701366", marginBottom: 16, fontWeight: 500 }}>
-          {isEdit ? "Edit Schedule" : "Add Schedule"}
+    <div
+      style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.35)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000, padding: "20px" }}
+      onClick={onClose}
+    >
+      <div
+        style={{ background: "white", borderRadius: "20px", padding: "32px", width: "100%", maxWidth: "640px", maxHeight: "90vh", overflowY: "auto", boxShadow: "0 8px 40px rgba(112,19,102,0.18)", fontFamily: "Inter, sans-serif", boxSizing: "border-box" }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "20px" }}>
+          <h3 style={{ fontSize: "19px", fontWeight: 700, color: "#701366", margin: 0 }}>
+            {isEdit ? "Edit Schedule" : "Add New Schedule"}
+          </h3>
+          <button
+            onClick={onClose}
+            style={{ border: "none", background: "none", color: "#701366", fontSize: "20px", cursor: "pointer", lineHeight: 1 }}
+            aria-label="Close"
+          >
+            ×
+          </button>
         </div>
 
-        {loadingOptions ? (
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8, padding: "20px 0", color: "#701366", opacity: 0.6 }}>
-            <Loader2 style={{ width: 16, height: 16, animation: "spin 1s linear infinite" }} />
-            <span style={{ fontSize: 13 }}>Loading options...</span>
+        {error && (
+          <div style={{ padding: "12px 16px", borderRadius: "8px", background: "#fee2e2", color: "#b91c1c", fontSize: "13px", border: "1px solid #fecaca", marginBottom: "18px" }}>
+            {error}
           </div>
-        ) : (
-          <>
-            <label style={labelStyle}>Class</label>
-            <select style={inputStyle} value={form.class_obj} onChange={(e) => setForm({ ...form, class_obj: e.target.value })}>
-              <option value="">Select class…</option>
-              {classes.map((c) => <option key={c.id} value={c.id}>{c.name ?? c.class_name ?? `Class ${c.id}`}</option>)}
-            </select>
-
-            <label style={labelStyle}>Day</label>
-            <select style={inputStyle} value={form.day} onChange={(e) => setForm({ ...form, day: e.target.value })}>
-              <option value="">Select day…</option>
-              {DOW_API.map((d, i) => <option key={d} value={d}>{DOW_FULL[i]}</option>)}
-            </select>
-
-            <label style={labelStyle}>Start Time</label>
-            <select style={inputStyle} value={form.startHour} onChange={(e) => setForm({ ...form, startHour: e.target.value })}>
-              {HOURS.map((h) => <option key={h} value={h}>{pad(h)}:00</option>)}
-            </select>
-
-            <label style={labelStyle}>End Time</label>
-            <select style={inputStyle} value={form.endHour} onChange={(e) => setForm({ ...form, endHour: e.target.value })}>
-              {HOURS.filter((h) => h > parseInt(form.startHour)).map((h) => <option key={h} value={h}>{pad(h)}:00</option>)}
-            </select>
-
-            <label style={labelStyle}>Classroom {loadingRooms ? "(checking availability…)" : ""}</label>
-            <select style={inputStyle} value={form.classroom} onChange={(e) => setForm({ ...form, classroom: e.target.value })}>
-              <option value="">Select classroom…</option>
-              {availableRooms.map((r) => <option key={r.id} value={r.id}>{r.name}</option>)}
-            </select>
-          </>
         )}
 
-        {error && <p style={{ color: "#dc2626", fontSize: 12, marginBottom: 8 }}>{error}</p>}
+        {loadingOptions ? (
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8, padding: "24px 0", color: "#701366", opacity: 0.6 }}>
+            <Loader2 style={{ width: 16, height: 16, animation: "spin 1s linear infinite" }} />
+            <span style={{ fontSize: "13px" }}>Loading options...</span>
+          </div>
+        ) : (
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "18px" }}>
 
-        <div style={{ display: "flex", justifyContent: "flex-end", gap: 8, marginTop: 4 }}>
-          <button onClick={onClose} style={{ border: "1.5px solid #701366", color: "#701366", background: "white", borderRadius: 10, padding: "7px 18px", fontSize: 11, cursor: "pointer" }}>
+            <Field label="Class" full>
+              <select style={sel} value={form.class_obj} onChange={handle("class_obj")}>
+                <option value="">Select class…</option>
+                {classes.map((c) => (
+                  <option key={c.id} value={c.id}>{c.name ?? c.class_name ?? `Class ${c.id}`}</option>
+                ))}
+              </select>
+            </Field>
+
+            <Field label="Day">
+              <select style={sel} value={form.day} onChange={handle("day")}>
+                <option value="">Select day…</option>
+                {DOW_API.map((d, i) => <option key={d} value={d}>{DOW_FULL[i]}</option>)}
+              </select>
+            </Field>
+
+            <Field label="Classroom" >
+              <select style={sel} value={form.classroom} onChange={handle("classroom")}>
+                <option value="">
+                  {loadingRooms ? "Checking availability…" : "Select classroom…"}
+                </option>
+                {availableRooms.map((r) => <option key={r.id} value={r.id}>{r.name}</option>)}
+              </select>
+            </Field>
+
+            <Field label="Start Time">
+              <select style={sel} value={form.startHour} onChange={handle("startHour")}>
+                {HOURS.map((h) => <option key={h} value={h}>{pad(h)}:00</option>)}
+              </select>
+            </Field>
+
+            <Field label="End Time">
+              <select style={sel} value={form.endHour} onChange={handle("endHour")}>
+                {HOURS.filter((h) => h > parseInt(form.startHour)).map((h) => <option key={h} value={h}>{pad(h)}:00</option>)}
+              </select>
+            </Field>
+
+          </div>
+        )}
+
+        <div style={{ display: "flex", gap: "8px", marginTop: "24px", justifyContent: "flex-end" }}>
+          <button
+            onClick={onClose}
+            style={{ padding: "8px 20px", borderRadius: "8px", border: "1.5px solid #e2d0e2", background: "#fff", color: "#701366", fontSize: "13px", fontFamily: "Inter, sans-serif", cursor: "pointer" }}
+            onMouseEnter={(e) => { e.target.style.borderColor = "#701366"; }}
+            onMouseLeave={(e) => { e.target.style.borderColor = "#e2d0e2"; }}
+          >
             Cancel
           </button>
-          <button onClick={handleSave} disabled={saving} style={{ background: "#701366", color: "white", border: "1.5px solid #701366", borderRadius: 10, padding: "7px 18px", fontSize: 11.5, cursor: saving ? "not-allowed" : "pointer", opacity: saving ? 0.7 : 1 }}>
-            {saving ? "Saving…" : isEdit ? "Update" : "Save"}
+          <button
+            onClick={handleSave}
+            disabled={saving}
+            style={{ padding: "8px 24px", borderRadius: "8px", border: "1.5px solid #701366", background: saving ? "#a855a0" : "#701366", color: "#fff", fontSize: "13px", fontFamily: "Inter, sans-serif", cursor: saving ? "not-allowed" : "pointer", fontWeight: "600" }}
+            onMouseEnter={(e) => { if (!saving) e.target.style.background = "#5a0f52"; }}
+            onMouseLeave={(e) => { if (!saving) e.target.style.background = "#701366"; }}
+          >
+            {saving ? "Saving..." : isEdit ? "Save Changes" : "Save Schedule"}
           </button>
         </div>
       </div>
@@ -429,7 +547,6 @@ export default function Time_table() {
   const [editingEvent, setEditingEvent] = useState(null);
   const [popup,        setPopup]        = useState(null);
 
-  // Options for the modal
   const [classes,        setClasses]        = useState([]);
   const [classrooms,     setClassrooms]     = useState([]);
   const [loadingOptions, setLoadingOptions] = useState(false);
@@ -438,7 +555,6 @@ export default function Time_table() {
   const [today]  = useState(todayRef);
   const [cursor, setCursor] = useState(new Date(todayRef));
 
-  // ── Fetch schedules ──
   const fetchSchedules = useCallback(async () => {
     setLoading(true);
     setError(null);
@@ -447,7 +563,10 @@ export default function Time_table() {
       if (!res.ok) throw new Error(`Server error: ${res.status}`);
       const data = await res.json();
       const list = Array.isArray(data) ? data : (data.results ?? []);
-      setEvents(list.map(normalizeSchedule));
+      // Hide schedules whose class has already finished — completed
+      // classes shouldn't clutter the live timetable. See the
+      // `classStatus` field-name assumptions in normalizeSchedule above.
+      setEvents(list.map(normalizeSchedule).filter((ev) => ev.classStatus !== "completed"));
     } catch (err) {
       setError(err.message || "Failed to load schedules.");
     } finally {
@@ -457,18 +576,31 @@ export default function Time_table() {
 
   useEffect(() => { fetchSchedules(); }, [fetchSchedules]);
 
-  // ── Fetch classes + classrooms for modal ──
-  const fetchOptions = useCallback(async () => {
+  const fetchOptions = useCallback(async (currentClassId = null) => {
     setLoadingOptions(true);
     try {
       const [cRes, rRes] = await Promise.all([
-        apiFetch("/academic/classes/"),
+        apiFetch("/academic/classes/?status=scheduled"),
         apiFetch("/academic/classrooms/"),
       ]);
       const cData = await cRes.json();
       const rData = await rRes.json();
-      setClasses(Array.isArray(cData)   ? cData   : (cData.results   ?? []));
-      setClassrooms(Array.isArray(rData) ? rData   : (rData.results   ?? []));
+      let classList = Array.isArray(cData) ? cData : (cData.results ?? []);
+
+      if (currentClassId && !classList.some((c) => String(c.id) === String(currentClassId))) {
+        try {
+          const curRes = await apiFetch(`/academic/classes/${currentClassId}/`);
+          if (curRes.ok) {
+            const curClass = await curRes.json();
+            classList = [curClass, ...classList];
+          }
+        } catch {
+          // ignore — edit modal will just be missing that one option
+        }
+      }
+
+      setClasses(classList);
+      setClassrooms(Array.isArray(rData) ? rData : (rData.results ?? []));
     } catch {
       // silently fail — modal will show empty dropdowns
     } finally {
@@ -476,7 +608,6 @@ export default function Time_table() {
     }
   }, []);
 
-  // ── Event handlers ──
   const handleEventClick = (ev, e) => {
     e.stopPropagation();
     setPopup({ ev, rect: e.currentTarget.getBoundingClientRect() });
@@ -494,12 +625,16 @@ export default function Time_table() {
   const handleEditRequest = (ev) => {
     setPopup(null);
     setEditingEvent(ev);
-    fetchOptions();
+    fetchOptions(ev.raw.class_obj);
     setShowModal(true);
   };
 
   const handleSave = (normalizedEvent) => {
-    if (editingEvent) {
+    if (normalizedEvent.classStatus === "completed") {
+      // Just-saved schedule belongs to a class that's already completed
+      // (shouldn't normally happen, but guard against showing it anyway).
+      setEvents((prev) => prev.filter((e) => e.id !== normalizedEvent.id));
+    } else if (editingEvent) {
       setEvents((prev) => prev.map((e) => (e.id === normalizedEvent.id ? normalizedEvent : e)));
     } else {
       setEvents((prev) => [...prev, normalizedEvent]);
@@ -527,46 +662,142 @@ export default function Time_table() {
     return `${MONTHS[cursor.getMonth()]} ${cursor.getFullYear()}`;
   };
 
-  const btnBase = { padding: "4px 12px", borderRadius: 7, border: "none", fontSize: "0.78rem", fontWeight: 600, cursor: "pointer", transition: "all .15s" };
+  // ── Shared button styles — copied 1:1 from Classes.jsx's pagination
+  // iconBtn/pageBtn pattern, reused here for the date-nav chevrons and
+  // the Week/Day/Month view switcher so both pages feel identical. ──
+  const iconBtn = {
+    width: "32px",
+    height: "32px",
+    borderRadius: "8px",
+    border: "1px solid #701366",
+    background: "white",
+    color: "#701366",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    cursor: "pointer",
+    transition: "background 0.15s, color 0.15s",
+  };
+
+  const viewTabBtn = (active) => ({
+    padding: "6px 16px",
+    height: "32px",
+    boxSizing: "border-box",
+    borderRadius: "8px",
+    border: "1px solid #701366",
+    background: active ? "#701366" : "white",
+    color: active ? "white" : "#701366",
+    fontSize: "13px",
+    fontWeight: 600,
+    cursor: "pointer",
+    transition: "background 0.15s, color 0.15s",
+  });
 
   return (
     <DashboardLayout>
-      <div className="w-full" style={{ padding: "0 clamp(12px, 2vw, 32px) 40px" }}>
+      <div style={{ width: "100%", display: "flex", flexDirection: "column", gap: "24px", paddingTop: "0px", boxSizing: "border-box", minWidth: 0 }}>
 
-        <h1 style={{ fontSize: "1.6rem", color: "#701366", marginBottom: 16 }}>Timetable</h1>
+        {/* Page Title — matches Classes.jsx */}
+        <div style={{ marginBottom: "4px" }}>
+          <h1 style={{
+            fontSize: "32px",
+            fontWeight: 700,
+            color: "#701366",
+            margin: 0,
+            letterSpacing: "-0.02em",
+            lineHeight: 1.2,
+          }}>
+            Timetable
+          </h1>
+          <p style={{
+            fontSize: "14px",
+            color: "#701366",
+            opacity: 0.55,
+            margin: "4px 0 0",
+          }}>
+            View and manage class schedules
+          </p>
+        </div>
 
         {/* Top bar */}
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16, flexWrap: "wrap", gap: 10 }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
-            <button onClick={() => setCursor(new Date(today))} style={{ fontSize: "0.78rem", color: "#701366", cursor: "pointer", border: "1.5px solid #e0d6f0", background: "white", borderRadius: 8, padding: "3px 10px" }}>Today</button>
-            <button onClick={() => navigate(-1)} style={{ border: "1.5px solid #e0d6f0", background: "white", borderRadius: 8, padding: "2px 10px", fontSize: "1rem", color: "#701366", cursor: "pointer" }}>‹</button>
-            <span style={{ fontSize: "0.85rem", fontWeight: 500, color: "#333", minWidth: 200, textAlign: "center" }}>{getNavLabel()}</span>
-            <button onClick={() => navigate(1)}  style={{ border: "1.5px solid #e0d6f0", background: "white", borderRadius: 8, padding: "2px 10px", fontSize: "1rem", color: "#701366", cursor: "pointer" }}>›</button>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: "12px" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap" }}>
+            <button
+              onClick={() => setCursor(new Date(today))}
+              style={viewTabBtn(false)}
+              onMouseEnter={(e) => { e.currentTarget.style.background = "#701366"; e.currentTarget.style.color = "white"; }}
+              onMouseLeave={(e) => { e.currentTarget.style.background = "white";   e.currentTarget.style.color = "#701366"; }}
+            >
+              Today
+            </button>
+
+            <button
+              style={iconBtn}
+              onClick={() => navigate(-1)}
+              onMouseEnter={(e) => { e.currentTarget.style.background = "#701366"; e.currentTarget.style.color = "white"; }}
+              onMouseLeave={(e) => { e.currentTarget.style.background = "white";   e.currentTarget.style.color = "#701366"; }}
+            >
+              <ChevronLeft size={16} />
+            </button>
+
+            <span style={{ fontSize: "14px", fontWeight: 600, color: "#701366", minWidth: "210px", textAlign: "center" }}>
+              {getNavLabel()}
+            </span>
+
+            <button
+              style={iconBtn}
+              onClick={() => navigate(1)}
+              onMouseEnter={(e) => { e.currentTarget.style.background = "#701366"; e.currentTarget.style.color = "white"; }}
+              onMouseLeave={(e) => { e.currentTarget.style.background = "white";   e.currentTarget.style.color = "#701366"; }}
+            >
+              <ChevronRight size={16} />
+            </button>
           </div>
-          <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
-            <div style={{ display: "flex", gap: 4, background: "white", borderRadius: 10, padding: 3, border: "1.5px solid #e0d6f0" }}>
+
+          <div style={{ display: "flex", gap: "10px", alignItems: "center", flexWrap: "wrap" }}>
+            {/* View tabs — outlined pills, same border/radius/height as
+                the pagination iconBtn on Classes.jsx for visual parity */}
+            <div style={{ display: "flex", gap: "8px" }}>
               {["Week", "Day", "Month"].map((v) => (
-                <button key={v} onClick={() => setView(v)} style={{ ...btnBase, background: view === v ? "#701366" : "transparent", color: view === v ? "white" : "#888" }}>{v}</button>
+                <button
+                  key={v}
+                  onClick={() => setView(v)}
+                  style={viewTabBtn(view === v)}
+                >
+                  {v}
+                </button>
               ))}
             </div>
+
+            {/* Add — icon-only "+", identical to Classes.jsx's Add Class button */}
             <button
               onClick={() => { setEditingEvent(null); fetchOptions(); setShowModal(true); }}
-              style={{ background: "#701366", color: "white", border: "1.5px solid #701366", borderRadius: 10, padding: "7px 16px", fontSize: "0.82rem", cursor: "pointer" }}
+              aria-label="Add Schedule"
+              style={{
+                width: "38px", height: "38px", flexShrink: 0,
+                display: "inline-flex", alignItems: "center", justifyContent: "center",
+                borderRadius: "10px", background: "#701366", color: "white",
+                border: "2px solid #701366", cursor: "pointer",
+                transition: "background 0.15s, color 0.15s, box-shadow 0.15s",
+                boxShadow: "0 2px 8px rgba(112,19,102,.13)",
+              }}
+              onMouseEnter={(e) => { e.currentTarget.style.background = "white"; e.currentTarget.style.color = "#701366"; e.currentTarget.style.boxShadow = "0 4px 16px rgba(112,19,102,.18)"; }}
+              onMouseLeave={(e) => { e.currentTarget.style.background = "#701366"; e.currentTarget.style.color = "white"; e.currentTarget.style.boxShadow = "0 2px 8px rgba(112,19,102,.13)"; }}
             >
-              + Add Event
+              <Plus size={18} />
             </button>
           </div>
         </div>
 
         {/* Calendar card */}
-        <div style={{ background: "white", borderRadius: 16, boxShadow: "0 2px 16px rgba(112,19,102,0.07)", padding: 16, overflow: "hidden" }}>
+        <div style={{ width: "100%", background: "white", borderRadius: "16px", boxShadow: "0 1px 4px rgba(0,0,0,0.06)", padding: "16px", overflow: "hidden", boxSizing: "border-box" }}>
           {loading ? (
             <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8, padding: "60px 0", color: "#701366", opacity: 0.6 }}>
               <Loader2 style={{ width: 18, height: 18, animation: "spin 1s linear infinite" }} />
-              <span>Loading timetable…</span>
+              <span style={{ fontSize: "14px" }}>Loading timetable…</span>
             </div>
           ) : error ? (
-            <div style={{ textAlign: "center", padding: "60px 0", color: "#dc2626", fontSize: 14 }}>{error}</div>
+            <div style={{ textAlign: "center", padding: "60px 0", color: "#dc2626", fontSize: "14px" }}>{error}</div>
           ) : (
             <>
               {view === "Week"  && <WeekView  cursor={cursor} events={events} today={today} onEventClick={handleEventClick} />}

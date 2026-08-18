@@ -10,6 +10,7 @@ const Searchbar = ({
   showAdd = true,
   onSearchChange,
   onFilterChange,
+  onAddClick,
 }) => {
   const [dropdownOpen, setDropdownOpen]   = useState(false);
   const [selectedFilter, setSelectedFilter] = useState("All");
@@ -17,6 +18,7 @@ const Searchbar = ({
   // const navigate = useNavigate();
   
   const handleFilterSelect = (option) => {
+    console.log("1. Searchbar clicked:", option);
     setSelectedFilter(option);
     setDropdownOpen(false);
     if (onFilterChange) onFilterChange(option);
@@ -29,6 +31,16 @@ const Searchbar = ({
     background: "white", color: "#701366",
     cursor: "pointer", transition: "background 0.15s, color 0.15s",
   };
+
+  const addBtnStyle = {
+    ...iconBtn,
+    background: "#701366", color: "white",
+    borderRadius: "12px", textDecoration: "none",
+    transition: "background 0.15s, color 0.15s, transform 0.15s",
+  };
+
+  const addBtnHover = (e) => { e.currentTarget.style.background = "white"; e.currentTarget.style.color = "#701366"; e.currentTarget.style.transform = "scale(1.1)"; };
+  const addBtnLeave = (e) => { e.currentTarget.style.background = "#701366"; e.currentTarget.style.color = "white"; e.currentTarget.style.transform = "scale(1)"; };
 
   return (
     <div style={{ display: "flex", alignItems: "center", justifyContent: "flex-end", width: "100%" }}>
@@ -100,19 +112,27 @@ const Searchbar = ({
 
         {/* Add */}
         {showAdd && (
-          <Link
-            to={addPath}
-            style={{
-              ...iconBtn,
-              background: "#701366", color: "white",
-              borderRadius: "12px", textDecoration: "none",
-              transition: "background 0.15s, color 0.15s, transform 0.15s",
-            }}
-            onMouseEnter={e => { e.currentTarget.style.background = "white"; e.currentTarget.style.color = "#701366"; e.currentTarget.style.transform = "scale(1.1)"; }}
-            onMouseLeave={e => { e.currentTarget.style.background = "#701366"; e.currentTarget.style.color = "white"; e.currentTarget.style.transform = "scale(1)"; }}
-          >
-            <Plus style={{ width: "16px", height: "16px", flexShrink: 0 }} />
-          </Link>
+          onAddClick ? (
+            <button
+              type="button"
+              onClick={onAddClick}
+              aria-label="Add"
+              style={addBtnStyle}
+              onMouseEnter={addBtnHover}
+              onMouseLeave={addBtnLeave}
+            >
+              <Plus style={{ width: "16px", height: "16px", flexShrink: 0 }} />
+            </button>
+          ) : (
+            <Link
+              to={addPath}
+              style={addBtnStyle}
+              onMouseEnter={addBtnHover}
+              onMouseLeave={addBtnLeave}
+            >
+              <Plus style={{ width: "16px", height: "16px", flexShrink: 0 }} />
+            </Link>
+          )
         )}
 
       </div>

@@ -18,20 +18,15 @@ const inp = (hasError) => ({
 const sel = (hasError) => ({ ...inp(hasError), cursor: "pointer" });
 
 const Field = ({ label, children, full = false }) => (
-  <div className="flex flex-col gap-1.5" style={full ? { gridColumn: "1 / -1" } : {}}>
-    {label ? <label className="text-[13px] text-gray-500 font-Inter">{label}</label> : null}
+  <div style={{ display: "flex", flexDirection: "column", gap: "6px", ...(full ? { gridColumn: "1 / -1" } : {}), minWidth: 0 }}>
+    {label ? <label style={{ fontSize: "13px", color: "#6b7280", fontFamily: "Inter, sans-serif" }}>{label}</label> : null}
     {children}
   </div>
 );
 
 const Card = ({ title, children }) => (
-  <div
-    className="bg-white rounded-2xl border border-gray-100"
-    style={{ padding: "24px 28px", boxShadow: "0 1px 6px rgba(0,0,0,0.05)" }}
-  >
-    <h3 className="text-[#701366] font-Inter" style={{ fontSize: "16px", marginBottom: "20px" }}>
-      {title}
-    </h3>
+  <div style={{ background: "white", borderRadius: "16px", border: "1px solid #f3f4f6", padding: "24px 28px", boxShadow: "0 1px 6px rgba(0,0,0,0.05)", boxSizing: "border-box", width: "100%", minWidth: 0 }}>
+    <h3 style={{ fontSize: "19px", fontWeight: 700, color: "#701366", fontFamily: "Inter, sans-serif", marginBottom: "20px", margin: "0 0 20px 0" }}>{title}</h3>
     {children}
   </div>
 );
@@ -76,6 +71,7 @@ const Form = ({ onSuccess }) => {
 
   const [errors,     setErrors]     = useState({});
   const [submitting, setSubmitting] = useState(false);
+  const [success,    setSuccess]    = useState(false);
 
   const clearErr = (...fields) =>
     setErrors(p => { const u = { ...p }; fields.forEach(f => delete u[f]); return u; });
@@ -89,6 +85,27 @@ const Form = ({ onSuccess }) => {
 
   const age = getAge(dateOfBirth);
   const isMinor = age !== null && age < 18;
+
+  const handleReset = () => {
+    setGender("Male");
+    setParentType("");
+    setCustomType("");
+    setFirstName("");
+    setLastName("");
+    setDateOfBirth("");
+    setSpecialCase("");
+    setPhone("");
+    setEmail("");
+    setAddress("");
+    setUsername("");
+    setPassword("");
+    setParentFirstName("");
+    setParentLastName("");
+    setParentPhone("");
+    setClassVal("");
+    setErrors({});
+    setSuccess(false);
+  };
 
   const handleSubmit = async () => {
     const currentAge     = getAge(dateOfBirth);
@@ -112,6 +129,7 @@ const Form = ({ onSuccess }) => {
 
     setSubmitting(true);
     setErrors({});
+    setSuccess(false);
 
     try {
       // 1. Create parent if minor
@@ -194,7 +212,8 @@ const Form = ({ onSuccess }) => {
         return;
       }
 
-      onSuccess && onSuccess();
+      setSuccess(true);
+      setTimeout(() => { onSuccess && onSuccess(); }, 2000);
     } catch {
       setErrors({ error: "Network error. Please try again." });
     } finally {
@@ -204,6 +223,20 @@ const Form = ({ onSuccess }) => {
 
   return (
     <div style={{ width: "100%", boxSizing: "border-box" }}>
+
+      {/* Success banner */}
+      {success && (
+        <div style={{
+          background: "#f0fdf4", color: "#166534",
+          padding: "14px 20px", borderRadius: "10px",
+          marginBottom: "20px", fontSize: "14px",
+          display: "flex", alignItems: "center", gap: "10px",
+          border: "1px solid #bbf7d0",
+        }}>
+          <span style={{ fontSize: "18px" }}>✓</span>
+          Student added successfully! Redirecting...
+        </div>
+      )}
 
       {/* Global error banner */}
       {errors.error && (
@@ -220,16 +253,16 @@ const Form = ({ onSuccess }) => {
       {/* Two-column grid */}
       <div style={{
         display: "grid",
-        gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 380px), 1fr))",
+        gridTemplateColumns: "1fr 1fr",
         gap: "24px",
         alignItems: "start",
       }}>
 
         {/* LEFT */}
-        <div className="flex flex-col" style={{ gap: "24px" }}>
+        <div style={{ display: "flex", flexDirection: "column", gap: "24px", minWidth: 0 }}>
 
-          <Card title="Basic Information">
-            <div className="grid grid-cols-2" style={{ gap: "18px" }}>
+          <Card title="Personal Information">
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "18px" }}>
 
               <Field label="First Name">
                 <input style={inp(!!errors.first_name)} value={firstName} placeholder="First Name"
@@ -244,9 +277,9 @@ const Form = ({ onSuccess }) => {
               </Field>
 
               <Field label="Gender">
-                <div className="flex items-center gap-5 text-[14px] text-[#701366]" style={{ padding: "6px 0" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: "20px", fontSize: "14px", color: "#701366", padding: "6px 0" }}>
                   {["Male", "Female"].map(g => (
-                    <label key={g} className="flex items-center gap-2 cursor-pointer">
+                    <label key={g} style={{ display: "flex", alignItems: "center", gap: "8px", cursor: "pointer" }}>
                       <input type="radio" name="gender" checked={gender === g}
                         onChange={() => setGender(g)}
                         style={{ accentColor: "#701366", width: "15px", height: "15px" }} />
@@ -289,7 +322,7 @@ const Form = ({ onSuccess }) => {
                 Parent details are required only for students under 18.
               </p>
             )}
-            <div className="grid grid-cols-2" style={{ gap: "18px" }}>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "18px" }}>
 
               <Field label="Parent First Name">
                 <input style={inp(!!errors.parent_first_name)} value={parentFirstName} placeholder="First Name"
@@ -304,9 +337,9 @@ const Form = ({ onSuccess }) => {
               </Field>
 
               <Field label="Relationship Type" full>
-                <div className="flex items-center flex-wrap gap-5 text-[14px] text-[#701366]" style={{ padding: "6px 0" }}>
+                <div style={{ display: "flex", alignItems: "center", flexWrap: "wrap", gap: "20px", fontSize: "14px", color: "#701366", padding: "6px 0" }}>
                   {["Father", "Mother", "Other"].map(type => (
-                    <label key={type} className="flex items-center gap-2 cursor-pointer">
+                    <label key={type} style={{ display: "flex", alignItems: "center", gap: "8px", cursor: "pointer" }}>
                       <input type="radio" name="parentType" value={type}
                         checked={parentType === type}
                         onChange={() => { setParentType(type); clearErr("parent_type"); }}
@@ -334,17 +367,36 @@ const Form = ({ onSuccess }) => {
         </div>
 
         {/* RIGHT */}
-        <div className="flex flex-col" style={{ gap: "24px" }}>
+        <div style={{ display: "flex", flexDirection: "column", gap: "24px", minWidth: 0 }}>
+
+          <Card title="Contact Information">
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "18px" }}>
+              <Field label="Phone">
+                <input style={inp(!!errors.phone)} value={phone} placeholder="0XXXXXXXXX (10 digits)" maxLength={10}
+                  onChange={e => { setPhone(e.target.value); clearErr("phone"); }} />
+                {getError(errors, "phone") && <span style={{ color: "#ef4444", fontSize: "11px" }}>{getError(errors, "phone")}</span>}
+              </Field>
+
+              <Field label="Email">
+                <input style={inp(!!errors.email)} value={email} placeholder="example@gmail.com"
+                  onChange={e => { setEmail(e.target.value); clearErr("email"); }} />
+                {getError(errors, "email") && <span style={{ color: "#ef4444", fontSize: "11px" }}>{getError(errors, "email")}</span>}
+              </Field>
+
+              <Field label="Address" full>
+                <input style={inp(false)} value={address} placeholder="Street, City, ZIP"
+                  onChange={e => setAddress(e.target.value)} />
+              </Field>
+            </div>
+          </Card>
 
           <Card title="Account Information">
-            <div className="grid grid-cols-2" style={{ gap: "18px" }}>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "18px" }}>
               <Field label="Username">
                 <input style={inp(!!errors.username)} value={username} placeholder="Username"
                   onChange={e => { setUsername(e.target.value); clearErr("username"); }} />
                 {getError(errors, "username") && <span style={{ color: "#ef4444", fontSize: "11px" }}>{getError(errors, "username")}</span>}
               </Field>
-
-
 
               <Field label="Password">
                 <input type="password" style={inp(!!errors.password)} value={password} placeholder="Password"
@@ -354,36 +406,12 @@ const Form = ({ onSuccess }) => {
             </div>
           </Card>
 
-          <Card title="Contact Information">
-            <div className="grid grid-cols-2" style={{ gap: "18px" }}>
-
-
-
-              <Field label="Phone">
-                <input style={inp(!!errors.phone)} value={phone} placeholder="0XXXXXXXXX (10 digits)" maxLength={10}
-                  onChange={e => { setPhone(e.target.value); clearErr("phone"); }} />
-                {getError(errors, "phone") && <span style={{ color: "#ef4444", fontSize: "11px" }}>{getError(errors, "phone")}</span>}
-              </Field>
-
-
-
-              <Field label="Email">
-                <input style={inp(!!errors.email)} value={email} placeholder="example@gmail.com"
-                  onChange={e => { setEmail(e.target.value); clearErr("email"); }} />
-                {getError(errors, "email") && <span style={{ color: "#ef4444", fontSize: "11px" }}>{getError(errors, "email")}</span>}
-              </Field>
-              <Field label="Address" full>
-                <input style={inp(false)} value={address} placeholder="Street, City, ZIP"
-                  onChange={e => setAddress(e.target.value)} />
-              </Field>
-            </div>
-          </Card>
-
         </div>
       </div>
 
-      {/* Hidden trigger */}
+      {/* Hidden triggers — clicked by the parent page's header buttons */}
       <button id="form-submit-trigger" style={{ display: "none" }} onClick={handleSubmit} disabled={submitting} />
+      <button id="form-reset-trigger" style={{ display: "none" }} onClick={handleReset} />
     </div>
   );
 };

@@ -1,8 +1,8 @@
 import { useEffect, useState } from "react";
-import { useLocation } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
+import { ArrowLeft } from "lucide-react";
 import DashboardLayout from "../../layouts/DashboardLayout";
 import Tabs from "../../components/Tabs";
-import Buttons from "../../components/Buttons";
 import { apiFetch } from "../../services/api";
 
 const F = "Inter, sans-serif";
@@ -20,8 +20,17 @@ const attColors = {
   late    : { bg: "#fef9c3", color: "#854d0e" },
 };
 
+const backBtnStyle = {
+  width: "36px", height: "32px", flexShrink: 0,
+  display: "inline-flex", alignItems: "center", justifyContent: "center",
+  borderRadius: "8px", cursor: "pointer",
+  border: "1px solid #701366", transition: "background 0.15s, color 0.15s",
+  background: "white", color: "#701366",
+};
+
 export default function Attendance_student() {
   const { state } = useLocation();
+  const navigate  = useNavigate();
   const student   = state?.student;
   const studentId = student?.person?.id;
 
@@ -60,7 +69,7 @@ export default function Attendance_student() {
       .finally(() => setAttLoading(false));
   };
 
-  const goBack = () => { setSelectedClass(null); setRecords([]); };
+  const goBackToList = () => { setSelectedClass(null); setRecords([]); };
 
   // Stats
   const total   = records.length;
@@ -73,63 +82,96 @@ export default function Attendance_student() {
   // ── DETAIL VIEW ──────────────────────────────────────────────
   if (selectedClass) return (
     <DashboardLayout>
-      <div className="flex flex-col gap-6">
+      <div style={{ display: "flex", flexDirection: "column", gap: "24px", width: "100%", minWidth: 0, boxSizing: "border-box" }}>
 
-        <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-          <button onClick={goBack}
-            style={{ background: "#f8e0f8", border: "none", borderRadius: "8px", padding: "6px 14px", cursor: "pointer", color: "#701366", fontSize: "16px", fontFamily: F }}>
-            ‹ Back
+        {/* Header */}
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "flex-start", gap: "14px", direction: "ltr" }}>
+          <button
+            onClick={() => navigate("/Students")}
+            style={backBtnStyle}
+            onMouseEnter={e => { e.currentTarget.style.background = "#701366"; e.currentTarget.style.color = "white"; }}
+            onMouseLeave={e => { e.currentTarget.style.background = "white";   e.currentTarget.style.color = "#701366"; }}
+          >
+            <ArrowLeft size={16} />
           </button>
-          <h2 className="text-2xl font-Inter" style={{ color: "#701366", margin: 0 }}>
-            {selectedClass.name} — {student?.person?.first_name} {student?.person?.last_name}
-          </h2>
+          <div>
+            <h1 style={{
+              fontSize: "32px",
+              fontWeight: 700,
+              color: "#701366",
+              margin: 0,
+              letterSpacing: "-0.02em",
+              lineHeight: 1.2,
+            }}>
+              Attendance
+            </h1>
+          </div>
         </div>
 
-        <div className="flex flex-col lg:flex-row gap-6">
+        {/* Tabs */}
+        <div style={{ display: "flex", alignItems: "center", width: "100%", flexShrink: 0, minWidth: 0 }}>
+          <Tabs tabs={studentTabs} />
+        </div>
+
+        {/* In-page back to list */}
+        
+
+        <div style={{ display: "flex", gap: "24px", flexWrap: "wrap" }}>
 
           {/* Table */}
-          <div style={{ flex: 2, background: "white", borderRadius: "16px", boxShadow: "0 1px 4px rgba(0,0,0,.06)", overflow: "hidden" }}>
-            <div style={{ padding: "16px 24px", borderBottom: "1px solid #f0e0ee" }}>
-              <h3 style={{ fontSize: "15px", fontWeight: 500, color: "#701366", fontFamily: F, margin: 0 }}>
-                Attendance Records
-                {total > 0 && <span style={{ marginLeft: "10px", fontSize: "13px", fontWeight: 400, opacity: 0.6 }}>{present}/{total} present ({percent}%)</span>}
-              </h3>
-            </div>
+          <div style={{ flex: 2, minWidth: "320px", background: "white", borderRadius: "16px", boxShadow: "0 1px 4px rgba(0,0,0,.06)", overflow: "hidden" }}>
+            <div style={{ padding: "16px 24px", borderBottom: "1px solid #f0e0ee", display: "flex", alignItems: "center", gap: "10px" }}>
+  <button
+  onClick={goBackToList}
+  style={{
+    background: "none", border: "none", cursor: "pointer",
+    color: "#701366", fontSize: "18px", padding: "0", lineHeight: 1,
+    display: "flex", alignItems: "center",
+  }}
+  aria-label="Back to classes"
+>
+  ‹
+</button>
+  <h3 style={{ fontSize: "15px", fontWeight: 500, color: "#701366", fontFamily: F, margin: 0 }}>
+    Attendance Records
+    {total > 0 && <span style={{ marginLeft: "10px", fontSize: "13px", fontWeight: 400, opacity: 0.6 }}>{present}/{total} present ({percent}%)</span>}
+  </h3>
+</div>
             <table style={{ width: "100%", borderCollapse: "collapse", tableLayout: "fixed" }}>
-              <thead>
-                <tr style={{ background: "#F8E0F8", height: "44px" }}>
-                  <th style={{ ...thStyle, paddingLeft: "24px", width: "40%" }}>Date</th>
-                  <th style={{ ...thStyle, width: "35%" }}>Session</th>
-                  <th style={{ ...thStyle, width: "25%" }}>Status</th>
-                </tr>
-              </thead>
-              <tbody>
-                {attLoading ? (
-                  <tr><td colSpan={3} style={{ textAlign: "center", padding: "24px", color: "#701366", opacity: 0.5 }}>Loading...</td></tr>
-                ) : records.length === 0 ? (
-                  <tr><td colSpan={3} style={{ textAlign: "center", padding: "24px", color: "#701366", opacity: 0.5 }}>No attendance records.</td></tr>
-                ) : records.map((a, idx) => {
-                  const ac = attColors[a.status] ?? { bg: "#f3f4f6", color: "#6b7280" };
-                  return (
-                    <tr key={idx} style={{ height: "46px", borderBottom: "1px solid #f8e0f8" }}
-                      onMouseEnter={e => e.currentTarget.style.background = "#fffafe"}
-                      onMouseLeave={e => e.currentTarget.style.background = "white"}>
-                      <td style={{ ...tdStyle, paddingLeft: "24px" }}>{a.date ?? a.session_date ?? "—"}</td>
-                      <td style={tdStyle}>{a.session ?? a.session_id ?? "—"}</td>
-                      <td style={tdStyle}>
-                        <span style={{ display: "inline-flex", alignItems: "center", gap: "4px", padding: "3px 12px", borderRadius: "9999px", fontSize: "12px", fontFamily: F, fontWeight: 600, background: ac.bg, color: ac.color }}>
-                          ● {a.status}
-                        </span>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
+  <thead>
+    <tr style={{ background: "#F8E0F8", height: "34px" }}>
+      <th style={{ ...thStyle, paddingLeft: "24px", width: "20%" }}>Session</th>
+      <th style={{ ...thStyle, width: "40%" }}>Date</th>
+      <th style={{ ...thStyle, width: "25%" }}>Status</th>
+    </tr>
+  </thead>
+  <tbody>
+    {attLoading ? (
+      <tr><td colSpan={3} style={{ textAlign: "center", padding: "24px", color: "#701366", opacity: 0.5 }}>Loading...</td></tr>
+    ) : records.length === 0 ? (
+      <tr><td colSpan={3} style={{ textAlign: "center", padding: "24px", color: "#701366", opacity: 0.5 }}>No attendance records.</td></tr>
+    ) : records.map((a, idx) => {
+      const ac = attColors[a.status] ?? { bg: "#f3f4f6", color: "#6b7280" };
+      return (
+        <tr key={idx} style={{ height: "46px", borderBottom: "1px solid #f8e0f8" }}
+          onMouseEnter={e => e.currentTarget.style.background = "#fffafe"}
+          onMouseLeave={e => e.currentTarget.style.background = "white"}>
+          <td style={{ ...tdStyle, paddingLeft: "24px" }}>{idx + 1}</td>
+          <td style={tdStyle } >{a.session_date ? a.session_date.split("T")[0] : "—"}</td>
+          <td style={tdStyle}>
+            <span style={{ display: "inline-flex", alignItems: "center", gap: "4px", padding: "3px 12px", borderRadius: "9999px", fontSize: "12px", fontFamily: F, fontWeight: 600, background: ac.bg, color: ac.color , textalign: "center"}}>
+               {a.status}
+            </span>
+          </td>
+        </tr>
+      );
+    })}
+  </tbody>
+</table>
           </div>
 
           {/* Donut */}
-          <div style={{ flex: 1, background: "white", borderRadius: "16px", boxShadow: "0 1px 4px rgba(0,0,0,.06)", padding: "28px", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}>
+          <div style={{ flex: 1, minWidth: "260px", background: "white", borderRadius: "16px", boxShadow: "0 1px 4px rgba(0,0,0,.06)", padding: "28px", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}>
             <h3 style={{ color: "#701366", fontFamily: F, fontSize: "16px", marginBottom: "16px" }}>Attendance Rate</h3>
             <div style={{ display: "flex", gap: "16px", fontSize: "12px", marginBottom: "16px" }}>
               {[["#fde68a","Absent"],["#701366","Present"]].map(([bg,label]) => (
@@ -167,15 +209,39 @@ export default function Attendance_student() {
   // ── LIST VIEW ─────────────────────────────────────────────────
   return (
     <DashboardLayout>
-      <div className="flex flex-col gap-6">
-        <h2 className="text-2xl font-Inter" style={{ color: "#701366" }}>
-          Attendance — {student?.person?.first_name} {student?.person?.last_name}
-        </h2>
-        <div className="flex items-center justify-between gap-4 flex-wrap">
-          <Tabs tabs={studentTabs} />
-          <Buttons cancelPath="/Students" showSave={false} />
+      <div style={{ display: "flex", flexDirection: "column", gap: "24px", width: "100%", minWidth: 0, boxSizing: "border-box" }}>
+
+        {/* Header */}
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "flex-start", gap: "14px", direction: "ltr" }}>
+          <button
+            onClick={() => navigate("/Students")}
+            style={backBtnStyle}
+            onMouseEnter={e => { e.currentTarget.style.background = "#701366"; e.currentTarget.style.color = "white"; }}
+            onMouseLeave={e => { e.currentTarget.style.background = "white";   e.currentTarget.style.color = "#701366"; }}
+          >
+            <ArrowLeft size={16} />
+          </button>
+          <div>
+            <h1 style={{
+              fontSize: "32px",
+              fontWeight: 700,
+              color: "#701366",
+              margin: 0,
+              letterSpacing: "-0.02em",
+              lineHeight: 1.2,
+            }}>
+              Classes
+            </h1>
+          </div>
         </div>
-        <div style={{ width: "100%", background: "white", borderRadius: "16px", boxShadow: "0 1px 4px rgba(0,0,0,.06)", overflow: "hidden" }}>
+
+        {/* Tabs */}
+        <div style={{ display: "flex", alignItems: "center", width: "100%", flexShrink: 0, minWidth: 0 }}>
+          <Tabs tabs={studentTabs} />
+        </div>
+
+        {/* Table */}
+        <div style={{ width: "100%", background: "white", borderRadius: "16px", boxShadow: "0 1px 4px rgba(0,0,0,.06)", overflow: "hidden", boxSizing: "border-box" }}>
           <table style={{ width: "100%", borderCollapse: "collapse", tableLayout: "fixed" }}>
             <thead>
               <tr style={{ background: "#F8E0F8", height: "48px" }}>

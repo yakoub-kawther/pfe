@@ -1,12 +1,11 @@
-// import { useState, useEffect } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
+import { ArrowLeft } from "lucide-react";
 import DashboardLayout from "../../layouts/DashboardLayout";
-import Buttons from "../../components/Buttons";
-// import { apiFetch } from "../../services/api";
+import Tabs from "../../components/Tabs";
 
 const ReadField = ({ label, value, full = false }) => (
-  <div className="flex flex-col gap-1.5" style={full ? { gridColumn: "1 / -1" } : {}}>
-    {label ? <label className="text-[13px] text-gray-500 font-Inter">{label}</label> : null}
+  <div style={{ display: "flex", flexDirection: "column", gap: "6px", ...(full ? { gridColumn: "1 / -1" } : {}), minWidth: 0 }}>
+    {label ? <label style={{ fontSize: "13px", color: "#6b7280", fontFamily: "Inter, sans-serif" }}>{label}</label> : null}
     <div style={{
       width: "100%", border: "1px solid #e2d0e2", borderRadius: "8px",
       padding: "10px 14px", fontSize: "14px", color: "#701366",
@@ -19,122 +18,124 @@ const ReadField = ({ label, value, full = false }) => (
 );
 
 const Card = ({ title, children }) => (
-  <div
-    className="bg-white rounded-2xl border border-gray-100 min-w-0"
-    style={{ padding: "24px 28px", boxShadow: "0 1px 6px rgba(0,0,0,0.05)" }}
-  >
-    <h3 className="text-[#701366] font-Inter" style={{ fontSize: "16px", marginBottom: "20px" }}>
-      {title}
-    </h3>
+  <div style={{ background: "white", borderRadius: "16px", border: "1px solid #f3f4f6", padding: "24px 28px", boxShadow: "0 1px 6px rgba(0,0,0,0.05)", boxSizing: "border-box", width: "100%", minWidth: 0 }}>
+    <h3 style={{ fontSize: "19px", fontWeight: 700, color: "#701366", fontFamily: "Inter, sans-serif", marginBottom: "20px", margin: "0 0 20px 0" }}>{title}</h3>
     {children}
   </div>
 );
 
-// ─── Improved Status Badge ────────────────────────────────────
-const StatusBadge = ({ status }) => {
-  const map = {
-    active:   { bg: "#dcfce7", color: "#15803d", dot: "#16a34a", label: "Active"   },
-    inactive: { bg: "#fee2e2", color: "#dc2626", dot: "#ef4444", label: "Inactive" },
-  };
-  const s = map[status?.toLowerCase()] ?? map.inactive;
-  return (
-    <span style={{
-      display: "inline-flex", alignItems: "center", gap: "6px",
-      padding: "4px 14px", borderRadius: "9999px", fontSize: "12px",
-      fontWeight: 600, fontFamily: "Inter, sans-serif",
-      background: s.bg, color: s.color,
-    }}>
-      <span style={{ width: "7px", height: "7px", borderRadius: "50%", background: s.dot, flexShrink: 0 }} />
-      {s.label}
-    </span>
-  );
+const statusStyle = (status) => ({
+  padding: "4px 10px",
+  borderRadius: "999px",
+  fontSize: "12px",
+  fontWeight: 600,
+  display: "inline-block",
+  background: status === "active" ? "#e6f7ec" : "#fdecea",
+  color: status === "active" ? "#1a7f4b" : "#c92c2c",
+  textTransform: "capitalize",
+});
+
+const backBtnStyle = {
+  width: "36px", height: "32px", flexShrink: 0,
+  display: "inline-flex", alignItems: "center", justifyContent: "center",
+  borderRadius: "8px", cursor: "pointer",
+  border: "1px solid #701366", transition: "background 0.15s, color 0.15s",
+  background: "white", color: "#701366",
 };
 
-export default function Employee_profile() {
+const Employee_profile = () => {
   const { state } = useLocation();
   const navigate  = useNavigate();
   const employee  = state?.employee;
 
+  // ─── Extract nested fields ────────────────────────────────
   const person   = employee?.person   ?? {};
   const position = employee?.position ?? {};
-  const firstName = person.first_name ?? "—";
-  const lastName  = person.last_name  ?? "—";
-  const fullName  = `${firstName} ${lastName}`.trim();
-  const status    = employee?.status  ?? "inactive";
-  const account = employee?.account ?? null; 
+  const account  = employee?.account  ?? null;
+  const fullName = `${person.first_name ?? ""} ${person.last_name ?? ""}`.trim();
+  const status   = (employee?.status ?? "").toLowerCase();
+  const gender = person.gender
+    ? person.gender.charAt(0).toUpperCase() + person.gender.slice(1)
+    : "—";
 
-console.log("employee:", JSON.stringify(employee).slice(0, 500));
+  const employeeTabs = [
+    { name: "Profile", path: "/Employee_profile", state: { employee } },
+    { name: "Payment", path: "/Employee_payment", state: { employee } },
+  ];
 
   return (
     <DashboardLayout>
-      <div className="w-full mx-auto pb-10" style={{ padding: "30px clamp(12px, 2vw, 32px)" }}>
+      <div style={{ display: "flex", flexDirection: "column", gap: "24px", width: "100%", minWidth: 0, boxSizing: "border-box" }}>
 
         {/* Header */}
-        <div className="flex items-center justify-between mb-8">
-          <h1 className="text-2xl text-[#701366] font-Inter">Employee Profile</h1>
-          <Buttons
-            cancelPath="/Employees"
-            onEdit={() => navigate("/Edit_employee", { state: { employee } })}
-          />
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "flex-start", gap: "14px", direction: "ltr" }}>
+          <button
+            onClick={() => navigate("/Employees")}
+            style={backBtnStyle}
+            onMouseEnter={e => { e.currentTarget.style.background = "#701366"; e.currentTarget.style.color = "white"; }}
+            onMouseLeave={e => { e.currentTarget.style.background = "white";   e.currentTarget.style.color = "#701366"; }}
+          >
+            <ArrowLeft size={16} />
+          </button>
+          <div>
+            <h1 style={{
+              fontSize: "32px",
+              fontWeight: 700,
+              color: "#701366",
+              margin: 0,
+              letterSpacing: "-0.02em",
+              lineHeight: 1.2,
+            }}>
+              Employee Profile
+            </h1>
+          </div>
         </div>
 
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(340px, 1fr))", gap: "24px", alignItems: "start", marginTop: "30px" }}>
+        {/* Tabs */}
+        <div style={{ display: "flex", alignItems: "center", width: "100%", flexShrink: 0, minWidth: 0 }}>
+          <Tabs tabs={employeeTabs} />
+        </div>
 
-          {/* LEFT — Basic Information */}
-          <Card title="Basic Information">
-            {/* Avatar + name + status */}
-            <div style={{ display: "flex", alignItems: "center", gap: "16px", marginBottom: "24px", padding: "16px", background: "#faf5fa", borderRadius: "12px", border: "1px solid #f0e0f0" }}>
-              <div style={{
-                width: "52px", height: "52px", borderRadius: "50%",
-                background: "linear-gradient(135deg, #f8e0f8, #e8c0e4)",
-                display: "flex", alignItems: "center", justifyContent: "center",
-                color: "#701366", fontWeight: 700, fontSize: "20px",
-                fontFamily: "Inter, sans-serif", flexShrink: 0,
-                boxShadow: "0 2px 8px rgba(112,19,102,0.15)",
-              }}>
-                {firstName.charAt(0).toUpperCase() || "E"}
-              </div>
-              <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-                <p style={{ color: "#701366", fontFamily: "Inter, sans-serif", fontSize: "16px", fontWeight: 600, margin: 0 }}>
-                  {fullName}
+        {/* Cards grid */}
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "24px", alignItems: "start", minWidth: 0 }}>
+
+          {/* LEFT */}
+          <div style={{ display: "flex", flexDirection: "column", gap: "24px", minWidth: 0 }}>
+            <Card title="Personal Information">
+              {/* Name + status */}
+              <div style={{ display: "flex", flexDirection: "column", gap: "8px", marginBottom: "20px" }}>
+                <p style={{ color: "#701366", opacity: 0.75, fontFamily: "Inter, sans-serif", fontSize: "20px", fontWeight: 700, margin: 0 }}>
+                  {fullName || "—"}
                 </p>
-                <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                  <StatusBadge status={status} />
-                  {position.name && (
-                    <span style={{ fontSize: "12px", color: "#9c5094", fontFamily: "Inter, sans-serif", background: "#f8e0f8", padding: "3px 10px", borderRadius: "9999px" }}>
-                      {position.name}
-                    </span>
-                  )}
-                </div>
+                <span style={{ ...statusStyle(status), width: "fit-content" }}>
+                  {status || "—"}
+                </span>
               </div>
-            </div>
 
-            <div className="grid grid-cols-2" style={{ gap: "18px" }}>
-              <ReadField label="First Name" value={firstName} />
-              <ReadField label="Last Name"  value={lastName} />
-              <ReadField label="Gender"     value={person.gender ? person.gender.charAt(0).toUpperCase() + person.gender.slice(1) : null} />
-              <ReadField label="Position"   value={position.name} />
-              <ReadField label="Hire Date"  value={employee?.hire_date} />
-              <ReadField label="End Date"   value={employee?.end_date} />
-            </div>
-          </Card>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "18px" }}>
+                <ReadField label="First Name" value={person.first_name} />
+                <ReadField label="Last Name"  value={person.last_name} />
+                <ReadField label="Gender"     value={gender} />
+                <ReadField label="Position"   value={position.name} />
+                <ReadField label="Hire Date"  value={employee?.hire_date} />
+                <ReadField label="End Date"   value={employee?.end_date} />
+              </div>
+            </Card>
+          </div>
 
           {/* RIGHT */}
-          <div className="flex flex-col min-w-0" style={{ gap: "24px" }}>
-
-            {/* Contact Information */}
+          <div style={{ display: "flex", flexDirection: "column", gap: "24px", minWidth: 0 }}>
             <Card title="Contact Information">
-              <div className="grid grid-cols-2" style={{ gap: "18px" }}>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "18px" }}>
                 <ReadField label="Phone"   value={person.phone} />
                 <ReadField label="Email"   value={person.email} />
                 <ReadField label="Address" value={person.address} full />
               </div>
             </Card>
 
-            {/* Account Details */}
-            <Card title="Login / Account Details">
-             { account ? (
-                <div className="grid grid-cols-2" style={{ gap: "18px" }}>
+            <Card title="Account Information">
+              {account ? (
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "18px" }}>
                   <ReadField label="Username" value={account.username} />
                   <ReadField label="Role"     value={account.role} />
                 </div>
@@ -144,11 +145,12 @@ console.log("employee:", JSON.stringify(employee).slice(0, 500));
                 </div>
               )}
             </Card>
-
           </div>
+
         </div>
       </div>
     </DashboardLayout>
-    
   );
-}
+};
+
+export default Employee_profile;

@@ -2,129 +2,353 @@ import React, { useState, useEffect, useCallback } from "react";
 import DashboardLayout from "../../layouts/DashboardLayout";
 import Tabs from "../../components/Tabs";
 import Searchbar from "../../components/Searchbar";
-import { Loader2 } from "lucide-react";
+import { SquarePen, Loader2, X } from "lucide-react";
 import { apiFetch } from "../../services/api";
+
+const thStyle = {
+  padding   : "12px 16px",
+  fontSize  : "14px",
+  fontWeight: 500,
+  textAlign : "center",
+  whiteSpace: "nowrap",
+  color     : "#701366",
+};
+
+const tdStyle = {
+  padding   : "12px 16px",
+  fontSize  : "14px",
+  color     : "#701366",
+  whiteSpace: "nowrap",
+  textAlign : "center",
+};
+
+const inputStyle = {
+  width: "100%",
+  boxSizing: "border-box",
+  padding: "10px 14px",
+  borderRadius: "8px",
+  border: "1px solid #e2d0e2",
+  outline: "none",
+  fontSize: "14px",
+  color: "#701366",
+  fontFamily: "Inter, sans-serif",
+};
+
+const labelStyle = {
+  fontSize: "13px",
+  color: "#6b7280",
+  fontFamily: "Inter, sans-serif",
+};
+
+function EditClassroomModal({ room, onClose, onSaved }) {
+  const [name, setName]         = useState(room.name ?? room.room_number ?? "");
+  const [capacity, setCapacity] = useState(room.capacity ?? "");
+  const [saving, setSaving]     = useState(false);
+  const [error, setError]       = useState(null);
+
+  const handleSave = async () => {
+    setSaving(true);
+    setError(null);
+    try {
+      const res = await apiFetch(`/academic/classrooms/${room.id}/`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name, capacity: capacity === "" ? null : Number(capacity) }),
+      });
+      if (!res.ok) throw new Error(`Server error: ${res.status}`);
+      const updated = await res.json();
+      onSaved(updated);
+    } catch (err) {
+      setError(err.message || "Failed to save classroom.");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div
+      style={{
+        position: "fixed", inset: 0, background: "rgba(0,0,0,0.35)",
+        display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000,
+      }}
+      onClick={onClose}
+    >
+      <div
+        style={{
+          background: "white", borderRadius: "16px", padding: "28px",
+          width: "380px", maxWidth: "90vw", boxShadow: "0 10px 40px rgba(0,0,0,0.2)",
+          boxSizing: "border-box",
+        }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "20px" }}>
+          <h3 style={{ fontSize: "18px", fontWeight: 700, color: "#701366", margin: 0, fontFamily: "Inter, sans-serif" }}>
+            Edit Classroom
+          </h3>
+          <button
+            onClick={onClose}
+            aria-label="Close"
+            style={{ background: "none", border: "none", color: "#701366", cursor: "pointer", padding: "4px", display: "flex" }}
+          >
+            <X size={18} />
+          </button>
+        </div>
+
+        <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+          <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+            <label style={labelStyle}>Name</label>
+            <input style={inputStyle} value={name} onChange={(e) => setName(e.target.value)} />
+          </div>
+
+          <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+            <label style={labelStyle}>Capacity</label>
+            <input
+              style={inputStyle}
+              type="number"
+              min="0"
+              value={capacity}
+              onChange={(e) => setCapacity(e.target.value)}
+            />
+          </div>
+
+          {error && <div style={{ color: "#dc2626", fontSize: "13px" }}>{error}</div>}
+
+          <div style={{ display: "flex", justifyContent: "flex-end", gap: "10px", marginTop: "8px" }}>
+            <button
+              onClick={onClose}
+              disabled={saving}
+              style={{
+                padding: "9px 18px", borderRadius: "8px", border: "1px solid #701366",
+                background: "white", color: "#701366", fontSize: "13px", fontWeight: 600,
+                cursor: saving ? "default" : "pointer", opacity: saving ? 0.6 : 1,
+              }}
+            >
+              Cancel
+            </button>
+            <button
+              onClick={handleSave}
+              disabled={saving}
+              style={{
+                padding: "9px 18px", borderRadius: "8px", border: "none",
+                background: "#701366", color: "white", fontSize: "13px", fontWeight: 600,
+                cursor: saving ? "default" : "pointer", opacity: saving ? 0.7 : 1,
+                display: "flex", alignItems: "center", gap: "6px",
+              }}
+            >
+              {saving && <Loader2 style={{ width: "14px", height: "14px", animation: "spin 1s linear infinite" }} />}
+              Save
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 export default function Classrooms() {
   const classTabs = [
-    { name: "Classes",    path: "/Classes"    },
+    { name: "Classes", path: "/Classes" },
     { name: "Classrooms", path: "/Classrooms" },
-    { name: "Language",   path: "/Languages"  },
-    { name: "Positions",   path: "/Positions"  },
+    { name: "Language", path: "/Languages" },
+    { name: "Positions", path: "/Positions" },
   ];
 
   const [classrooms, setClassrooms] = useState([]);
-  const [loading,    setLoading]    = useState(false);
-  const [error,      setError]      = useState(null);
-  const [search,     setSearch]     = useState("");
-  const [filter,     setFilter]     = useState("All");
+  const [loading, setLoading]       = useState(false);
+  const [error, setError]           = useState(null);
+  const [search, setSearch]         = useState("");
+  const [editingRoom, setEditingRoom] = useState(null);
 
-  const buildParams = useCallback((searchVal, filterVal) => {
+  const buildParams = useCallback((searchVal) => {
     const params = new URLSearchParams();
-    if (searchVal.trim())                 params.set("search", searchVal.trim());
-    if (filterVal && filterVal !== "All") params.set("status", filterVal);
+    if (searchVal.trim()) params.set("search", searchVal.trim());
     return params.toString();
   }, []);
 
-  const fetchClassrooms = useCallback(async (searchVal, filterVal) => {
-    setLoading(true);
-    setError(null);
-    try {
-      const qs  = buildParams(searchVal, filterVal);
-      const res = await apiFetch(`/academic/classrooms/${qs ? `?${qs}` : ""}`);
-      if (!res.ok) throw new Error(`Server error: ${res.status}`);
-      const data = await res.json();
-      setClassrooms(Array.isArray(data) ? data : (data.results ?? []));
-    } catch (err) {
-      setError(err.message || "Failed to load classrooms.");
-    } finally {
-      setLoading(false);
-    }
-  }, [buildParams]);
+  const fetchClassrooms = useCallback(
+    async (searchVal) => {
+      setLoading(true);
+      setError(null);
+      try {
+        const qs = buildParams(searchVal);
+        const res = await apiFetch(`/academic/classrooms/${qs ? `?${qs}` : ""}`);
+        if (!res.ok) throw new Error(`Server error: ${res.status}`);
+        const data = await res.json();
+        setClassrooms(Array.isArray(data) ? data : data.results ?? []);
+      } catch (err) {
+        setError(err.message || "Failed to load classrooms.");
+      } finally {
+        setLoading(false);
+      }
+    },
+    [buildParams]
+  );
 
   useEffect(() => {
-    const timer = setTimeout(() => fetchClassrooms(search, filter), 300);
+    const timer = setTimeout(() => fetchClassrooms(search), 300);
     return () => clearTimeout(timer);
-  }, [search, filter, fetchClassrooms]);
+  }, [search, fetchClassrooms]);
+
+  const actionBtn = {
+    padding: "6px",
+    borderRadius: "4px",
+    border: "none",
+    background: "none",
+    color: "#701366",
+    cursor: "pointer",
+    transition: "background 0.15s, color 0.15s, transform 0.15s",
+    flexShrink: 0,
+  };
+
+  const actionHover = (e) => {
+    e.currentTarget.style.background = "#701366";
+    e.currentTarget.style.color = "white";
+    e.currentTarget.style.transform = "scale(1.1)";
+  };
+  const actionLeave = (e) => {
+    e.currentTarget.style.background = "none";
+    e.currentTarget.style.color = "#701366";
+    e.currentTarget.style.transform = "scale(1)";
+  };
+
+  const handleSaved = (updated) => {
+    setClassrooms((prev) => prev.map((r) => (r.id === updated.id ? { ...r, ...updated } : r)));
+    setEditingRoom(null);
+  };
 
   return (
     <DashboardLayout>
-      <div className="w-full flex flex-col gap-6 pt-6 px-4 sm:px-6 lg:px-8 xl:px-10 2xl:px-12 pb-10">
-
-        {/* Header */}
-        <h2 className="text-2xl mt-6 text-[#701366]">Classrooms</h2>
+      <div
+        style={{
+          width: "100%",
+          display: "flex",
+          flexDirection: "column",
+          gap: "24px",
+          paddingTop: "0px",
+          boxSizing: "border-box",
+          minWidth: 0,
+        }}
+      >
+        {/* Page Title */}
+        <div style={{ marginBottom: "4px" }}>
+          <h1
+            style={{
+              fontSize: "32px",
+              fontWeight: 700,
+              color: "#701366",
+              margin: 0,
+              letterSpacing: "-0.02em",
+              lineHeight: 1.2,
+            }}
+          >
+            Classrooms
+          </h1>
+          <p style={{ fontSize: "14px", color: "#701366", opacity: 0.55, margin: "4px 0 0" }}>
+            Manage rooms and capacity
+          </p>
+        </div>
 
         {/* Tabs + Search */}
-        <div className="flex items-center justify-between">
+        <section style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: "12px" }}>
           <Tabs tabs={classTabs} />
           <Searchbar
-            placeholder="Search by room or capacity..."
-            filterOptions={["Available", "Occupied"]}
+            placeholder="Search by room..."
             addPath="/Add_classrooms"
             showAdd={true}
             onSearchChange={(val) => setSearch(val)}
-            onFilterChange={(val) => setFilter(val)}
           />
-        </div>
+        </section>
 
-        {/* Table — smaller, centered */}
-        <div className="flex justify-center">
-          <div className="bg-white rounded-2xl shadow-sm overflow-hidden" style={{ width: "100%" }}>
-            <table className="w-full text-sm" style={{ borderCollapse: "collapse" }}>
-              <thead>
-                <tr className="bg-[#F8E0F8] h-12 text-[#701366] text-left">
-                  <th className="py-3 px-8">Room</th>
-                  <th className="py-3 px-8">Capacity</th>
+        {/* Table */}
+        <div
+          style={{
+            width: "100%",
+            background: "white",
+            borderRadius: "16px",
+            boxShadow: "0 1px 4px rgba(0,0,0,0.06)",
+            overflow: "hidden",
+            boxSizing: "border-box",
+          }}
+        >
+          <table style={{ width: "100%", borderCollapse: "collapse", tableLayout: "fixed" }}>
+            <thead>
+              <tr style={{ background: "#F8E0F8", height: "48px" }}>
+                <th style={{ ...thStyle, paddingLeft: "20px", textAlign: "left", width: "25%" }}>ID</th>
+                <th style={{ ...thStyle, textAlign: "left", width: "25%" }}>Name</th>
+                <th style={{ ...thStyle, width: "25%" }}>Capacity</th>
+                <th style={{ ...thStyle, width: "25%" }}>Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              {loading && (
+                <tr>
+                  <td colSpan={4} style={{ textAlign: "center", padding: "32px" }}>
+                    <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "8px", color: "#701366", opacity: 0.6 }}>
+                      <Loader2 style={{ width: "16px", height: "16px", animation: "spin 1s linear infinite" }} />
+                      <span style={{ fontSize: "14px" }}>Loading classrooms...</span>
+                    </div>
+                  </td>
                 </tr>
-              </thead>
-              <tbody className="divide-y divide-[#f8e0f8]">
+              )}
 
-                {/* Loading */}
-                {loading && (
-                  <tr>
-                    <td colSpan={2} className="py-8 text-center">
-                      <div className="flex items-center justify-center gap-2 text-[#701366] opacity-60">
-                        <Loader2 className="w-4 h-4 animate-spin" />
-                        <span className="text-sm">Loading classrooms...</span>
+              {!loading && error && (
+                <tr>
+                  <td colSpan={4} style={{ textAlign: "center", padding: "32px", color: "#dc2626", fontSize: "14px" }}>
+                    {error}
+                  </td>
+                </tr>
+              )}
+
+              {!loading && !error && classrooms.length === 0 && (
+                <tr>
+                  <td colSpan={4} style={{ textAlign: "center", padding: "32px", color: "#701366", opacity: 0.5, fontSize: "14px" }}>
+                    No classrooms found.
+                  </td>
+                </tr>
+              )}
+
+              {!loading &&
+                !error &&
+                classrooms.map((room) => (
+                  <tr
+                    key={room.id}
+                    style={{ height: "48px", borderBottom: "1px solid #f8e0f8", transition: "background 0.1s", cursor: "pointer" }}
+                    onClick={() => setEditingRoom(room)}
+                    onMouseEnter={(e) => (e.currentTarget.style.background = "#fffafe")}
+                    onMouseLeave={(e) => (e.currentTarget.style.background = "white")}
+                  >
+                    <td style={{ ...tdStyle, paddingLeft: "20px", textAlign: "left" }}>{room.id}</td>
+                    <td style={{ ...tdStyle, textAlign: "left" }}>
+                      {room.name || room.room_number || `Room ${room.id}`}
+                    </td>
+                    <td style={tdStyle}>{room.capacity ?? "---"}</td>
+                    <td style={tdStyle}>
+                      <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "8px" }}>
+                        <button
+                          aria-label="Edit"
+                          onClick={(e) => { e.stopPropagation(); setEditingRoom(room); }}
+                          style={actionBtn}
+                          onMouseEnter={actionHover}
+                          onMouseLeave={actionLeave}
+                        >
+                          <SquarePen style={{ width: "16px", height: "16px", flexShrink: 0 }} />
+                        </button>
                       </div>
                     </td>
                   </tr>
-                )}
-
-                {/* Error */}
-                {!loading && error && (
-                  <tr>
-                    <td colSpan={2} className="py-8 text-center text-red-500 text-sm">
-                      {error}
-                    </td>
-                  </tr>
-                )}
-
-                {/* Empty */}
-                {!loading && !error && classrooms.length === 0 && (
-                  <tr>
-                    <td colSpan={2} className="py-8 text-center text-[#701366] opacity-50">
-                      No classrooms found.
-                    </td>
-                  </tr>
-                )}
-
-                {/* Rows */}
-                {!loading && !error && classrooms.map((room) => (
-                  <tr key={room.id} className="hover:bg-[#fffafe] transition h-12">
-                    <td className="py-3 px-8 text-[#701366]">
-                      {room.name || room.room_number || `Room ${room.id}`}
-                    </td>
-                    <td className="py-3 px-8 text-[#701366]">{room.capacity ?? "---"}</td>
-                  </tr>
                 ))}
-
-              </tbody>
-            </table>
-          </div>
+            </tbody>
+          </table>
         </div>
-
       </div>
+
+      {editingRoom && (
+        <EditClassroomModal
+          room={editingRoom}
+          onClose={() => setEditingRoom(null)}
+          onSaved={handleSaved}
+        />
+      )}
     </DashboardLayout>
   );
 }

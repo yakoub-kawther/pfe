@@ -1,15 +1,28 @@
-import { useNavigate } from "react-router-dom";
 import { useState, useEffect, useCallback } from "react";
-import { SquarePen, Plus, Users, Loader2 } from "lucide-react";
+import { SquarePen, Loader2, X } from "lucide-react";
 import DashboardLayout from "../../layouts/DashboardLayout";
-import Tabs from "../../components/Tabs";  // ✅ import Tabs
+import Tabs from "../../components/Tabs";
+import Searchbar from "../../components/Searchbar";
 import { apiFetch } from "../../services/api";
 
 const F = "'Inter', sans-serif";
 const thStyle = { padding: "12px 16px", fontSize: "14px", fontWeight: 500, textAlign: "left", whiteSpace: "nowrap", color: "#701366" };
 const tdStyle = { padding: "12px 16px", fontSize: "14px", color: "#701366", whiteSpace: "nowrap" };
 
-//  moved outside component is fine, but must be used correctly
+const inputStyle = {
+  width: "100%",
+  boxSizing: "border-box",
+  padding: "10px 14px",
+  borderRadius: "8px",
+  border: "1px solid #e2d0e2",
+  outline: "none",
+  fontSize: "14px",
+  color: "#701366",
+  fontFamily: F,
+};
+
+const labelStyle = { fontSize: "13px", color: "#6b7280", fontFamily: F };
+
 const classTabs = [
   { name: "Classes",    path: "/Classes"    },
   { name: "Classrooms", path: "/Classrooms" },
@@ -17,11 +30,105 @@ const classTabs = [
   { name: "Positions",  path: "/Positions"  },
 ];
 
+function EditPositionModal({ position, onClose, onSaved }) {
+  const [name, setName]     = useState(position.name ?? "");
+  const [saving, setSaving] = useState(false);
+  const [error, setError]   = useState(null);
+
+  const handleSave = async () => {
+    setSaving(true);
+    setError(null);
+    try {
+      const res = await apiFetch(`/academic/positions/${position.id}/`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name }),
+      });
+      if (!res.ok) throw new Error(`Server error: ${res.status}`);
+      const updated = await res.json();
+      onSaved(updated);
+    } catch (err) {
+      setError(err.message || "Failed to save position.");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div
+      style={{
+        position: "fixed", inset: 0, background: "rgba(0,0,0,0.35)",
+        display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000,
+      }}
+      onClick={onClose}
+    >
+      <div
+        style={{
+          background: "white", borderRadius: "16px", padding: "28px",
+          width: "380px", maxWidth: "90vw", boxShadow: "0 10px 40px rgba(0,0,0,0.2)",
+          boxSizing: "border-box",
+        }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "20px" }}>
+          <h3 style={{ fontSize: "18px", fontWeight: 700, color: "#701366", margin: 0, fontFamily: F }}>
+            Edit Position
+          </h3>
+          <button
+            onClick={onClose}
+            aria-label="Close"
+            style={{ background: "none", border: "none", color: "#701366", cursor: "pointer", padding: "4px", display: "flex" }}
+          >
+            <X size={18} />
+          </button>
+        </div>
+
+        <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+          <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+            <label style={labelStyle}>Position</label>
+            <input style={inputStyle} value={name} onChange={(e) => setName(e.target.value)} />
+          </div>
+
+          {error && <div style={{ color: "#dc2626", fontSize: "13px" }}>{error}</div>}
+
+          <div style={{ display: "flex", justifyContent: "flex-end", gap: "10px", marginTop: "8px" }}>
+            <button
+              onClick={onClose}
+              disabled={saving}
+              style={{
+                padding: "9px 18px", borderRadius: "8px", border: "1px solid #701366",
+                background: "white", color: "#701366", fontSize: "13px", fontWeight: 600,
+                cursor: saving ? "default" : "pointer", opacity: saving ? 0.6 : 1,
+              }}
+            >
+              Cancel
+            </button>
+            <button
+              onClick={handleSave}
+              disabled={saving}
+              style={{
+                padding: "9px 18px", borderRadius: "8px", border: "none",
+                background: "#701366", color: "white", fontSize: "13px", fontWeight: 600,
+                cursor: saving ? "default" : "pointer", opacity: saving ? 0.7 : 1,
+                display: "flex", alignItems: "center", gap: "6px",
+              }}
+            >
+              {saving && <Loader2 style={{ width: "14px", height: "14px", animation: "spin 1s linear infinite" }} />}
+              Save
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function Positions() {
-  const navigate = useNavigate();
   const [positions,  setPositions]  = useState([]);
   const [employees,  setEmployees]  = useState([]);
   const [posLoading, setPosLoading] = useState(false);
+  const [search,     setSearch]     = useState("");
+  const [editingPosition, setEditingPosition] = useState(null);
 
   const fetchPositions = useCallback(async () => {
     setPosLoading(true);
@@ -53,6 +160,17 @@ export default function Positions() {
   const countFor = (name) => employees.filter(e => (e.position?.name ?? "").toLowerCase() === name.toLowerCase()).length;
   const isActive = (name) => countFor(name) > 0;
 
+  const filteredPositions = positions.filter((pos) => {
+    const q = search.trim().toLowerCase();
+    if (!q) return true;
+    return (pos.name ?? "").toLowerCase().includes(q) || String(pos.id).includes(q);
+  });
+
+  const handleSaved = (updated) => {
+    setPositions((prev) => prev.map((p) => (p.id === updated.id ? { ...p, ...updated } : p)));
+    setEditingPosition(null);
+  };
+
   const LoadingRow = ({ cols }) => (
     <tr>
       <td colSpan={cols} style={{ textAlign: "center", padding: "32px" }}>
@@ -82,54 +200,79 @@ export default function Positions() {
         .pos-primary-btn:hover { background:white;color:#701366;box-shadow:0 4px 16px rgba(112,19,102,.18); }
       `}</style>
 
-      <div style={{ width: "100%", display: "flex", flexDirection: "column", gap: "24px", paddingTop: "6px", boxSizing: "border-box", minWidth: 0, marginTop: "30px" }}>
+      <div style={{ width: "100%", display: "flex", flexDirection: "column", gap: "24px", paddingTop: "0px", boxSizing: "border-box", minWidth: 0 }}>
 
-        {/*  Tabs + Add button on same row */}
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: "12px" }}>
-          <Tabs tabs={classTabs} />
-          <button className="pos-primary-btn" onClick={() => navigate("/Add_position")}>
-            <Plus style={{ width: "16px", height: "16px" }} /> Add Position
-          </button>
+        {/* Page Title */}
+        <div style={{ marginBottom: "4px" }}>
+          <h1 style={{ fontSize: "32px", fontWeight: 700, color: "#701366", margin: 0, letterSpacing: "-0.02em", lineHeight: 1.2 }}>
+            Positions
+          </h1>
+          <p style={{ fontSize: "14px", color: "#701366", opacity: 0.55, margin: "4px 0 0" }}>
+            Manage staff positions and assignments
+          </p>
         </div>
 
-        <div style={{ width: "100%", background: "white", borderRadius: "16px", boxShadow: "0 1px 4px rgba(0,0,0,.06)", overflow: "hidden" }}>
+        {/* Tabs + Search */}
+        <section style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: "12px" }}>
+          <Tabs tabs={classTabs} />
+          <Searchbar
+            placeholder="Search by id or position..."
+            addPath="/Add_position"
+            showAdd={true}
+            onSearchChange={(val) => setSearch(val)}
+          />
+        </section>
+
+        {/* Table */}
+        <div style={{ width: "100%", background: "white", borderRadius: "16px", boxShadow: "0 1px 4px rgba(0,0,0,.06)", overflow: "hidden", boxSizing: "border-box" }}>
           <table style={{ width: "100%", borderCollapse: "collapse", tableLayout: "fixed" }}>
             <thead>
               <tr style={{ background: "#F8E0F8", height: "48px" }}>
-                <th style={{ ...thStyle, paddingLeft: "24px", width: "12%" }}>ID</th>
-                <th style={{ ...thStyle, width: "38%" }}>Position</th>
-                <th style={{ ...thStyle, width: "18%" }}>Employees</th>
-                <th style={{ ...thStyle, width: "18%" }}>Status</th>
-                <th style={{ ...thStyle, width: "14%" }}>Action</th>
+                <th style={{ ...thStyle, paddingLeft: "24px", width: "20%" }}>ID</th>
+                <th style={{ ...thStyle, width: "20%" }}>Position</th>
+                <th style={{ ...thStyle, width: "20%" }}>Employees</th>
+                <th style={{ ...thStyle, width: "20%" }}>Status</th>
+                <th style={{ ...thStyle, width: "20%" }}>Action</th>
               </tr>
             </thead>
             <tbody>
               {posLoading && <LoadingRow cols={5} />}
-              {!posLoading && positions.length === 0 && <EmptyRow cols={5} message="No positions found." />}
-              {!posLoading && positions.map((pos) => {
+              {!posLoading && filteredPositions.length === 0 && <EmptyRow cols={5} message="No positions found." />}
+              {!posLoading && filteredPositions.map((pos) => {
                 const count  = countFor(pos.name);
                 const active = isActive(pos.name);
                 return (
                   <tr
                     key={pos.id}
-                    style={{ height: "50px", borderBottom: "1px solid #f8e0f8", transition: "background .1s", opacity: active ? 1 : 0.65 }}
+                    style={{ height: "48px", borderBottom: "1px solid #f8e0f8", transition: "background .1s", cursor: "pointer" }}
+                    onClick={() => setEditingPosition({ ...pos, active, count })}
                     onMouseEnter={e => e.currentTarget.style.background = "#fffafe"}
                     onMouseLeave={e => e.currentTarget.style.background = "white"}
                   >
-                    <td style={{ ...tdStyle, paddingLeft: "24px", fontWeight: 600, color: "#a050a0" }}>#{pos.id}</td>
+                    <td style={{ ...tdStyle, paddingLeft: "24px", fontWeight: 600, color: "#a050a0" }}>{pos.id}</td>
                     <td style={{ ...tdStyle, fontWeight: 500 }}>{pos.name || "—"}</td>
+                    <td style={{ ...tdStyle, color: "#701366", fontWeight: 600 }}>
+                      {count} {count === 1 ? "employee" : "employees"}
+                    </td>
                     <td style={tdStyle}>
-                      <span style={{ display: "inline-flex", alignItems: "center", gap: "5px", padding: "3px 12px", borderRadius: "9999px", fontSize: "12px", fontFamily: F, fontWeight: 600, background: "#eff6ff", color: "#2563eb" }}>
-                        <Users style={{ width: "11px", height: "11px" }} /> {count}
+                      <span style={{
+                        padding: "4px 10px",
+                        borderRadius: "999px",
+                        fontSize: "12px",
+                        fontWeight: 600,
+                        display: "inline-block",
+                        fontFamily: F,
+                        background: active ? "#e6f7ec" : "#fdecea",
+                        color: active ? "#1a7f4b" : "#c92c2c",
+                      }}>
+                        {active ? "Active" : "Inactive"}
                       </span>
                     </td>
                     <td style={tdStyle}>
-                      <span style={{ display: "inline-flex", alignItems: "center", gap: "4px", padding: "3px 12px", borderRadius: "9999px", fontSize: "12px", fontFamily: F, fontWeight: 600, background: active ? "#dcfce7" : "#fee2e2", color: active ? "#16a34a" : "#dc2626" }}>
-                        ● {active ? "Active" : "Inactive"}
-                      </span>
-                    </td>
-                    <td style={tdStyle}>
-                      <button className="pos-action-btn" onClick={() => navigate("/Edit_position", { state: { position: { ...pos, active, count } } })}>
+                      <button
+                        className="pos-action-btn"
+                        onClick={(e) => { e.stopPropagation(); setEditingPosition({ ...pos, active, count }); }}
+                      >
                         <SquarePen style={{ width: "16px", height: "16px" }} />
                       </button>
                     </td>
@@ -140,6 +283,14 @@ export default function Positions() {
           </table>
         </div>
       </div>
+
+      {editingPosition && (
+        <EditPositionModal
+          position={editingPosition}
+          onClose={() => setEditingPosition(null)}
+          onSaved={handleSaved}
+        />
+      )}
     </DashboardLayout>
   );
 }
