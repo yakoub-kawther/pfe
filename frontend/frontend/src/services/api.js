@@ -1,19 +1,19 @@
 const API_BASE = "http://localhost:8000/api";
 
 // ─── Token helpers ────────────────────────────────────────────
-export const getAccess  = () => localStorage.getItem("access");
-export const getRefresh = () => localStorage.getItem("refresh");
+export const getAccess  = () => sessionStorage.getItem("access");
+export const getRefresh = () => sessionStorage.getItem("refresh");
 
 export const saveTokens = ({ access, refresh, role, full_name }) => {
-  localStorage.setItem("access",    access);
-  localStorage.setItem("refresh",   refresh);
-  localStorage.setItem("role",      role      ?? "");
-  localStorage.setItem("full_name", full_name ?? "");
+  sessionStorage.setItem("access",    access);
+  sessionStorage.setItem("refresh",   refresh);
+  sessionStorage.setItem("role",      role      ?? "");
+  sessionStorage.setItem("full_name", full_name ?? "");
 };
 
 export const clearTokens = () => {
   ["access", "refresh", "role", "full_name"].forEach((k) =>
-    localStorage.removeItem(k)
+    sessionStorage.removeItem(k)
   );
 };
 
@@ -35,7 +35,7 @@ async function refreshAccessToken() {
   }
 
   const data = await res.json();
-  localStorage.setItem("access", data.access);
+  sessionStorage.setItem("access", data.access);
   return data.access;
 }
 

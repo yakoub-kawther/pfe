@@ -80,7 +80,10 @@ class NotificationCreateSerializer(serializers.Serializer):
         send_to_all_teachers,
      )
 
+
      sender = self.context['request'].user
+    #  print(">>> SENDER AT CREATE:", sender.id, sender.username, sender.role)
+    #  print(">>> AUTH HEADER:", self.context['request'].headers.get('Authorization'))
      target = validated_data['target']
      notification_type = validated_data['notification_type']
      title = validated_data['title']

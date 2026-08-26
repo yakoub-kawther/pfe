@@ -163,6 +163,7 @@ class StudentSerializer(serializers.ModelSerializer):
     username                = serializers.SerializerMethodField()
     languages_count         = serializers.SerializerMethodField()
     attendance_percentage   = serializers.SerializerMethodField()
+    last_inscription         = serializers.SerializerMethodField()
 
     class Meta:
         model  = Student
@@ -170,7 +171,7 @@ class StudentSerializer(serializers.ModelSerializer):
             'person', 'date_of_birth', 'special_case',
             'parent_id', 'parent_name', 'parent_phone', 'parent_relationship',
             'class_name', 'username',
-            'languages_count', 'attendance_percentage',
+            'languages_count', 'attendance_percentage', 'last_inscription',
         ]
 
     def get_parent_name(self, obj):
@@ -224,6 +225,18 @@ class StudentSerializer(serializers.ModelSerializer):
             return 0
 
         return round((stats['present'] / stats['total']) * 100, 1)
+
+
+    def get_last_inscription(self, obj):
+        from apps.inscription.models import Inscription
+        insc = Inscription.objects.filter(student=obj).select_related('enrolled_class').order_by('-inscription_date').first()
+        if not insc:
+            return None
+        return {
+            'status': insc.status,
+            'class_id': insc.enrolled_class_id,
+            'class_name': insc.enrolled_class.name,
+        }
     
 
 class ParentSerializer(serializers.ModelSerializer):
@@ -266,7 +279,7 @@ class TeacherSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Teacher
-        fields = ['employee', 'qualifications', 'language', 'is_head_teacher', 'account']
+        fields = [ 'employee', 'qualifications', 'language', 'is_head_teacher', 'account']
 
 class EmployeeWithoutTeacherListView(generics.ListAPIView):
     serializer_class = EmployeeSerializer

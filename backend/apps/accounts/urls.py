@@ -6,9 +6,11 @@ from .views import (
     LogoutView,
     RefreshView,
     ResetPasswordView,
-    AccountDetailView , 
-    CreateAccountView ,
-    ToggleAccountStatusView
+    AccountDetailView,
+    AccountListView,
+    CreateAccountView,
+    ToggleAccountStatusView , 
+    AdminPasswordResetView
 )
 
 urlpatterns = [
@@ -17,7 +19,8 @@ urlpatterns = [
     path('refresh/',        RefreshView.as_view(),        name='refresh'),
     path('reset-password/', ResetPasswordView.as_view(),  name='reset-password'),
     path('me/',             AccountDetailView.as_view(),  name='me'),
+    path('accounts/',       AccountListView.as_view(),    name='account-list'),
     path('create-account/', CreateAccountView.as_view(),  name='create-account'),
     path('<int:account_id>/toggle-status/', ToggleAccountStatusView.as_view(), name='toggle-account-status'),
-
+    path('accounts/<int:account_id>/admin-reset-password/', AdminPasswordResetView.as_view()),
 ]

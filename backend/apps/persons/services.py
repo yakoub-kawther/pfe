@@ -77,6 +77,7 @@ from apps.accounts.services import create_account
 POSITION_ROLE_MAP = {
     'secretary': 'admin',
     'manager':   'superadmin',
+    'teacher':   'teacher',
 }
 
 @transaction.atomic

@@ -135,3 +135,21 @@ def _set_status(account_id: int, new_status: str) -> Account:
     account.status = new_status
     account.save(update_fields=['status'])
     return account
+
+
+def admin_reset_password(account_id: int, new_password: str) -> None:
+    """
+    Reset a user's password without knowing the old one.
+    Caller must be authorized (e.g. superadmin/admin) — enforced at the view level,
+    not here.
+    """
+    try:
+        account = Account.objects.get(pk=account_id)
+    except Account.DoesNotExist:
+        raise ValueError("Account not found.")
+
+    if check_password(new_password, account.password_hash):
+        raise ValueError("New password must differ from the current password.")
+
+    account.password_hash = make_password(new_password)
+    account.save(update_fields=['password_hash'])

@@ -60,6 +60,10 @@ const Edit_teacher = () => {
   // Extract nested data from teacher object
   const person   = teacher?.employee?.person   ?? {};
   const employee = teacher?.employee           ?? {};
+
+  // Teacher, Employee, and Person share the same primary key value
+  // (stacked OneToOneField(primary_key=True) chain), so person_id is
+  // exactly what the backend's Teacher.objects.filter(pk=pk) expects.
   const person_id = employee.person_id;
 
   const [gender,       setGender]       = useState(
@@ -130,6 +134,10 @@ const Edit_teacher = () => {
           is_head_teacher : headTeacher,
           qualifications  : form.qualifications || null,
           status          : form.status.toLowerCase(),
+          // Only send account fields if the admin actually typed something,
+          // so leaving them blank never overwrites the existing username/password.
+          ...(form.username && { username: form.username }),
+          ...(form.password && { password: form.password }),
         },
       });
 
@@ -142,6 +150,8 @@ const Edit_teacher = () => {
         if (errData.email)            mapped.email       = errData.email;
         if (errData.hire_date)        mapped.hire_date   = errData.hire_date;
         if (errData.language_id)      mapped.language_id = errData.language_id;
+        if (errData.username)         mapped.username    = errData.username;
+        if (errData.password)         mapped.password    = errData.password;
         if (errData.detail)           mapped.error       = errData.detail;
         if (errData.error)            mapped.error       = errData.error;
         if (errData.non_field_errors) mapped.error       = errData.non_field_errors[0];
@@ -323,10 +333,12 @@ const Edit_teacher = () => {
             <Card title="Account Information">
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "18px" }}>
                 <Field label="Username">
-                  <input style={inp(false)} value={form.username} onChange={handle("username")} placeholder="New Username" />
+                  <input style={inp(!!errors.username)} value={form.username} onChange={handle("username")} placeholder="New Username" />
+                  {getError(errors, "username") && <span style={{ color: "#ef4444", fontSize: "11px" }}>{getError(errors, "username")}</span>}
                 </Field>
                 <Field label="Password">
-                  <input type="password" style={inp(false)} value={form.password} onChange={handle("password")} placeholder="New Password" />
+                  <input type="password" style={inp(!!errors.password)} value={form.password} onChange={handle("password")} placeholder="New Password" />
+                  {getError(errors, "password") && <span style={{ color: "#ef4444", fontSize: "11px" }}>{getError(errors, "password")}</span>}
                 </Field>
               </div>
             </Card>

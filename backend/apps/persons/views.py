@@ -1,18 +1,11 @@
-
-from django.shortcuts import render
-
-# Create your views here.
-
-# apps/persons/views.py
-
 from rest_framework import viewsets, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from django.core.exceptions import ValidationError
 from rest_framework.permissions import AllowAny
+from django.db.models import OuterRef, Subquery, Q
 
 from .models import Student, Parent, Employee, Teacher
-#from apps.academic.models import Position
 from .serializers import (
     StudentSerializer, StudentCreateSerializer,
     ParentSerializer, ParentCreateSerializer,
@@ -21,25 +14,57 @@ from .serializers import (
 )
 
 from .services import (
-    
     deactivate_employee,
     promote_to_head_teacher,
     demote_from_head_teacher
 )
 
+from apps.inscription.models import Inscription
+
 
 class StudentViewSet(viewsets.ViewSet):
     permission_classes = [AllowAny]
+
+    def _students_with_latest_inscription(self):
+        latest = Inscription.objects.filter(
+            student=OuterRef('pk')
+        ).order_by('-inscription_date')
+
+        return Student.objects.select_related(
+            'person', 'parent__person'
+        ).annotate(
+            latest_status=Subquery(latest.values('status')[:1]),
+            latest_class_name=Subquery(latest.values('enrolled_class__name')[:1]),
+        )
+
     def list(self, request):
-       students = Student.objects.select_related('person', 'parent__person').all()
-       serializer = StudentSerializer(students, many=True)
-       return Response(serializer.data)
+        students = Student.objects.select_related('person', 'parent__person').all()
+        serializer = StudentSerializer(students, many=True)
+        return Response(serializer.data)
 
     def retrieve(self, request, pk=None):
-      student = Student.objects.select_related('person', 'parent__person').filter(pk=pk).first()
-      if not student:
-        return Response({'error': 'Student not found'}, status=status.HTTP_404_NOT_FOUND)
-      return Response(StudentSerializer(student).data)
+        student = Student.objects.select_related('person', 'parent__person').filter(pk=pk).first()
+        if not student:
+            return Response({'error': 'Student not found'}, status=status.HTTP_404_NOT_FOUND)
+        return Response(StudentSerializer(student).data)
+
+    # ── Never enrolled, or their latest inscription was cancelled ──
+    @action(detail=False, methods=['get'], url_path='waitlisted')
+    def waitlisted(self, request):
+        students = self._students_with_latest_inscription().filter(
+            Q(latest_status__isnull=True) | Q(latest_status=Inscription.STATUS_CANCELLED)
+        )
+        serializer = StudentSerializer(students, many=True)
+        return Response(serializer.data)
+
+    # ── Promoted or repeated, awaiting placement into a new class ──
+    @action(detail=False, methods=['get'], url_path='needs-placement')
+    def needs_placement(self, request):
+        students = self._students_with_latest_inscription().filter(
+            latest_status__in=[Inscription.STATUS_PROMOTED, Inscription.STATUS_REPEATED]
+        )
+        serializer = StudentSerializer(students, many=True)
+        return Response(serializer.data)
 
     def create(self, request):
         serializer = StudentCreateSerializer(data=request.data)
@@ -53,7 +78,6 @@ class StudentViewSet(viewsets.ViewSet):
             serializer.errors,
             status=status.HTTP_400_BAD_REQUEST
         )
-    
 
     def update(self, request, pk=None):
         student = Student.objects.select_related('person').filter(pk=pk).first()
@@ -63,9 +87,9 @@ class StudentViewSet(viewsets.ViewSet):
                 status=status.HTTP_404_NOT_FOUND
             )
         serializer = StudentCreateSerializer(
-            student, #existing obj
-            data=request.data, # new data 
-            partial=True  # update only some fields
+            student,
+            data=request.data,
+            partial=True
         )
         if serializer.is_valid(raise_exception=True):
             serializer.save()
@@ -75,7 +99,7 @@ class StudentViewSet(viewsets.ViewSet):
             status=status.HTTP_400_BAD_REQUEST
         )
 
-    
+  
 
 
 

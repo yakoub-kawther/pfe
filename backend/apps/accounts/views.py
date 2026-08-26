@@ -2,7 +2,7 @@
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
-from rest_framework.permissions import AllowAny, IsAuthenticated
+from rest_framework.permissions import AllowAny, IsAuthenticated 
 from rest_framework_simplejwt.tokens import RefreshToken
 
 from .serializers import (
@@ -10,10 +10,11 @@ from .serializers import (
     AccountSerializer,
     PasswordResetSerializer,
     TokenSerializer,
+    AdminPasswordResetSerializer ,
 )
 from . import services
 
-
+from .permissions import IsAdminOrSuperAdmin # your existing role-check permission
 # takes user acc and create JWT token
 
 def _build_tokens(account) -> dict:
@@ -193,3 +194,32 @@ class ToggleAccountStatusView(APIView):
             "detail": f"Account {account.status}d successfully.",
             "status": account.status
         }, status=status.HTTP_200_OK)
+
+
+
+class AccountListView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        from .models import Account
+        accounts = Account.objects.select_related(
+            'role', 'student__person', 'employee__person'
+        ).all()
+        serializer = AccountSerializer(accounts, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+class AdminPasswordResetView(APIView):
+    permission_classes = [IsAdminOrSuperAdmin]
+
+    def post(self, request, account_id):
+        serializer = AdminPasswordResetSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        new_password = serializer.validated_data['new_password']
+
+        try:
+            services.admin_reset_password(account_id, new_password)
+        except ValueError as exc:
+            return Response({"detail": str(exc)}, status=status.HTTP_400_BAD_REQUEST)
+
+        return Response({"detail": "Password reset successfully."}, status=status.HTTP_200_OK)

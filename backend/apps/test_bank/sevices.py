@@ -5,6 +5,27 @@ from .models import Note
 PASS_MARK = 50.0
 
 
+def _apply_result_to_inscription(inscription_id: int) -> None:
+    """Recalculate promoted/repeated on the inscription from its current notes."""
+    inscription = Inscription.objects.filter(pk=inscription_id).first()
+    if not inscription:
+        return
+
+    # A cancelled inscription shouldn't be revived by a mark entry.
+    if inscription.status == Inscription.STATUS_CANCELLED:
+        return
+
+    result = calculate_final_result(inscription_id)
+    if result['final_mark'] is None:
+        return  # written mark not entered yet — nothing to decide
+
+    inscription.status = (
+        Inscription.STATUS_PROMOTED if result['is_passed']
+        else Inscription.STATUS_REPEATED
+    )
+    inscription.save(update_fields=['status'])
+
+
 def create_note(inscription_id: int, component: str, mark: float) -> Note:
     inscription = get_object_or_404(Inscription, pk=inscription_id)
 
@@ -17,12 +38,14 @@ def create_note(inscription_id: int, component: str, mark: float) -> Note:
     if not (0 <= mark <= 100):
         raise ValueError("Mark must be between 0 and 100.")
 
-    return Note.objects.create(
+    note = Note.objects.create(
         inscription=inscription,
         component=component,
         mark=mark,
         is_passed=mark >= PASS_MARK,
     )
+    _apply_result_to_inscription(inscription_id)
+    return note
 
 
 def update_note(note_id: int, mark: float) -> Note:
@@ -35,6 +58,7 @@ def update_note(note_id: int, mark: float) -> Note:
     note.is_passed = mark >= PASS_MARK
     note.save(update_fields=['mark', 'is_passed'])
 
+    _apply_result_to_inscription(note.inscription_id)
     return note
 
 
@@ -58,7 +82,6 @@ def get_class_notes(class_id: int):
 
 def get_note_by_inscription(inscription_id: int) -> Note:
     return get_object_or_404(Note, inscription_id=inscription_id)
-
 
 
 def calculate_final_result(inscription_id: int) -> dict:
