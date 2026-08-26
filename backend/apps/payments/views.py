@@ -21,6 +21,8 @@ from apps.payments.exceptions import (
     InvalidPaymentStatusError,
     InscriptionNotFoundError,
 )
+from apps.notifications.models import Notification
+from apps.notifications import services as notif_services
 
 
 class PaymentsPagination(PageNumberPagination):
@@ -37,6 +39,7 @@ class PaymentViewSet(viewsets.ViewSet):
     PATCH  /api/payments/<pk>/                    -> partial_update
     PATCH  /api/payments/<pk>/confirm/             -> confirm
     PATCH  /api/payments/<pk>/cancel/              -> cancel
+    POST   /api/payments/<pk>/notify/              -> notify
     GET    /api/payments/pending/                  -> pending
     GET    /api/payments/student/<student_id>/     -> student_payments
     GET    /api/payments/inscription/<inscription_id>/ -> by_inscription
@@ -153,6 +156,44 @@ class PaymentViewSet(viewsets.ViewSet):
             return Response({'detail': str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
         return Response({'detail': f'Payment {pk} cancelled successfully.'}, status=status.HTTP_200_OK)
+
+    @action(detail=True, methods=['post'])
+    def notify(self, request, pk=None):
+        try:
+            payment = Payment.objects.select_related(
+                'inscription__student',
+                'inscription__student__person',
+                'inscription__enrolled_class',
+            ).get(id=pk)
+        except Payment.DoesNotExist:
+            return Response({'detail': f'Payment with id={pk} not found.'}, status=status.HTTP_404_NOT_FOUND)
+
+        # Account.student is a OneToOneField(Student), so the reverse accessor
+        # off a Student instance is `.account` (no related_name set on the FK).
+        account = getattr(payment.inscription.student, 'account', None)
+        if not account:
+            return Response(
+                {'detail': 'This student has no account to notify.'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        title = request.data.get('title') or 'Payment Reminder'
+        body = request.data.get('body') or ''
+        if not body:
+            return Response({'detail': 'body is required.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        notification_type = request.data.get('notification_type', Notification.Type.PAYMENT_REMINDER)
+        if notification_type not in Notification.Type.values:
+            notification_type = Notification.Type.PAYMENT_REMINDER
+
+        notif_services.send_notification(
+            sender=request.user,
+            receivers=[account],
+            notification_type=notification_type,
+            title=title,
+            body=body,
+        )
+        return Response(status=status.HTTP_201_CREATED)
 
     @action(detail=False, methods=['get'])
     def pending(self, request):

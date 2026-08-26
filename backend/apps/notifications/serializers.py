@@ -101,3 +101,28 @@ class NotificationCreateSerializer(serializers.Serializer):
 
      elif target == 'all_teachers':
         return send_to_all_teachers(sender, notification_type, title, body)
+
+
+
+class SentReceiverSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Account
+        fields = ['id', 'username']
+
+
+class SentNotificationSerializer(serializers.ModelSerializer):
+    receivers = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Notification
+        fields = ['id', 'type', 'title', 'body', 'sent_at', 'receivers']
+
+    def get_receivers(self, obj):
+        return [
+            {
+                'id': nr.receiver.id,
+                'username': nr.receiver.username,
+                'is_read': nr.is_read,
+            }
+            for nr in obj.notificationreceiver_set.all()
+        ]

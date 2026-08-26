@@ -8,6 +8,14 @@ from .models import Notification, NotificationReceiver
 # Core
 # ─────────────────────────────────────────
 
+from django.utils import timezone
+from django.db import transaction
+from channels.layers import get_channel_layer
+from asgiref.sync import async_to_sync
+from apps.accounts.models import Account
+from .models import Notification, NotificationReceiver
+
+
 @transaction.atomic
 def send_notification(sender, receivers: list, notification_type: str, title: str, body: str) -> Notification:
     receivers = list(set(receivers))
@@ -29,12 +37,28 @@ def send_notification(sender, receivers: list, notification_type: str, title: st
         batch_size=1000
     )
 
+    transaction.on_commit(lambda: _push_notification(notification, receivers, sender))
+
     return notification
 
 
-# ─────────────────────────────────────────
-# Sending helpers
-# ─────────────────────────────────────────
+def _push_notification(notification, receivers, sender):
+    channel_layer = get_channel_layer()
+    payload = {
+        "notification_id": notification.id,
+        "type": notification.type,
+        "title": notification.title,
+        "body": notification.body,
+        "sender": sender.username,
+        "sent_at": notification.sent_at.isoformat(),
+    }
+    for receiver in receivers:
+        async_to_sync(channel_layer.group_send)(
+            f"user_{receiver.id}",
+            {"type": "notify", "data": payload},
+        )
+
+
 
 def send_to_class(sender, class_id: int, notification_type: str, title: str, body: str) -> Notification:
     """Send to all students in a class."""
@@ -62,9 +86,6 @@ def send_to_all_teachers(sender, notification_type: str, title: str, body: str) 
     return send_notification(sender, receivers, notification_type, title, body)
 
 
-# ─────────────────────────────────────────
-# Read management
-# ─────────────────────────────────────────
 
 def mark_as_read(notification_receiver_id: int) -> NotificationReceiver:
     nr = NotificationReceiver.objects.get(id=notification_receiver_id)
@@ -87,9 +108,7 @@ def mark_all_as_read(account_id: int) -> int:
     return updated
 
 
-# ─────────────────────────────────────────
-# Queries
-# ─────────────────────────────────────────
+
 
 def get_my_notifications(account_id: int):
     return (
@@ -100,9 +119,7 @@ def get_my_notifications(account_id: int):
     )
 
 
-# ─────────────────────────────────────────
-# Automatic triggers
-# ─────────────────────────────────────────
+
 
 def auto_absence_alert(student_id: int) -> Notification | None:
     student_account = Account.objects.filter(student__person_id=student_id).first()
@@ -135,4 +152,13 @@ def auto_absence_alert(student_id: int) -> Notification | None:
             "you have exceeded the allowed number of absences. "
             "Please contact your supervisor."
         ),
+    )
+
+
+def get_my_sent_notifications(account_id: int):
+    return (
+        Notification.objects
+        .filter(sender_id=account_id)
+        .prefetch_related('notificationreceiver_set__receiver')
+        .order_by('-sent_at')
     )

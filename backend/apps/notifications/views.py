@@ -5,11 +5,13 @@ from rest_framework.viewsets import GenericViewSet
 from rest_framework.permissions import IsAuthenticated
 
 from .models import NotificationReceiver
-from .serializers import NotificationSerializer, NotificationCreateSerializer
+from .serializers import NotificationSerializer, NotificationCreateSerializer , SentNotificationSerializer
 from .services import (
     mark_as_read,
     mark_all_as_read,
     get_my_notifications,
+    
+    get_my_sent_notifications,
 )
 from apps.accounts.permissions import IsNotStudent # adjust to your permission class
 
@@ -65,3 +67,10 @@ class NotificationViewSet(GenericViewSet):
     def read_all(self, request):
         count = mark_all_as_read(request.user.id)
         return Response({"detail": f"{count} notifications marked as read."})
+
+
+    @action(detail=False, methods=['get'], url_path='sent')
+    def sent(self, request):
+      qs = get_my_sent_notifications(request.user.id)
+      serializer = SentNotificationSerializer(qs, many=True)
+      return Response(serializer.data)

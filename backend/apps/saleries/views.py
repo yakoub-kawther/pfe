@@ -9,6 +9,8 @@ from django.shortcuts import get_object_or_404
 from .models import Salary
 from .serializers import SalarySerializer, SalaryUpdateSerializer, SalaryCreateSerializer
 from apps.persons.models import Employee , Teacher
+from apps.notifications.models import Notification
+from apps.notifications import services as notif_services
 
 
 def apply_salary_changes(salary, validated_data):
@@ -132,6 +134,40 @@ class SalaryMarkPaidView(APIView):
             {"message": "Salary marked as paid.", "data": SalarySerializer(salary).data},
             status=status.HTTP_200_OK
         )
+
+
+class SalaryNotifyView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, pk):
+        salary = get_object_or_404(Salary.objects.select_related('employee'), pk=pk)
+
+        # Account.employee is a OneToOneField(Employee), so the reverse
+        # accessor off an Employee instance is `.account` (no related_name set).
+        account = getattr(salary.employee, 'account', None)
+        if not account:
+            return Response(
+                {'detail': 'This employee has no account to notify.'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        title = request.data.get('title') or 'Salary Notification'
+        body = request.data.get('body') or ''
+        if not body:
+            return Response({'detail': 'body is required.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        notification_type = request.data.get('notification_type', Notification.Type.SALARY)
+        if notification_type not in Notification.Type.values:
+            notification_type = Notification.Type.SALARY
+
+        notif_services.send_notification(
+            sender=request.user,
+            receivers=[account],
+            notification_type=notification_type,
+            title=title,
+            body=body,
+        )
+        return Response(status=status.HTTP_201_CREATED)
 
 
 class EmployeeSalaryView(APIView):

@@ -34,6 +34,18 @@ const Field = ({ label, children, full = false }) => (
   </div>
 );
 
+// DRF error bodies come in a few shapes: {"detail": "..."} for view-level
+// errors (get_object_or_404, custom checks) or {"field": ["msg"]} for
+// serializer validation errors. This normalizes both into one readable string.
+const extractErrorMessage = (errData, fallback) => {
+  if (!errData || typeof errData !== "object") return fallback;
+  if (errData.detail) return errData.detail;
+  const firstField = Object.values(errData)[0];
+  if (Array.isArray(firstField) && firstField.length) return firstField[0];
+  if (typeof firstField === "string") return firstField;
+  return fallback;
+};
+
 const FeesPage = () => {
   const [search, setSearch]         = useState("");
   const [status, setStatus]         = useState("All");
@@ -73,7 +85,11 @@ const FeesPage = () => {
         method: "PATCH",
         body: { amount: modalAmount, status: modalStatus, remark: modalRemark },
       });
-      if (!res.ok) throw new Error("Failed to save payment.");
+
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({}));
+        throw new Error(extractErrorMessage(errData, "Failed to save payment."));
+      }
       setRefreshKey((k) => k + 1);
       setNotice("Saved.");
     } catch (err) {
@@ -81,6 +97,20 @@ const FeesPage = () => {
     } finally {
       setModalBusy(false);
     }
+  };
+
+  // Builds the standard payment-reminder message sent to the student,
+  // using whatever is currently in the modal fields (not necessarily saved yet).
+  const buildNotifyMessage = () => {
+    const amountText = modalAmount ? `${modalAmount} DA` : "your fee";
+    const statusText = modalStatus[0].toUpperCase() + modalStatus.slice(1);
+    let body = `This is a reminder regarding a payment of ${amountText} for ${selected.language} (${selected.class_name}). Current status: ${statusText}.`;
+    if (modalRemark) body += ` Note: ${modalRemark}`;
+    return {
+      notification_type: "payment_reminder",
+      title: "Payment Reminder",
+      body,
+    };
   };
 
   // Independent of Save now — you shouldn't have to save a no-op change
@@ -91,8 +121,15 @@ const FeesPage = () => {
     setModalError(null);
     setNotice(null);
     try {
-      const res = await apiFetch(`/payments/${selected.id}/notify/`, { method: "POST" });
-      if (!res.ok) throw new Error("Failed to send notification.");
+      const res = await apiFetch(`/payments/${selected.id}/notify/`, {
+        method: "POST",
+        body: buildNotifyMessage(),
+      });
+
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({}));
+        throw new Error(extractErrorMessage(errData, "Failed to send notification."));
+      }
       setNotice("Notification sent.");
     } catch (err) {
       setModalError(err.message);
@@ -178,7 +215,16 @@ const FeesPage = () => {
                   type="number"
                   style={inp}
                   value={modalAmount}
-                  onChange={(e) => setModalAmount(e.target.value)}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    setModalAmount(val);
+                    // An amount > 0 implies the payment is settled — auto-correct
+                    // status so a forgotten dropdown doesn't leave a mismatched
+                    // "amount entered but still pending" record.
+                    if (Number(val) > 0 && modalStatus !== "paid") {
+                      setModalStatus("paid");
+                    }
+                  }}
                 />
               </Field>
 

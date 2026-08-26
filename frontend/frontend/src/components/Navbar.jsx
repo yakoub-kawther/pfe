@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { Bell, Settings, CheckCheck, Send, X, Search } from "lucide-react";
-import { apiFetch } from "../services/api";
+import { Bell, Settings, CheckCheck, Check, Send, X, Search, ShoppingCart, AlertTriangle, CalendarClock, Users, Wallet, MessageCircle } from "lucide-react";
+import { apiFetch, getAccess } from "../services/api";
 
 const formatTime = (dateStr) => {
   if (!dateStr) return "";
@@ -11,27 +11,103 @@ const formatTime = (dateStr) => {
   return new Date(dateStr).toLocaleDateString();
 };
 
+// ─── Type → color mapping ───────────────────────────────────────
+// Drives the icon-square color on every notification card, plus the small
+// type label. Add a new Notification.Type on the backend? Add it here too.
+const TYPE_STYLES = {
+  schedule_change:  { bg: "#eff6ff", accent: "#2563eb", label: "Schedule", icon: CalendarClock },
+  payment_reminder: { bg: "#f0fdf4", accent: "#16a34a", label: "Payment",  icon: ShoppingCart },
+  absence_alert:    { bg: "#fffbeb", accent: "#d97706", label: "Alert",    icon: AlertTriangle },
+  meeting:          { bg: "#f5f3ff", accent: "#7c3aed", label: "Meeting",  icon: Users },
+  salary:           { bg: "#f0fdfa", accent: "#0d9488", label: "Salary",   icon: Wallet },
+  general:          { bg: "#fdf5fd", accent: "#701366", label: "General", icon: MessageCircle },
+};
+const getTypeStyle = (type) => TYPE_STYLES[type] || TYPE_STYLES.general;
+
+// Received notifications (from the /notifications/ "my inbox" endpoint).
+// NOTE: backend model/serializer field is `notification_type` (that's what
+// gets POSTed in SendNotifDropdown), so we read that first. Falling back to
+// `type` too in case some endpoint aliases it differently.
 const mapNotif = (nr) => ({
   id:      nr.id,
   is_read: nr.is_read,
+  type:    nr.notification_type ?? nr.type ?? "general",
   sender:  nr.sender?.username ?? "System",
-  message: nr.body  ?? nr.title ?? "",
+  title:   nr.title ?? "",
+  message: nr.body  ?? "",
   time:    formatTime(nr.sent_at),
 });
 
-function NotifDropdown({ notifications, loading, onMarkRead, onMarkAll, onClose }) {
+// Maps a live WebSocket push payload (see _push_notification in services.py)
+// into the same shape mapNotif() produces, so both sources share state/rendering.
+const mapLivePush = (payload) => ({
+  id:      payload.notification_id,
+  is_read: false,
+  type:    payload.notification_type ?? payload.type ?? "general",
+  sender:  payload.sender ?? "System",
+  title:   payload.title ?? "",
+  message: payload.body ?? "",
+  time:    "just now",
+});
+
+// Sent notifications (from the /notifications/sent/ endpoint) — one row per
+// notification you sent, with the list of who received it attached.
+const mapSentNotif = (n) => ({
+  id:         n.id,
+  type:       n.notification_type ?? n.type ?? "general",
+  title:      n.title ?? "",
+  message:    n.body ?? "",
+  time:       formatTime(n.sent_at),
+  receivers:  n.receivers ?? [], // [{ id, username, is_read }]
+});
+
+// Renders a "To: alice, bob (+3 more) (5)" line from a receivers array.
+const RecipientsLine = ({ receivers }) => {
+  if (!receivers || receivers.length === 0) return null;
+  const names = receivers.map(r => r.username);
+  const shown = names.slice(0, 2).join(", ");
+  const extra = names.length > 2 ? ` +${names.length - 2} more` : "";
+  return (
+    <span style={{ fontSize: "10.5px", color: "#9c6a9c", fontFamily: "Inter, sans-serif" }}>
+      To: {shown}{extra} <span style={{ color: "#c9a8c9" }}>({names.length})</span>
+    </span>
+  );
+};
+
+// The colored icon square shown on every card, left of the content.
+// Both the icon shape and its color come from the notification's type.
+const TypeIcon = ({ type }) => {
+  const style = getTypeStyle(type);
+  const Icon = style.icon;
+  return (
+    <div style={{
+      width: "28px", height: "28px", borderRadius: "8px", flexShrink: 0,
+      background: "white", display: "flex", alignItems: "center", justifyContent: "center",
+    }}>
+      <Icon size={13} color={style.accent} />
+    </div>
+  );
+};
+
+function NotifDropdown({
+  tab, onTabChange,
+  notifications, sentNotifications, sentLoading,
+  loading, onMarkRead, onMarkAll, onClose,
+}) {
   const unread = notifications.filter(n => !n.is_read).length;
+  const list = tab === "received" ? notifications : sentNotifications;
+  const isSentTab = tab === "sent";
 
   return (
     <div style={{
       position: "absolute", top: "calc(100% + 10px)", right: 0,
-      width: "340px", background: "white", borderRadius: "18px",
+      width: "360px", background: "white", borderRadius: "18px",
       boxShadow: "0 8px 32px rgba(112,19,102,0.15), 0 2px 8px rgba(0,0,0,0.08)",
       border: "1.5px solid #f0e0f0", zIndex: 999, overflow: "hidden",
     }}>
 
       {/* Header */}
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "16px 18px 12px", borderBottom: "1px solid #f5eef5" }}>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "16px 18px 10px", borderBottom: "1px solid #f5eef5" }}>
         <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
           <span style={{ fontSize: "14px", fontWeight: 600, color: "#701366", fontFamily: "Inter, sans-serif" }}>Notifications</span>
           {unread > 0 && (
@@ -41,56 +117,135 @@ function NotifDropdown({ notifications, loading, onMarkRead, onMarkAll, onClose 
           )}
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-          {unread > 0 && (
+          {tab === "received" && unread > 0 && (
             <button onClick={onMarkAll} style={{ display: "inline-flex", alignItems: "center", gap: "4px", fontSize: "11px", color: "#701366", background: "#faf5fa", border: "1px solid #e2d0e2", borderRadius: "7px", padding: "4px 9px", fontFamily: "Inter, sans-serif", cursor: "pointer" }}>
               <CheckCheck size={11} /> Mark all read
             </button>
           )}
-          <button onClick={onClose} style={{ background: "none", border: "none", cursor: "pointer", color: "#c9a8c9", fontSize: "18px", lineHeight: 1, padding: "0 2px" }}>×</button>
+          <button onClick={onClose} style={{ display: "flex", alignItems: "center", justifyContent: "center", background: "none", border: "none", cursor: "pointer", color: "#c9a8c9", padding: "2px" }}>
+            <X size={16} />
+          </button>
         </div>
+      </div>
+
+      {/* Tabs — text-only, no icons */}
+      <div style={{ display: "flex", padding: "8px 14px 0", gap: "6px", borderBottom: "1px solid #f5eef5" }}>
+        {[
+          { key: "received", label: "Received" },
+          { key: "sent",     label: "Sent" },
+        ].map(({ key, label }) => {
+          const active = tab === key;
+          return (
+            <button
+              key={key}
+              onClick={() => onTabChange(key)}
+              style={{
+                padding: "7px 12px", fontSize: "12px", fontWeight: active ? 600 : 500,
+                fontFamily: "Inter, sans-serif", color: active ? "#701366" : "#b48ab0",
+                background: "none", border: "none", cursor: "pointer",
+                borderBottom: active ? "2px solid #701366" : "2px solid transparent",
+                marginBottom: "-1px", transition: "color 0.15s, border-color 0.15s",
+              }}
+            >
+              {label}
+            </button>
+          );
+        })}
       </div>
 
       {/* List */}
       <div style={{ maxHeight: "380px", overflowY: "auto", padding: "10px" }}>
         <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-          {loading ? (
+          {(isSentTab ? sentLoading : loading) ? (
             Array.from({ length: 3 }).map((_, i) => (
               <div key={i} style={{ padding: "12px", borderRadius: "12px", background: "#fafafa", border: "1.5px solid #f0ecf0", display: "flex", flexDirection: "column", gap: "6px" }}>
                 <div style={{ height: "12px", width: "70%", background: "#f3e8f9", borderRadius: "6px" }} />
                 <div style={{ height: "10px", width: "40%", background: "#f3e8f9", borderRadius: "6px" }} />
               </div>
             ))
-          ) : notifications.length === 0 ? (
-            <p style={{ textAlign: "center", color: "#b48ab0", fontSize: "13px", margin: "20px 0" }}>No notifications</p>
-          ) : notifications.map(n => (
-            <div
-              key={n.id}
-              onClick={() => !n.is_read && onMarkRead(n.id)}
-              style={{
-                display: "flex", gap: "10px", alignItems: "flex-start",
-                padding: "11px 12px", borderRadius: "12px", cursor: n.is_read ? "default" : "pointer",
-                background: n.is_read ? "#fafafa" : "#fdf5fd",
-                border: `1.5px solid ${n.is_read ? "#f0ecf0" : "#e2c8e2"}`,
-                transition: "all 0.15s",
-              }}
-              onMouseEnter={e => { if (!n.is_read) e.currentTarget.style.borderColor = "#c9a8d0"; }}
-              onMouseLeave={e => { e.currentTarget.style.borderColor = n.is_read ? "#f0ecf0" : "#e2c8e2"; }}
-            >
-              <div style={{ width: "28px", height: "28px", borderRadius: "8px", flexShrink: 0, background: n.is_read ? "#f5eef5" : "linear-gradient(135deg, #701366, #9c1e8e)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                <Bell size={12} color={n.is_read ? "#a07aa0" : "white"} />
-              </div>
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <p style={{ fontSize: "12.5px", color: "#2d1a2d", margin: "0 0 2px", fontFamily: "Inter, sans-serif", lineHeight: "1.35" }}>
-                  <span style={{ fontWeight: n.is_read ? 500 : 600 }}>{n.sender}</span>
-                  {n.message ? <span style={{ fontWeight: 400, color: "#666" }}> — {n.message}</span> : ""}
-                </p>
-                <p style={{ fontSize: "10.5px", color: "#b09ab0", fontFamily: "Inter, sans-serif", margin: 0 }}>{n.time}</p>
-              </div>
-              {!n.is_read && (
-                <div style={{ width: "7px", height: "7px", borderRadius: "50%", background: "#701366", flexShrink: 0, marginTop: "5px" }} />
-              )}
-            </div>
-          ))}
+          ) : list.length === 0 ? (
+            <p style={{ textAlign: "center", color: "#b48ab0", fontSize: "13px", margin: "20px 0" }}>
+              {isSentTab ? "No notifications sent yet" : "No notifications"}
+            </p>
+          ) : isSentTab ? (
+            // ── Sent cards: title, body, recipients, time — colored by type ──
+            sentNotifications.map(n => {
+              const typeStyle = getTypeStyle(n.type);
+              return (
+                <div key={n.id} style={{
+                  display: "flex", gap: "10px", alignItems: "flex-start",
+                  padding: "11px 12px", borderRadius: "12px",
+                  background: typeStyle.bg, border: `1.5px solid ${typeStyle.accent}33`,
+                }}>
+                  <TypeIcon type={n.type} />
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: "6px", marginBottom: "2px" }}>
+                      <p style={{ fontSize: "12.5px", fontWeight: 600, color: "#2d1a2d", margin: 0, fontFamily: "Inter, sans-serif", lineHeight: "1.35" }}>
+                        {n.title}
+                      </p>
+                      <span style={{ fontSize: "9.5px", fontWeight: 600, color: typeStyle.accent, background: "white", padding: "1px 6px", borderRadius: "99px", fontFamily: "Inter, sans-serif", flexShrink: 0 }}>
+                        {typeStyle.label}
+                      </span>
+                    </div>
+                    {n.message && (
+                      <p style={{ fontSize: "12px", color: "#666", margin: "0 0 5px", fontFamily: "Inter, sans-serif", lineHeight: "1.35" }}>
+                        {n.message}
+                      </p>
+                    )}
+                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "8px" }}>
+                      <RecipientsLine receivers={n.receivers} />
+                      <span style={{ fontSize: "10.5px", color: "#b09ab0", fontFamily: "Inter, sans-serif", flexShrink: 0 }}>{n.time}</span>
+                    </div>
+                  </div>
+                </div>
+              );
+            })
+          ) : (
+            // ── Received cards: title sits next to the username, colored by type ──
+            notifications.map(n => {
+              const typeStyle = getTypeStyle(n.type);
+              return (
+                <div
+                  key={n.id}
+                  onClick={() => !n.is_read && onMarkRead(n.id)}
+                  style={{
+                    display: "flex", gap: "10px", alignItems: "flex-start",
+                    padding: "11px 12px", borderRadius: "12px", cursor: n.is_read ? "default" : "pointer",
+                    background: typeStyle.bg,
+                    border: `1.5px solid ${n.is_read ? `${typeStyle.accent}22` : `${typeStyle.accent}66`}`,
+                    opacity: n.is_read ? 0.7 : 1,
+                    transition: "all 0.15s",
+                  }}
+                  onMouseEnter={e => { if (!n.is_read) e.currentTarget.style.borderColor = typeStyle.accent; }}
+                  onMouseLeave={e => { e.currentTarget.style.borderColor = n.is_read ? `${typeStyle.accent}22` : `${typeStyle.accent}66`; }}
+                >
+                  <TypeIcon type={n.type} />
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: "6px", marginBottom: "1px", flexWrap: "wrap" }}>
+                      <p style={{ fontSize: "12.5px", color: "#2d1a2d", margin: 0, fontFamily: "Inter, sans-serif", lineHeight: "1.35" }}>
+                        <span style={{ fontWeight: n.is_read ? 500 : 600 }}>{n.sender}</span>
+                        {n.title && (
+                          <span style={{ fontWeight: n.is_read ? 500 : 600, color: typeStyle.accent }}> · {n.title}</span>
+                        )}
+                      </p>
+                      <span style={{ fontSize: "9.5px", fontWeight: 600, color: typeStyle.accent, background: "white", padding: "1px 6px", borderRadius: "99px", fontFamily: "Inter, sans-serif", flexShrink: 0 }}>
+                        {typeStyle.label}
+                      </span>
+                    </div>
+                    {n.message && (
+                      <p style={{ fontSize: "12px", color: "#666", margin: "0 0 2px", fontFamily: "Inter, sans-serif", lineHeight: "1.35" }}>
+                        {n.message}
+                      </p>
+                    )}
+                    <p style={{ fontSize: "10.5px", color: "#b09ab0", fontFamily: "Inter, sans-serif", margin: 0 }}>{n.time}</p>
+                  </div>
+                  {!n.is_read && (
+                    <div style={{ width: "7px", height: "7px", borderRadius: "50%", background: typeStyle.accent, flexShrink: 0, marginTop: "5px" }} />
+                  )}
+                </div>
+              );
+            })
+          )}
         </div>
       </div>
     </div>
@@ -171,7 +326,11 @@ const CompactSelectorList = ({ items, selectedIds, onToggle, searchPlaceholder, 
               }}
             >
               <span>{renderLabel(item)}</span>
-              {isSelected && <span style={{ fontSize: "11px", fontWeight: 700 }}>✓</span>}
+              {isSelected && (
+                <span style={{ width: "14px", height: "14px", borderRadius: "50%", background: "#701366", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                  <Check size={9} strokeWidth={3} color="white" />
+                </span>
+              )}
             </div>
           );
         })}
@@ -250,7 +409,7 @@ const UserSelectorList = ({ items, selectedIds, onToggle, searchPlaceholder = "S
                 background: isSelected ? "#701366" : "white",
                 display: "flex", alignItems: "center", justifyContent: "center",
               }}>
-                {isSelected && <span style={{ color: "white", fontSize: "10px", fontWeight: 700, lineHeight: 1 }}>✓</span>}
+                {isSelected && <Check size={10} strokeWidth={3} color="white" />}
               </div>
             </div>
           );
@@ -394,8 +553,8 @@ function SendNotifDropdown({ onClose, onSent }) {
       <div style={{ maxHeight: "440px", overflowY: "auto", padding: "14px 16px", display: "flex", flexDirection: "column", gap: "12px" }}>
 
         {success && (
-          <div style={{ background: "#f0fdf4", color: "#166534", padding: "9px 12px", borderRadius: "9px", fontSize: "12px", border: "1px solid #bbf7d0", fontFamily: "Inter, sans-serif" }}>
-            ✓ Sent successfully!
+          <div style={{ display: "flex", alignItems: "center", gap: "7px", background: "#f0fdf4", color: "#166534", padding: "9px 12px", borderRadius: "9px", fontSize: "12px", border: "1px solid #bbf7d0", fontFamily: "Inter, sans-serif" }}>
+            <Check size={14} /> Sent successfully!
           </div>
         )}
         {error && (
@@ -453,12 +612,25 @@ function SendNotifDropdown({ onClose, onSent }) {
   );
 }
 
+// WebSocket URL for the real-time notification feed.
+// TODO: move this to an env var (e.g. VITE_WS_BASE) before deploying anywhere
+// other than localhost, and switch to wss:// once served over https.
+const WS_BASE = "ws://localhost:8000";
+
 function Navbar({ role = "admin" }) {
   const navigate = useNavigate();
   const [dropdownOpen,  setDropdownOpen]  = useState(false);
+  const [notifTab, setNotifTab]           = useState("received"); // "received" | "sent"
   const [notifications, setNotifications] = useState([]);
   const [loading,       setLoading]       = useState(false);
+
+  // Sent-notifications tab state — fetched lazily the first time the tab is opened.
+  const [sentNotifications, setSentNotifications] = useState([]);
+  const [sentLoading,       setSentLoading]       = useState(false);
+  const [sentFetched,       setSentFetched]       = useState(false);
+
   const bellRef = useRef(null);
+  const wsRef   = useRef(null);
 
   // Compose ("Send Notification") dropdown — only rendered for these roles.
   const canSend = ["admin", "secretary", "teacher"].includes(role);
@@ -476,25 +648,84 @@ function Navbar({ role = "admin" }) {
     return () => document.removeEventListener("mousedown", handler);
   }, [dropdownOpen, composeOpen]);
 
-  // ── Fetch notifications ───────────────────────────────────
+  // ── Fetch received notifications once on mount ─────────────
   useEffect(() => {
-  if (!dropdownOpen) return;
-  let active = true;
+    let active = true;
 
-  const fetchNotifs = async () => {
-    setLoading(true);
-    try {
-      const r    = await apiFetch("/notifications/");
-      const data = await r.json();
-      const list = Array.isArray(data) ? data : (data.results ?? []);
-      if (active) setNotifications(list.map(mapNotif));   // <-- overwrites blindly
-    } catch {}
-    finally { if (active) setLoading(false); }
-  };
+    const fetchNotifs = async () => {
+      setLoading(true);
+      try {
+        const r    = await apiFetch("/notifications/");
+        const data = await r.json();
+        const list = Array.isArray(data) ? data : (data.results ?? []);
+        if (active) setNotifications(list.map(mapNotif));
+      } catch {}
+      finally {
+        if (active) setLoading(false);
+      }
+    };
 
-  fetchNotifs();
-  return () => { active = false; };
-}, [dropdownOpen]);
+    fetchNotifs();
+    return () => { active = false; };
+  }, []);
+
+  // ── Fetch sent notifications, lazily, the first time that tab is opened ──
+  useEffect(() => {
+    if (!canSend) return;
+    if (notifTab !== "sent" || sentFetched) return;
+
+    let active = true;
+    setSentLoading(true);
+
+    apiFetch("/notifications/sent/")
+      .then(r => r.json())
+      .then(data => {
+        const list = Array.isArray(data) ? data : (data.results ?? []);
+        if (active) {
+          setSentNotifications(list.map(mapSentNotif));
+          setSentFetched(true);
+        }
+      })
+      .catch(() => {})
+      .finally(() => { if (active) setSentLoading(false); });
+
+    return () => { active = false; };
+  }, [notifTab, sentFetched, canSend]);
+
+  // ── Live notifications over WebSocket ──────────────────────
+  useEffect(() => {
+    let cancelled = false;
+
+    const connect = () => {
+      const token = getAccess();
+      if (!token) return;
+
+      const ws = new WebSocket(`${WS_BASE}/ws/notifications/?token=${token}`);
+      wsRef.current = ws;
+
+      ws.onmessage = (e) => {
+        try {
+          const payload = JSON.parse(e.data);
+          setNotifications(prev => [mapLivePush(payload), ...prev]);
+        } catch {
+          // ignore malformed payloads rather than crashing the socket handler
+        }
+      };
+
+      ws.onclose = () => {
+        if (!cancelled) {
+          setTimeout(connect, 3000);
+        }
+      };
+    };
+
+    connect();
+
+    return () => {
+      cancelled = true;
+      wsRef.current?.close();
+    };
+  }, []);
 
   const unread = notifications.filter(n => !n.is_read).length;
 
@@ -518,6 +749,8 @@ function Navbar({ role = "admin" }) {
     setComposeOpen(o => !o);
   };
 
+  const handleSent = () => setSentFetched(false);
+
   return (
     <header style={{ display: "flex", alignItems: "center", justifyContent: "flex-end", paddingTop: "16px", marginBottom: "32px", width: "100%", minWidth: 0, flexShrink: 0 }}>
       <div style={{ display: "flex", alignItems: "center", gap: "12px", flexShrink: 0 }}>
@@ -538,7 +771,7 @@ function Navbar({ role = "admin" }) {
             {composeOpen && (
               <SendNotifDropdown
                 onClose={() => setComposeOpen(false)}
-                onSent={() => { /* dropdown shows its own success state */ }}
+                onSent={handleSent}
               />
             )}
           </div>
@@ -562,13 +795,31 @@ function Navbar({ role = "admin" }) {
           </button>
 
           {dropdownOpen && (
-            <NotifDropdown
-              notifications={notifications}
-              loading={loading}
-              onMarkRead={markRead}
-              onMarkAll={markAll}
-              onClose={() => setDropdownOpen(false)}
-            />
+            canSend ? (
+              <NotifDropdown
+                tab={notifTab}
+                onTabChange={setNotifTab}
+                notifications={notifications}
+                sentNotifications={sentNotifications}
+                sentLoading={sentLoading}
+                loading={loading}
+                onMarkRead={markRead}
+                onMarkAll={markAll}
+                onClose={() => setDropdownOpen(false)}
+              />
+            ) : (
+              <NotifDropdown
+                tab="received"
+                onTabChange={() => {}}
+                notifications={notifications}
+                sentNotifications={[]}
+                sentLoading={false}
+                loading={loading}
+                onMarkRead={markRead}
+                onMarkAll={markAll}
+                onClose={() => setDropdownOpen(false)}
+              />
+            )
           )}
         </div>
 
