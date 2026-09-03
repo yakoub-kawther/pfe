@@ -66,3 +66,11 @@ class ClassAttendanceSummarySerializer(serializers.Serializer):
         if obj.total == 0:
             return 0.0
         return round((obj.absences / obj.total) * 100, 1)
+
+
+
+class AttendanceOverviewSerializer(serializers.Serializer):
+    present         = serializers.IntegerField()
+    absent          = serializers.IntegerField()
+    total           = serializers.IntegerField()
+    percent_present = serializers.FloatField()

@@ -1,9 +1,9 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import DashboardLayout from "../../layouts/DashboardLayout.jsx";
 import Searchbar from "../../components/Searchbar.jsx";
 import Table from "../../components/Table.jsx";
 import { Users, UserCheck, UserX } from "lucide-react";
-import { apiFetch } from "../../services/api";
+import { useStudents } from "../../hooks/Usestudents .js";
 
 const SummaryCard = ({ icon, label, value, color, background }) => (
   <div style={{
@@ -33,16 +33,8 @@ const SummaryCard = ({ icon, label, value, color, background }) => (
 const Students = () => {
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState("All");
-  const [students, setStudents] = useState([]);
-  const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    apiFetch("/persons/students/")
-      .then(res => res.json())
-      .then(data => setStudents(Array.isArray(data) ? data : (data.results ?? [])))
-      .catch(() => {})
-      .finally(() => setLoading(false));
-  }, []);
+  const { students, loading } = useStudents();
 
   const totalCount    = students.length;
   const activeCount   = students.filter(s => (s.status ?? "active").toLowerCase() === "active").length;

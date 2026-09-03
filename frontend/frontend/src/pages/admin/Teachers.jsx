@@ -1,9 +1,9 @@
-import React, { useState, useEffect, useCallback, useRef } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import DashboardLayout from "../../layouts/DashboardLayout";
 import { SquarePen, LayoutGrid, Loader2, Users, UserCheck, UserX, ChevronLeft, ChevronRight } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import Searchbar from "../../components/Searchbar";
-import { apiFetch } from "../../services/api";
+import { useTeachers } from "../../hooks/useTeachers";
 
 const thStyle = {
   padding   : "12px 16px",
@@ -63,54 +63,29 @@ const SummaryCard = ({ icon, label, value, color }) => (
 const Teachers = () => {
   const navigate = useNavigate();
 
-  const [teachers, setTeachers] = useState([]);
-  const [loading, setLoading]   = useState(false);
-  const [error, setError]       = useState(null);
-  const [search, setSearch]     = useState("");
-  const [filter, setFilter]     = useState("All");
-  const [page, setPage]         = useState(1);
+  // What the user is typing right now (updates instantly, for a responsive input)
+  const [search, setSearch] = useState("");
+  const [filter, setFilter] = useState("All");
 
-  const buildParams = useCallback((searchVal, filterVal) => {
-    const params = new URLSearchParams();
-    if (searchVal.trim()) {
-      const q = searchVal.trim().toLowerCase();
-      if (q === "yes")       params.set("is_head_teacher", "true");
-      else if (q === "no")   params.set("is_head_teacher", "false");
-      else                   params.set("search", searchVal.trim());
-    }
-    if (filterVal && filterVal !== "All")
-      params.set("employee__status", filterVal.toLowerCase());
-    return params.toString();
-  }, []);
-
-  const fetchTeachers = useCallback(async (searchVal, filterVal) => {
-    setLoading(true);
-    setError(null);
-    try {
-      const qs  = buildParams(searchVal, filterVal);
-      const res = await apiFetch(`/persons/teachers/${qs ? `?${qs}` : ""}`);
-      if (!res.ok) throw new Error(`Server error: ${res.status}`);
-      const data = await res.json();
-      setTeachers(Array.isArray(data) ? data : (data.results ?? []));
-    } catch (err) {
-      setError(err.message || "Failed to load teachers.");
-    } finally {
-      setLoading(false);
-    }
-  }, [buildParams]);
-
+  // What actually drives the query (updates 500ms after typing stops, so we
+  // don't fire a network request on every keystroke)
+  const [debouncedSearch, setDebouncedSearch] = useState("");
   useEffect(() => {
-    const timer = setTimeout(() => fetchTeachers(search, filter), 500);
+    const timer = setTimeout(() => setDebouncedSearch(search), 500);
     return () => clearTimeout(timer);
-  }, [search, filter, fetchTeachers]);
+  }, [search]);
 
-  // Reset to page 1 when search/filter/data changes (derived during render, not in an effect)
-  const prevKeyRef = useRef(`${search}|${filter}`);
-  const currentKey = `${search}|${filter}`;
-  if (prevKeyRef.current !== currentKey) {
-    prevKeyRef.current = currentKey;
-    if (page !== 1) setPage(1);
-  }
+  const { teachers, loading, error } = useTeachers(debouncedSearch, filter);
+
+  const [page, setPage] = useState(1);
+
+  // Reset to page 1 when search/filter changes (derived during render, not in an effect)
+  // const prevKeyRef = useRef(`${debouncedSearch}|${filter}`);
+  // const currentKey = `${debouncedSearch}|${filter}`;
+  // if (prevKeyRef.current !== currentKey) {
+  //   prevKeyRef.current = currentKey;
+  //   if (page !== 1) setPage(1);
+  // }
 
   const totalCount    = teachers.length;
   const activeCount   = teachers.filter(t => (t.employee?.status ?? "").toLowerCase() === "active").length;

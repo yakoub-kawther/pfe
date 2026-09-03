@@ -1,9 +1,9 @@
-import React, { useState, useEffect, useCallback, useRef } from "react";
+import React, { useState, useEffect } from "react";
 import DashboardLayout from "../../layouts/DashboardLayout";
 import { SquarePen, LayoutGrid, Loader2, Users, UserCheck, UserX, ChevronLeft, ChevronRight } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import Searchbar from "../../components/Searchbar";
-import { apiFetch } from "../../services/api";
+import { useEmployees } from "../../hooks/Useemployee.js";
 
 const thStyle = {
   padding   : "12px 16px",
@@ -63,47 +63,26 @@ const SummaryCard = ({ icon, label, value, color }) => (
 const Employees = () => {
   const navigate = useNavigate();
 
-  const [employees, setEmployees] = useState([]);
-  const [loading, setLoading]     = useState(false);
-  const [error, setError]         = useState(null);
-  const [search, setSearch]       = useState("");
-  const [filter, setFilter]       = useState("All");
-  const [page, setPage]           = useState(1);
+  // What the user is typing right now (updates instantly, for a responsive input)
+  const [search, setSearch] = useState("");
+  const [filter, setFilter] = useState("All");
 
-  const buildParams = useCallback((searchVal, filterVal) => {
-    const params = new URLSearchParams();
-    if (searchVal.trim()) params.set("search", searchVal.trim());
-    if (filterVal && filterVal !== "All")
-      params.set("status", filterVal.toLowerCase());
-    return params.toString();
-  }, []);
-
-  const fetchEmployees = useCallback(async (searchVal, filterVal) => {
-    setLoading(true);
-    setError(null);
-    try {
-      const qs  = buildParams(searchVal, filterVal);
-      const res = await apiFetch(`/persons/employees/non-teachers/${qs ? `?${qs}` : ""}`);
-      if (!res.ok) throw new Error(`Server error: ${res.status}`);
-      const data = await res.json();
-      setEmployees(Array.isArray(data) ? data : (data.results ?? []));
-    } catch (err) {
-      setError(err.message || "Failed to load employees.");
-    } finally {
-      setLoading(false);
-    }
-  }, [buildParams]);
-
+  // What actually drives the query (updates 500ms after typing stops)
+  const [debouncedSearch, setDebouncedSearch] = useState("");
   useEffect(() => {
-    const timer = setTimeout(() => fetchEmployees(search, filter), 500);
+    const timer = setTimeout(() => setDebouncedSearch(search), 500);
     return () => clearTimeout(timer);
-  }, [search, filter, fetchEmployees]);
+  }, [search]);
 
-  // Reset to page 1 when search/filter/data changes (derived during render, not in an effect)
-  const prevKeyRef = useRef(`${search}|${filter}`);
-  const currentKey = `${search}|${filter}`;
-  if (prevKeyRef.current !== currentKey) {
-    prevKeyRef.current = currentKey;
+  const { employees, loading, error } = useEmployees(debouncedSearch, filter);
+
+  const [page, setPage] = useState(1);
+
+  // Reset to page 1 when search/filter changes (derived during render, not in an effect)
+  const currentKey = `${debouncedSearch}|${filter}`;
+  const [prevKey, setPrevKey] = useState(currentKey);
+  if (prevKey !== currentKey) {
+    setPrevKey(currentKey);
     if (page !== 1) setPage(1);
   }
 

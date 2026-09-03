@@ -147,3 +147,64 @@ def promote_student(student_id: int, new_class_id: int):
 
 def repeat_student(student_id: int, new_class_id: int):
     return _transition_student(student_id, new_class_id, Inscription.STATUS_REPEATED)
+
+
+
+from datetime import date, datetime, timezone as dt_timezone
+from django.db.models import Sum, Case, When, IntegerField
+from django.db.models.functions import TruncMonth
+from .models import Inscription
+
+
+def _net_expr():
+    return Sum(Case(
+        When(status=Inscription.STATUS_CANCELLED, then=-1),
+        When(status=Inscription.STATUS_CONFIRMED, then=1),
+        default=0,
+        output_field=IntegerField(),
+    ))
+
+
+def get_enrollment_growth(months=6):
+    counted_statuses = [Inscription.STATUS_CONFIRMED, Inscription.STATUS_CANCELLED]
+
+    today = date.today()
+    since_year, since_month = today.year, today.month - (months - 1)
+    while since_month <= 0:
+        since_month += 12
+        since_year -= 1
+
+    # Compare in UTC directly (inscription_date is stored in UTC) instead of
+    # using __date, which forces MySQL's CONVERT_TZ() — that silently returns
+    # NULL (matching nothing) unless the server's named-timezone tables are
+    # loaded, which they usually aren't on a fresh Windows MySQL install.
+    since_dt = datetime(since_year, since_month, 1, tzinfo=dt_timezone.utc)
+
+    rows = (
+        Inscription.objects
+        .filter(status__in=counted_statuses, inscription_date__gte=since_dt)
+        .annotate(month=TruncMonth('inscription_date', tzinfo=dt_timezone.utc))
+        .values('month')
+        .annotate(net=_net_expr())
+        .order_by('month')
+    )
+    net_by_month = {row['month'].date(): row['net'] for row in rows}
+
+    baseline = Inscription.objects.filter(
+        status__in=counted_statuses, inscription_date__lt=since_dt
+    ).aggregate(net=_net_expr())['net'] or 0
+
+    result = []
+    running = baseline
+    y, m = since_year, since_month
+    for _ in range(months):
+        month_key = date(y, m, 1)
+        net_this_month = net_by_month.get(month_key, 0)
+        running += net_this_month
+        result.append({'month': month_key.isoformat(), 'net': net_this_month, 'total': running})
+        m += 1
+        if m > 12:
+            m = 1
+            y += 1
+
+    return result

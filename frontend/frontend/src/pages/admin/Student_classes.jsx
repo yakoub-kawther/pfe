@@ -1,4 +1,5 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { useLocation, useNavigate } from "react-router-dom";
 import { ArrowLeft } from "lucide-react";
 import DashboardLayout from "../../layouts/DashboardLayout";
@@ -41,35 +42,43 @@ export default function Attendance_student() {
     { name: "Attendance", path: "/Attendance_student", state: { student } },
   ];
 
-  const [inscriptions,  setInscriptions]  = useState([]);
-  const [loading,       setLoading]       = useState(true);
   const [selectedClass, setSelectedClass] = useState(null); // { id, name }
-  const [records,       setRecords]       = useState([]);
-  const [attLoading,    setAttLoading]    = useState(false);
 
-  useEffect(() => {
-    if (!studentId) return;
-    apiFetch(`/inscriptions/student/${studentId}/history/`)
-      .then(r => r.json())
-      .then(data => setInscriptions(Array.isArray(data.history) ? data.history : []))
-      .catch(() => {})
-      .finally(() => setLoading(false));
-  }, [studentId]);
+  // Cached per student — same pattern as the other pages.
+  const { data: historyData, isLoading: loading } = useQuery({
+    queryKey: ["inscriptions-history", studentId],
+    queryFn: async () => {
+      const res  = await apiFetch(`/inscriptions/student/${studentId}/history/`);
+      const data = await res.json();
+      return Array.isArray(data.history) ? data.history : [];
+    },
+    enabled: !!studentId,
+    staleTime: 5 * 60 * 1000,
+  });
+  const inscriptions = historyData ?? [];
+
+  // Cached per student+class — re-opening a class you've already viewed
+  // this session shows the attendance records instantly, no refetch.
+  const { data: recordsData, isLoading: attLoading } = useQuery({
+    queryKey: ["attendance", studentId, selectedClass?.id],
+    queryFn: async () => {
+      const res  = await apiFetch(`/attendance/student/${studentId}/class/${selectedClass.id}/`);
+      const data = await res.json();
+      return Array.isArray(data) ? data : [];
+    },
+    enabled: !!studentId && !!selectedClass?.id,
+    staleTime: 5 * 60 * 1000,
+  });
+  const records = recordsData ?? [];
 
   const handleOpen = (ins) => {
     const cid   = ins.class_info?.id;
     const cname = ins.class_info?.name ?? "Class";
     if (!cid) return;
     setSelectedClass({ id: cid, name: cname });
-    setAttLoading(true);
-    apiFetch(`/attendance/student/${studentId}/class/${cid}/`)
-      .then(r => r.json())
-      .then(data => setRecords(Array.isArray(data) ? data : []))
-      .catch(() => setRecords([]))
-      .finally(() => setAttLoading(false));
   };
 
-  const goBackToList = () => { setSelectedClass(null); setRecords([]); };
+  const goBackToList = () => setSelectedClass(null);
 
   // Stats
   const total   = records.length;
@@ -271,7 +280,7 @@ export default function Attendance_student() {
                     <td style={tdStyle}>{ins.inscription_date?.split("T")[0] ?? "—"}</td>
                     <td style={tdStyle}>
                       <span style={{ display: "inline-flex", alignItems: "center", gap: "4px", padding: "3px 12px", borderRadius: "9999px", fontSize: "12px", fontFamily: F, fontWeight: 600, background: sc.bg, color: sc.color }}>
-                        ● {ins.status}
+                         {ins.status}
                       </span>
                     </td>
                     <td style={tdStyle}><span style={{ fontSize: "18px", color: "#d8b4d8" }}>›</span></td>

@@ -9,6 +9,7 @@ from .serializers import (
     InscriptionSerializer,
     InscriptionDetailSerializer,
     TransitionSerializer,
+    EnrollmentGrowthPointSerializer ,
 )
 from .services import (
     create_inscription,
@@ -18,6 +19,7 @@ from .services import (
     get_student_current,
     promote_student,
     repeat_student,
+    get_enrollment_growth,
 )
 from apps.accounts.permissions import IsNotStudent, IsAdminOrSuperAdmin
 
@@ -171,3 +173,15 @@ class InscriptionViewSet(GenericViewSet):
             inscriptions = inscriptions.filter(status=status_filter)
 
         return Response(InscriptionDetailSerializer(inscriptions, many=True).data)
+
+
+
+
+class EnrollmentGrowthViewSet(GenericViewSet):
+    serializer_class = EnrollmentGrowthPointSerializer
+
+    def list(self, request):
+        months = int(request.query_params.get('months', 6))
+        data = get_enrollment_growth(months)
+        serializer = self.get_serializer(data, many=True)
+        return Response(serializer.data)

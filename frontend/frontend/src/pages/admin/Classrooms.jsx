@@ -1,4 +1,5 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import DashboardLayout from "../../layouts/DashboardLayout";
 import Tabs from "../../components/Tabs";
 import Searchbar from "../../components/Searchbar";
@@ -145,6 +146,16 @@ function EditClassroomModal({ room, onClose, onSaved }) {
   );
 }
 
+const fetchClassrooms = async (searchVal) => {
+  const params = new URLSearchParams();
+  if (searchVal.trim()) params.set("search", searchVal.trim());
+  const qs = params.toString();
+  const res = await apiFetch(`/academic/classrooms/${qs ? `?${qs}` : ""}`);
+  if (!res.ok) throw new Error(`Server error: ${res.status}`);
+  const data = await res.json();
+  return Array.isArray(data) ? data : data.results ?? [];
+};
+
 export default function Classrooms() {
   const classTabs = [
     { name: "Classes", path: "/Classes" },
@@ -153,41 +164,22 @@ export default function Classrooms() {
     { name: "Positions", path: "/Positions" },
   ];
 
-  const [classrooms, setClassrooms] = useState([]);
-  const [loading, setLoading]       = useState(false);
-  const [error, setError]           = useState(null);
-  const [search, setSearch]         = useState("");
-  const [editingRoom, setEditingRoom] = useState(null);
+  const queryClient = useQueryClient();
+  const [search, setSearch]                 = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+  const [editingRoom, setEditingRoom]        = useState(null);
 
-  const buildParams = useCallback((searchVal) => {
-    const params = new URLSearchParams();
-    if (searchVal.trim()) params.set("search", searchVal.trim());
-    return params.toString();
-  }, []);
-
-  const fetchClassrooms = useCallback(
-    async (searchVal) => {
-      setLoading(true);
-      setError(null);
-      try {
-        const qs = buildParams(searchVal);
-        const res = await apiFetch(`/academic/classrooms/${qs ? `?${qs}` : ""}`);
-        if (!res.ok) throw new Error(`Server error: ${res.status}`);
-        const data = await res.json();
-        setClassrooms(Array.isArray(data) ? data : data.results ?? []);
-      } catch (err) {
-        setError(err.message || "Failed to load classrooms.");
-      } finally {
-        setLoading(false);
-      }
-    },
-    [buildParams]
-  );
-
+  // debounce: only update the query key 300ms after typing stops
   useEffect(() => {
-    const timer = setTimeout(() => fetchClassrooms(search), 300);
+    const timer = setTimeout(() => setDebouncedSearch(search), 300);
     return () => clearTimeout(timer);
-  }, [search, fetchClassrooms]);
+  }, [search]);
+
+  const { data: classrooms = [], isLoading: loading, error } = useQuery({
+    queryKey: ["classrooms", debouncedSearch],
+    queryFn: () => fetchClassrooms(debouncedSearch),
+    staleTime: 5 * 60 * 1000,
+  });
 
   const actionBtn = {
     padding: "6px",
@@ -212,7 +204,9 @@ export default function Classrooms() {
   };
 
   const handleSaved = (updated) => {
-    setClassrooms((prev) => prev.map((r) => (r.id === updated.id ? { ...r, ...updated } : r)));
+    queryClient.setQueryData(["classrooms", debouncedSearch], (prev = []) =>
+      prev.map((r) => (r.id === updated.id ? { ...r, ...updated } : r))
+    );
     setEditingRoom(null);
   };
 
@@ -294,7 +288,7 @@ export default function Classrooms() {
               {!loading && error && (
                 <tr>
                   <td colSpan={4} style={{ textAlign: "center", padding: "32px", color: "#dc2626", fontSize: "14px" }}>
-                    {error}
+                    {error.message || "Failed to load classrooms."}
                   </td>
                 </tr>
               )}

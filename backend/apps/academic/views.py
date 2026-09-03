@@ -16,8 +16,10 @@ from rest_framework.decorators import action
 
 
 from .models import Language, Level, Position, Classroom, Class, Schedule
-from .serializers import LanguageSerializer, LanguageCreateSerializer, LevelCreateSerializer, LevelSerializer, ClassroomCreateSerializer, LevelCreateSerializer, PositionCreateSerializer, PositionSerializer, ClassroomSerializer, ClassSerializer, ClassCreateSerializer, ScheduleSerializer, ScheduleCreateSerializer
+from .serializers import LanguageSerializer, LanguageCreateSerializer, LevelCreateSerializer, LevelSerializer, ClassroomCreateSerializer, LevelCreateSerializer, PositionCreateSerializer, PositionSerializer, ClassroomSerializer, ClassSerializer, ClassCreateSerializer, ScheduleSerializer, ScheduleCreateSerializer ,  ScheduleTodaySerializer
 from .services import create_language, update_language, get_teacher_busy_times, get_available_classrooms
+from datetime import date
+from .services import DAYS
 
 # language part
 class LanguageViewSet(viewsets.ModelViewSet):
@@ -204,6 +206,21 @@ class ScheduleViewSet(viewsets.ModelViewSet):
 
     queryset = Schedule.objects.all()
     serializer_class = ScheduleSerializer
+
+
+    queryset = Schedule.objects.all()
+    serializer_class = ScheduleSerializer
+
+    
+    @action(detail=False, methods=['get'])
+    def today(self, request):
+        today_name = DAYS[date.today().weekday()]
+        schedules = Schedule.objects.select_related(
+            'classroom', 'class_obj__language', 'class_obj__level',
+            'class_obj__teacher__employee__person'
+        ).filter(day_of_week=today_name, class_obj__status='active')
+        serializer = ScheduleTodaySerializer(schedules, many=True)
+        return Response(serializer.data)
 
     # ── Step 2: Get teacher busy times ──
     @action(detail=False, methods=['get'])

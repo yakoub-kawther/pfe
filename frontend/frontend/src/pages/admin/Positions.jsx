@@ -1,11 +1,12 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { SquarePen, Loader2, X } from "lucide-react";
 import DashboardLayout from "../../layouts/DashboardLayout";
 import Tabs from "../../components/Tabs";
 import Searchbar from "../../components/Searchbar";
 import { apiFetch } from "../../services/api";
 
-const F = "'Inter', sans-serif";
+const F = "Inter, sans-serif";
 const thStyle = { padding: "12px 16px", fontSize: "14px", fontWeight: 500, textAlign: "left", whiteSpace: "nowrap", color: "#701366" };
 const tdStyle = { padding: "12px 16px", fontSize: "14px", color: "#701366", whiteSpace: "nowrap" };
 
@@ -123,39 +124,36 @@ function EditPositionModal({ position, onClose, onSaved }) {
   );
 }
 
+const fetchPositions = async () => {
+  const res = await apiFetch("/academic/positions/");
+  if (!res.ok) throw new Error(`Server error: ${res.status}`);
+  const data = await res.json();
+  return Array.isArray(data) ? data : (data.results ?? []);
+};
+
+const fetchEmployees = async () => {
+  const res = await apiFetch("/persons/employees/non-teachers/");
+  if (!res.ok) throw new Error(`Server error: ${res.status}`);
+  const data = await res.json();
+  return Array.isArray(data) ? data : (data.results ?? []);
+};
+
 export default function Positions() {
-  const [positions,  setPositions]  = useState([]);
-  const [employees,  setEmployees]  = useState([]);
-  const [posLoading, setPosLoading] = useState(false);
-  const [search,     setSearch]     = useState("");
+  const queryClient = useQueryClient();
+  const [search, setSearch] = useState("");
   const [editingPosition, setEditingPosition] = useState(null);
 
-  const fetchPositions = useCallback(async () => {
-    setPosLoading(true);
-    try {
-      const res  = await apiFetch("/academic/positions/");
-      if (!res.ok) return;
-      const data = await res.json();
-      setPositions(Array.isArray(data) ? data : (data.results ?? []));
-    } catch {
-    } finally {
-      setPosLoading(false);
-    }
-  }, []);
+  const { data: positions = [], isLoading: posLoading } = useQuery({
+    queryKey: ["positions"],
+    queryFn: fetchPositions,
+    staleTime: 5 * 60 * 1000,
+  });
 
-  const fetchEmployees = useCallback(async () => {
-    try {
-      const res  = await apiFetch("/persons/employees/non-teachers/");
-      if (!res.ok) return;
-      const data = await res.json();
-      setEmployees(Array.isArray(data) ? data : (data.results ?? []));
-    } catch {}
-  }, []);
-
-  useEffect(() => {
-    fetchPositions();
-    fetchEmployees();
-  }, [fetchPositions, fetchEmployees]);
+  const { data: employees = [] } = useQuery({
+    queryKey: ["employees", "non-teachers"],
+    queryFn: fetchEmployees,
+    staleTime: 5 * 60 * 1000,
+  });
 
   const countFor = (name) => employees.filter(e => (e.position?.name ?? "").toLowerCase() === name.toLowerCase()).length;
   const isActive = (name) => countFor(name) > 0;
@@ -167,7 +165,9 @@ export default function Positions() {
   });
 
   const handleSaved = (updated) => {
-    setPositions((prev) => prev.map((p) => (p.id === updated.id ? { ...p, ...updated } : p)));
+    queryClient.setQueryData(["positions"], (prev = []) =>
+      prev.map((p) => (p.id === updated.id ? { ...p, ...updated } : p))
+    );
     setEditingPosition(null);
   };
 

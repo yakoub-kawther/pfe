@@ -12,6 +12,7 @@ from .serializers import (
     UpdateAttendanceSerializer,
     StudentAttendanceSerializer,
     ClassAttendanceSummarySerializer,
+    AttendanceOverviewSerializer ,
 )
 from .services import (
     mark_attendance,
@@ -22,6 +23,7 @@ from .services import (
     get_class_attendance_summary,
     get_absent_students,
     calculate_absence_rate,
+    get_weekly_attendance_overview ,
 )
 # from accounts.permissions import IsAdminOrSuperAdmin, IsTeacher , IsNotStudent
 
@@ -33,6 +35,14 @@ class AttendanceViewSet(GenericViewSet):
                        'class_summary', 'absent_students', 'absence_rate' , 'list'):
         return [IsAuthenticated()]
      return [IsAuthenticated(), IsNotStudent()]
+
+
+
+    @action(detail=False, methods=['get'], url_path='overview')
+    def overview(self, request):
+        data = get_weekly_attendance_overview()
+        serializer = AttendanceOverviewSerializer(data)
+        return Response(serializer.data)
 
     # ─────────────────────────────────────────
     # POST /attendance/mark/

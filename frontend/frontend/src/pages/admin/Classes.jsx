@@ -1,7 +1,8 @@
-import React, { useState, useEffect, useCallback, useRef } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import DashboardLayout from "../../layouts/DashboardLayout";
 import Tabs from "../../components/Tabs";
 import { useNavigate } from "react-router-dom";
+import { useQueryClient } from "@tanstack/react-query";
 import {
   SquarePen,
   LayoutGrid,
@@ -17,6 +18,10 @@ import {
 } from "lucide-react";
 import Searchbar from "../../components/Searchbar";
 import { apiFetch } from "../../services/api";
+import { useClasses } from "../../hooks/useClasses";
+import { useLanguages } from "../../hooks/useLanguages";
+import { useLevels } from "../../hooks/useLevels";
+import { useTeachers } from "../../hooks/useTeachers";
 
 const thStyle = {
   padding: "12px 16px",
@@ -125,14 +130,17 @@ const SummaryCard = ({ icon, label, value, color }) => (
   </div>
 );
 
-/* ── Add Class Modal ── */
+/* ── Add Class Modal ──
+   Reference data (teachers/languages/levels) is shared via the same
+   cached hooks used elsewhere in the app, instead of each modal firing
+   its own independent fetch every time it opens. ── */
 const AddClassModal = ({ onClose, onCreated }) => {
-  const [form, setForm]           = useState(emptyForm);
-  const [teachers, setTeachers]   = useState([]);
-  const [languages, setLanguages] = useState([]);
-  const [levels, setLevels]       = useState([]);
-  const [saving, setSaving]       = useState(false);
-  const [error, setError]         = useState(null);
+  const [form, setForm]   = useState(emptyForm);
+  const { teachers: allTeachers } = useTeachers("", "All");
+  const { languages }             = useLanguages();
+  const { levels }                = useLevels();
+  const [saving, setSaving] = useState(false);
+  const [error, setError]   = useState(null);
 
   const nameTouched = useRef(false);
   const [suggestingName, setSuggestingName] = useState(false);
@@ -159,26 +167,9 @@ const AddClassModal = ({ onClose, onCreated }) => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [form.language, form.level, form.teacher]);
 
-  useEffect(() => {
-    apiFetch("/persons/teachers/")
-      .then((res) => res.json())
-      .then((data) => setTeachers(Array.isArray(data) ? data : (data.results ?? [])))
-      .catch((err) => console.error("Failed to fetch teachers:", err));
-
-    apiFetch("/academic/languages/")
-      .then((res) => res.json())
-      .then((data) => setLanguages(Array.isArray(data) ? data : (data.results ?? [])))
-      .catch((err) => console.error("Failed to fetch languages:", err));
-
-    apiFetch("/academic/levels/")
-      .then((res) => res.json())
-      .then((data) => setLevels(Array.isArray(data) ? data : (data.results ?? [])))
-      .catch((err) => console.error("Failed to fetch levels:", err));
-  }, []);
-
   const filteredTeachers = form.language
-    ? teachers.filter((t) => String(t.language?.id) === String(form.language))
-    : teachers;
+    ? allTeachers.filter((t) => String(t.language?.id) === String(form.language))
+    : allTeachers;
 
   const handle = (field) => (e) =>
     setForm((prev) => ({ ...prev, [field]: e.target.value }));
@@ -392,29 +383,12 @@ const EditClassModal = ({ classItem, onClose, onUpdated }) => {
     start_date: classItem?.start_date ?? "",
     status:     currentStatus,
   });
-  const [teachers, setTeachers]   = useState([]);
-  const [languages, setLanguages] = useState([]);
-  const [levels, setLevels]       = useState([]);
+  const { teachers: allTeachers } = useTeachers("", "All");
+  const { languages }             = useLanguages();
+  const { levels }                = useLevels();
   const [saving, setSaving]       = useState(false);
   const [loadingDetail, setLoadingDetail] = useState(false);
   const [error, setError]         = useState(null);
-
-  useEffect(() => {
-    apiFetch("/persons/teachers/")
-      .then((res) => res.json())
-      .then((data) => setTeachers(Array.isArray(data) ? data : (data.results ?? [])))
-      .catch((err) => console.error("Failed to fetch teachers:", err));
-
-    apiFetch("/academic/languages/")
-      .then((res) => res.json())
-      .then((data) => setLanguages(Array.isArray(data) ? data : (data.results ?? [])))
-      .catch((err) => console.error("Failed to fetch languages:", err));
-
-    apiFetch("/academic/levels/")
-      .then((res) => res.json())
-      .then((data) => setLevels(Array.isArray(data) ? data : (data.results ?? [])))
-      .catch((err) => console.error("Failed to fetch levels:", err));
-  }, []);
 
   // Safety net: the table row may only carry *_name display fields, not
   // the raw ids these selects are keyed on. Pull the full record so the
@@ -444,8 +418,8 @@ const EditClassModal = ({ classItem, onClose, onUpdated }) => {
   }, [classItem?.id]);
 
   const filteredTeachers = form.language
-    ? teachers.filter((t) => String(t.language?.id) === String(form.language))
-    : teachers;
+    ? allTeachers.filter((t) => String(t.language?.id) === String(form.language))
+    : allTeachers;
 
   const handle = (field) => (e) =>
     setForm((prev) => ({ ...prev, [field]: e.target.value }));
@@ -626,37 +600,30 @@ const EditClassModal = ({ classItem, onClose, onUpdated }) => {
 
 export default function Classes() {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
 
-  const [classes, setClasses] = useState([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState("All");
   const [page, setPage] = useState(1);
   const [showAddModal, setShowAddModal] = useState(false);
   const [editingClass, setEditingClass] = useState(null);
 
-  // Summary counts are always computed from the FULL unfiltered class
-  // list, independent of the search/status filter applied to the table
-  // below -- otherwise picking a status filter zeroed out the other
-  // cards, since they'd only ever see the filtered subset.
-  const [allClasses, setAllClasses] = useState([]);
-
-  const fetchAllClassesForSummary = useCallback(async () => {
-    try {
-      const res = await apiFetch(`/academic/classes/`);
-      if (!res.ok) return;
-      const data = await res.json();
-      setAllClasses(Array.isArray(data) ? data : data.results ?? []);
-    } catch {
-      // Summary is a nice-to-have; silently ignore failures here since
-      // the main table's error state already surfaces real problems.
-    }
-  }, []);
-
+  // Debounce the search that actually drives the query, same pattern as
+  // Teachers/Employees — input stays responsive, network calls don't fire
+  // on every keystroke.
+  const [debouncedSearch, setDebouncedSearch] = useState("");
   useEffect(() => {
-    fetchAllClassesForSummary();
-  }, [fetchAllClassesForSummary]);
+    const timer = setTimeout(() => setDebouncedSearch(search), 300);
+    return () => clearTimeout(timer);
+  }, [search]);
+
+  const { classes, loading, error } = useClasses(debouncedSearch, filter);
+
+  // Summary counts always reflect the FULL unfiltered list, independent of
+  // whatever search/status filter is applied to the table — this is its
+  // own cached query (empty search/filter), so it doesn't get invalidated
+  // or reshaped by the filtered view above.
+  const { classes: allClasses } = useClasses("", "All");
 
   const classTabs = [
     { name: "Classes", path: "/Classes" },
@@ -667,43 +634,13 @@ export default function Classes() {
 
   const STATUS_FILTER_OPTIONS = ["Active", "Scheduled", "Completed", "Cancelled"];
 
-  const buildParams = useCallback((searchVal, filterVal) => {
-    const params = new URLSearchParams();
-    if (searchVal.trim()) params.set("search", searchVal.trim());
-    if (filterVal && filterVal !== "All") params.set("status", filterVal.toLowerCase());
-    return params.toString();
-  }, []);
-
-  const fetchClasses = useCallback(
-    async (searchVal, filterVal) => {
-      setLoading(true);
-      setError(null);
-      try {
-        const qs = buildParams(searchVal, filterVal);
-        const res = await apiFetch(`/academic/classes/${qs ? `?${qs}` : ""}`);
-        if (!res.ok) throw new Error(`Server error: ${res.status}`);
-        const data = await res.json();
-        const list = Array.isArray(data) ? data : data.results ?? [];
-        // Newest-created class on top.
-        list.sort((a, b) => (b.id ?? 0) - (a.id ?? 0));
-        setClasses(list);
-      } catch (err) {
-        setError(err.message || "Failed to load classes.");
-      } finally {
-        setLoading(false);
-      }
-    },
-    [buildParams]
-  );
-
-  useEffect(() => {
-    const timer = setTimeout(() => fetchClasses(search, filter), 300);
-    return () => clearTimeout(timer);
-  }, [search, filter, fetchClasses]);
-
-  useEffect(() => {
-    setPage(1);
-  }, [search, filter]);
+  // Reset to page 1 when search/filter changes (derived during render, not in an effect)
+  const currentKey = `${debouncedSearch}|${filter}`;
+  const [prevKey, setPrevKey] = useState(currentKey);
+  if (prevKey !== currentKey) {
+    setPrevKey(currentKey);
+    if (page !== 1) setPage(1);
+  }
 
   const totalCount = allClasses.length;
   const statusCount = (s) => allClasses.filter((c) => (c.status ?? "").toLowerCase() === s).length;
@@ -716,6 +653,11 @@ export default function Classes() {
   const paginated = classes.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
 
   const goTo = (p) => setPage(Math.min(Math.max(p, 1), totalPages));
+
+  // Any create/update makes both the filtered list and the summary stale —
+  // this invalidates every cached ["classes", ...] query in one call so
+  // both refetch fresh data instead of showing stale counts/rows.
+  const refreshClasses = () => queryClient.invalidateQueries({ queryKey: ["classes"] });
 
   const pageBtn = (active) => ({
     width: "32px",
@@ -1019,10 +961,7 @@ export default function Classes() {
       {showAddModal && (
         <AddClassModal
           onClose={() => setShowAddModal(false)}
-          onCreated={() => {
-            fetchClasses(search, filter);
-            fetchAllClassesForSummary();
-          }}
+          onCreated={refreshClasses}
         />
       )}
 
@@ -1030,10 +969,7 @@ export default function Classes() {
         <EditClassModal
           classItem={editingClass}
           onClose={() => setEditingClass(null)}
-          onUpdated={() => {
-            fetchClasses(search, filter);
-            fetchAllClassesForSummary();
-          }}
+          onUpdated={refreshClasses}
         />
       )}
     </DashboardLayout>

@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import DashboardLayout from "../../layouts/DashboardLayout";
 import { apiFetch } from "../../services/api";
 import { Loader2, ChevronLeft, ChevronRight, Plus, SquarePen, Trash2 } from "lucide-react";
@@ -539,9 +540,8 @@ function EventModal({ initial, onClose, onSave, classes, classrooms, loadingOpti
 // MAIN COMPONENT
 // ──────────────────────────────────────────────────────
 export default function Time_table() {
-  const [events,       setEvents]       = useState([]);
-  const [loading,      setLoading]      = useState(false);
-  const [error,        setError]        = useState(null);
+  const queryClient = useQueryClient();
+
   const [view,         setView]         = useState("Week");
   const [showModal,    setShowModal]    = useState(false);
   const [editingEvent, setEditingEvent] = useState(null);
@@ -555,26 +555,26 @@ export default function Time_table() {
   const [today]  = useState(todayRef);
   const [cursor, setCursor] = useState(new Date(todayRef));
 
-  const fetchSchedules = useCallback(async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      const res  = await apiFetch("/academic/schedules/");
+  // Cached — same pattern as Classes/Classe_sessions/etc. Returning to
+  // Timetable from another page shows the same schedule instantly instead
+  // of refetching and re-normalizing everything from scratch.
+  const { data, isLoading, error } = useQuery({
+    queryKey: ["schedules"],
+    queryFn: async () => {
+      const res = await apiFetch("/academic/schedules/");
       if (!res.ok) throw new Error(`Server error: ${res.status}`);
-      const data = await res.json();
-      const list = Array.isArray(data) ? data : (data.results ?? []);
+      const json = await res.json();
+      const list = Array.isArray(json) ? json : (json.results ?? []);
       // Hide schedules whose class has already finished — completed
       // classes shouldn't clutter the live timetable. See the
       // `classStatus` field-name assumptions in normalizeSchedule above.
-      setEvents(list.map(normalizeSchedule).filter((ev) => ev.classStatus !== "completed"));
-    } catch (err) {
-      setError(err.message || "Failed to load schedules.");
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+      return list.map(normalizeSchedule).filter((ev) => ev.classStatus !== "completed");
+    },
+    staleTime: 5 * 60 * 1000,
+  });
 
-  useEffect(() => { fetchSchedules(); }, [fetchSchedules]);
+  const events  = data ?? [];
+  const loading = isLoading;
 
   const fetchOptions = useCallback(async (currentClassId = null) => {
     setLoadingOptions(true);
@@ -616,7 +616,9 @@ export default function Time_table() {
   const handleDelete = async (id) => {
     try {
       await apiFetch(`/academic/schedules/${id}/`, { method: "DELETE" });
-      setEvents((prev) => prev.filter((e) => e.id !== id));
+      // Update the cache directly instead of refetching the whole list —
+      // instant, and any other page reading ["schedules"] stays in sync.
+      queryClient.setQueryData(["schedules"], (prev) => (prev ?? []).filter((e) => e.id !== id));
     } catch {
       alert("Failed to delete. Please try again.");
     }
@@ -630,15 +632,18 @@ export default function Time_table() {
   };
 
   const handleSave = (normalizedEvent) => {
-    if (normalizedEvent.classStatus === "completed") {
-      // Just-saved schedule belongs to a class that's already completed
-      // (shouldn't normally happen, but guard against showing it anyway).
-      setEvents((prev) => prev.filter((e) => e.id !== normalizedEvent.id));
-    } else if (editingEvent) {
-      setEvents((prev) => prev.map((e) => (e.id === normalizedEvent.id ? normalizedEvent : e)));
-    } else {
-      setEvents((prev) => [...prev, normalizedEvent]);
-    }
+    queryClient.setQueryData(["schedules"], (prev) => {
+      const list = prev ?? [];
+      if (normalizedEvent.classStatus === "completed") {
+        // Just-saved schedule belongs to a class that's already completed
+        // (shouldn't normally happen, but guard against showing it anyway).
+        return list.filter((e) => e.id !== normalizedEvent.id);
+      }
+      if (editingEvent) {
+        return list.map((e) => (e.id === normalizedEvent.id ? normalizedEvent : e));
+      }
+      return [...list, normalizedEvent];
+    });
     setShowModal(false);
     setEditingEvent(null);
   };
@@ -797,7 +802,7 @@ export default function Time_table() {
               <span style={{ fontSize: "14px" }}>Loading timetable…</span>
             </div>
           ) : error ? (
-            <div style={{ textAlign: "center", padding: "60px 0", color: "#dc2626", fontSize: "14px" }}>{error}</div>
+            <div style={{ textAlign: "center", padding: "60px 0", color: "#dc2626", fontSize: "14px" }}>{error.message}</div>
           ) : (
             <>
               {view === "Week"  && <WeekView  cursor={cursor} events={events} today={today} onEventClick={handleEventClick} />}

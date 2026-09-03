@@ -1,27 +1,48 @@
 import { useState, useEffect } from "react";
 import DashboardLayout from "../../layouts/DashboardLayout";
-import Buttons from "../../components/Buttons";
 import { apiFetch } from "../../services/api";
 
-const Card = ({ title, icon, children }) => (
-  <div
-    className="bg-white rounded-2xl border border-gray-100"
-    style={{ padding: "24px 28px", boxShadow: "0 1px 6px rgba(0,0,0,0.05)" }}
-  >
-    <div className="flex items-center gap-2 mb-6">
-      {icon && <span className="text-[#701366] text-lg">{icon}</span>}
-      <h3 className="text-[#701366] font-Inter" style={{ fontSize: "16px" }}>{title}</h3>
-    </div>
+const inp = (hasError) => ({
+  width          : "100%",
+  border         : `1px solid ${hasError ? "#ef4444" : "#e2d0e2"}`,
+  borderRadius   : "8px",
+  padding        : "10px 14px",
+  fontSize       : "14px",
+  color          : "#701366",
+  outline        : "none",
+  boxSizing      : "border-box",
+  fontFamily     : "Inter, sans-serif",
+  backgroundColor: "#fff",
+  transition     : "border-color 0.2s",
+});
+
+const readField = {
+  ...inp(false),
+  backgroundColor: "#faf5fa",
+  minHeight: "40px",
+  display: "flex",
+  alignItems: "center",
+};
+
+const Field = ({ label, children, full = false }) => (
+  <div style={{ display: "flex", flexDirection: "column", gap: "6px", ...(full ? { gridColumn: "1 / -1" } : {}), minWidth: 0 }}>
+    {label ? <label style={{ fontSize: "13px", color: "#6b7280", fontFamily: "Inter, sans-serif" }}>{label}</label> : null}
     {children}
   </div>
 );
 
 const ReadField = ({ label, value }) => (
-  <div className="flex flex-col gap-1.5">
-    {label && <label className="text-[13px] text-gray-500 font-Inter">{label}</label>}
-    <div style={{ width: "100%", border: "1px solid #e2d0e2", borderRadius: "8px", padding: "10px 14px", fontSize: "14px", color: "#701366", boxSizing: "border-box", fontFamily: "Inter, sans-serif", backgroundColor: "#faf5fa", minHeight: "40px" }}>
+  <Field label={label}>
+    <div style={readField}>
       {value || <span style={{ color: "#c9a8c9" }}>—</span>}
     </div>
+  </Field>
+);
+
+const Card = ({ title, children }) => (
+  <div style={{ background: "white", borderRadius: "16px", border: "1px solid #f3f4f6", padding: "24px 28px", boxShadow: "0 1px 6px rgba(0,0,0,0.05)", boxSizing: "border-box", width: "100%", minWidth: 0 }}>
+    <h3 style={{ fontSize: "19px", fontWeight: 700, color: "#701366", fontFamily: "Inter, sans-serif", marginBottom: "20px", margin: "0 0 20px 0" }}>{title}</h3>
+    {children}
   </div>
 );
 
@@ -53,30 +74,28 @@ const Eye = ({ visible }) =>
     </svg>
   );
 
-const PwField = ({ label, field, form, setForm, show, onToggle }) => (
-  <div className="flex flex-col gap-1.5">
-    <label className="text-[13px] text-gray-500 font-Inter">{label}</label>
+const PwField = ({ label, field, form, setForm, show, onToggle, hasError }) => (
+  <Field label={label}>
     <div style={{ position: "relative" }}>
       <input
         type={show[field] ? "text" : "password"}
         value={form[field]}
         onChange={(e) => setForm((f) => ({ ...f, [field]: e.target.value }))}
         placeholder="••••••••"
-        style={{ width: "100%", border: "1px solid #e2d0e2", borderRadius: "8px", padding: "10px 40px 10px 14px", fontSize: "14px", color: "#333", boxSizing: "border-box", fontFamily: "Inter, sans-serif", backgroundColor: "#fff", minHeight: "40px", outline: "none", transition: "border-color 0.2s" }}
-        onFocus={(e) => (e.target.style.borderColor = "#701366")}
-        onBlur={(e)  => (e.target.style.borderColor = "#e2d0e2")}
+        style={{ ...inp(hasError), padding: "10px 40px 10px 14px" }}
       />
       <button type="button" onClick={() => onToggle(field)} style={{ position: "absolute", right: "12px", top: "50%", transform: "translateY(-50%)", background: "none", border: "none", cursor: "pointer", color: "#a07aa0", padding: 0, display: "flex" }}>
         <Eye visible={show[field]} />
       </button>
     </div>
-  </div>
+  </Field>
 );
 
 export default function Settings() {
   const [me,      setMe]      = useState(null);
   const [form,    setForm]    = useState({ current: "", next: "", confirm: "" });
   const [show,    setShow]    = useState({ current: false, next: false, confirm: false });
+  const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState("");
   const [error,   setError]   = useState("");
 
@@ -90,12 +109,19 @@ export default function Settings() {
   const strength = getStrength(form.next);
   const toggle   = (field) => setShow((s) => ({ ...s, [field]: !s[field] }));
 
+  const handleReset = () => {
+    setForm({ current: "", next: "", confirm: "" });
+    setError("");
+    setSuccess("");
+  };
+
   const handleSave = async () => {
     setError(""); setSuccess("");
     if (!form.current) return setError("Please enter your current password.");
     if (form.next.length < 8) return setError("New password must be at least 8 characters.");
     if (form.next !== form.confirm) return setError("Passwords do not match.");
 
+    setLoading(true);
     try {
       const res = await apiFetch("/account/reset-password/", {
         method: "POST",
@@ -107,45 +133,91 @@ export default function Settings() {
 
       if (!res.ok) {
         const err = await res.json();
-        return setError(err.detail || "Failed to update password.");
+        setError(err.detail || "Failed to update password.");
+        return;
       }
 
       setSuccess("Password updated successfully!");
       setForm({ current: "", next: "", confirm: "" });
     } catch {
       setError("Network error. Please try again.");
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
     <DashboardLayout>
-      <div className="w-full pb-10" style={{ padding: "30px clamp(12px, 2vw, 32px)" }}>
+      <div style={{ display: "flex", flexDirection: "column", gap: "24px", width: "100%", minWidth: 0, boxSizing: "border-box" }}>
 
         {/* Header */}
-        <div className="flex items-center justify-between mb-8">
-          <h1 className="text-2xl text-[#701366] font-Inter">Settings</h1>
+        <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", flexWrap: "wrap", gap: "14px" }}>
+          <h1 style={{
+            fontSize: "32px",
+            fontWeight: 700,
+            color: "#701366",
+            margin: 0,
+            letterSpacing: "-0.02em",
+            lineHeight: 1.2,
+          }}>
+            Settings
+          </h1>
+
+          <div style={{ display: "flex", gap: "8px", flexWrap: "wrap", marginTop: "8px" }}>
+            <button
+              onClick={handleReset}
+              style={{ padding: "8px 20px", borderRadius: "8px", border: "1.5px solid #e2d0e2", background: "#fff", color: "#701366", fontSize: "13px", fontFamily: "Inter, sans-serif", cursor: "pointer" }}
+              onMouseEnter={e => { e.target.style.borderColor = "#701366"; }}
+              onMouseLeave={e => { e.target.style.borderColor = "#e2d0e2"; }}
+            >
+              Cancel
+            </button>
+            <button
+              onClick={handleSave}
+              disabled={loading}
+              style={{ padding: "8px 24px", borderRadius: "8px", border: "1.5px solid #701366", background: loading ? "#a855a0" : "#701366", color: "#fff", fontSize: "13px", fontFamily: "Inter, sans-serif", cursor: loading ? "not-allowed" : "pointer", fontWeight: "600" }}
+              onMouseEnter={e => { if (!loading) e.target.style.background = "#5a0f52"; }}
+              onMouseLeave={e => { if (!loading) e.target.style.background = "#701366"; }}
+            >
+              {loading ? "Saving..." : "Save Password"}
+            </button>
+          </div>
         </div>
 
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 380px), 1fr))", gap: "24px", alignItems: "start", marginTop: "30px" }}>
+        {/* Success banner */}
+        {success && (
+          <div style={{ background: "#f0fdf4", color: "#166534", padding: "14px 20px", borderRadius: "10px", fontSize: "14px", display: "flex", alignItems: "center", gap: "10px", border: "1px solid #bbf7d0" }}>
+            <span style={{ fontSize: "18px" }}>✓</span>
+            {success}
+          </div>
+        )}
+
+        {/* Error banner */}
+        {error && (
+          <div style={{ background: "#fef2f2", color: "#991b1b", padding: "12px 20px", borderRadius: "10px", fontSize: "14px" }}>
+            {error}
+          </div>
+        )}
+
+        {/* Cards grid */}
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "24px", alignItems: "start", minWidth: 0, marginTop: "8px" }}>
 
           {/* LEFT */}
-          <div className="flex flex-col" style={{ gap: "24px" }}>
+          <div style={{ display: "flex", flexDirection: "column", gap: "24px", minWidth: 0 }}>
 
-            {/* Account Info */}
             <Card title="Account Information">
-              <div className="grid grid-cols-1" style={{ gap: "16px", marginTop: "20px" }}>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "18px" }}>
                 <ReadField label="Full Name" value={me?.full_name} />
                 <ReadField label="Username"  value={me?.username}  />
-                <ReadField label="Role"      value={me?.role}      />
+                <ReadField label="Role" value={me?.role} />
               </div>
-              <p className="text-[11px] text-gray-400 font-Inter mt-4">
+              <p style={{ fontSize: "11px", color: "#9ca3af", fontFamily: "Inter, sans-serif", marginTop: "16px" }}>
                 * Account details can only be updated by the system administrator.
               </p>
             </Card>
 
-            {/* Support */}
             <Card title="Support">
-              <a href={`https://mail.google.com/mail/?view=cm&to=${DIRECTOR_EMAIL}&subject=Support%20Request`} target="_blank" rel="noreferrer" style={{ textDecoration: "none", display: "block", marginBottom: "14px", marginTop: "10px" }}>
+              <a href={`https://mail.google.com/mail/?view=cm&to=${DIRECTOR_EMAIL}&subject=Support%20Request`} target="_blank" rel="noreferrer" style={{ textDecoration: "none", display: "block" }}>
                 <div
                   style={{ background: "linear-gradient(135deg, #701366 0%, #9c1e8e 100%)", borderRadius: "14px", padding: "10px 20px", display: "flex", alignItems: "center", gap: "14px", cursor: "pointer", transition: "opacity 0.2s, transform 0.2s" }}
                   onMouseEnter={e => { e.currentTarget.style.opacity = "0.9"; e.currentTarget.style.transform = "translateY(-2px)"; }}
@@ -166,59 +238,50 @@ export default function Settings() {
                   </svg>
                 </div>
               </a>
-              <p className="text-[11px] text-gray-400 font-Inter leading-relaxed">
+              <p style={{ fontSize: "11px", color: "#9ca3af", fontFamily: "Inter, sans-serif", lineHeight: 1.6, marginTop: "14px" }}>
                 Click above to open your email app and write to the director directly. We typically respond within one business day.
               </p>
             </Card>
           </div>
 
           {/* RIGHT — Change Password */}
-          <Card title="Change Password">
-            <p className="text-[11px] text-[#c192c1] font-Inter mb-6 leading-relaxed">
-              Choose a strong password you haven't used before.
-            </p>
-            <div className="grid grid-cols-1" style={{ gap: "18px", marginTop: "20px" }}>
-              <PwField label="Current Password"     field="current" form={form} setForm={setForm} show={show} onToggle={toggle} />
-              <PwField label="New Password"         field="next"    form={form} setForm={setForm} show={show} onToggle={toggle} />
+          <div style={{ display: "flex", flexDirection: "column", gap: "24px", minWidth: 0 }}>
+            <Card title="Change Password">
+              <p style={{ fontSize: "11px", color: "#c192c1", fontFamily: "Inter, sans-serif", marginBottom: "20px", lineHeight: 1.6 }}>
+                Choose a strong password you haven't used before.
+              </p>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr", gap: "18px" }}>
+                <PwField label="Current Password" field="current" form={form} setForm={setForm} show={show} onToggle={toggle} />
+                <PwField label="New Password"     field="next"    form={form} setForm={setForm} show={show} onToggle={toggle} />
 
-              {form.next && strength && (
-                <div>
-                  <div style={{ height: "4px", background: "#f0e6f0", borderRadius: "99px", overflow: "hidden" }}>
-                    <div style={{ height: "100%", width: strength.width, background: strength.color, borderRadius: "99px", transition: "width 0.35s ease, background 0.35s ease" }} />
+                {form.next && strength && (
+                  <div>
+                    <div style={{ height: "4px", background: "#f0e6f0", borderRadius: "99px", overflow: "hidden" }}>
+                      <div style={{ height: "100%", width: strength.width, background: strength.color, borderRadius: "99px", transition: "width 0.35s ease, background 0.35s ease" }} />
+                    </div>
+                    <p style={{ fontSize: "11px", fontFamily: "Inter, sans-serif", marginTop: "4px", color: strength.color }}>{strength.label}</p>
                   </div>
-                  <p className="text-[11px] font-Inter mt-1" style={{ color: strength.color }}>{strength.label}</p>
-                </div>
-              )}
+                )}
 
-              <PwField label="Confirm New Password" field="confirm" form={form} setForm={setForm} show={show} onToggle={toggle} />
+                <PwField label="Confirm New Password" field="confirm" form={form} setForm={setForm} show={show} onToggle={toggle} />
 
-              <ul className="text-[11px] text-gray-400 font-Inter space-y-0.5 list-none" style={{ paddingLeft: "0", margin: "0" }}>
-                {[
-                  ["At least 8 characters",  form.next.length >= 8],
-                  ["One uppercase letter",    /[A-Z]/.test(form.next)],
-                  ["One number",             /[0-9]/.test(form.next)],
-                  ["One special character",  /[^A-Za-z0-9]/.test(form.next)],
-                  ["Passwords match",        form.next && form.next === form.confirm],
-                ].map(([rule, ok]) => (
-                  <li key={rule} className="flex items-center gap-1.5">
-                    <span style={{ color: ok ? "#22c55e" : "#d1b3d1", fontSize: "12px" }}>{ok ? "✓" : "○"}</span>
-                    <span style={{ color: ok ? "#22c55e" : undefined }}>{rule}</span>
-                  </li>
-                ))}
-              </ul>
-
-              {error   && <p className="text-[13px] font-Inter" style={{ color: "#ef4444" }}>⚠ {error}</p>}
-              {success && <p className="text-[13px] font-Inter" style={{ color: "#22c55e" }}>✓ {success}</p>}
-
-              <div className="flex justify-end pt-1">
-                <Buttons
-                  onCancel={() => { setForm({ current: "", next: "", confirm: "" }); setError(""); setSuccess(""); }}
-                  onSave={handleSave}
-                  saveLabel="Save Password"
-                />
+                <ul style={{ fontSize: "11px", color: "#9ca3af", fontFamily: "Inter, sans-serif", listStyle: "none", padding: 0, margin: 0, display: "flex", flexDirection: "column", gap: "4px" }}>
+                  {[
+                    ["At least 8 characters",  form.next.length >= 8],
+                    ["One uppercase letter",    /[A-Z]/.test(form.next)],
+                    ["One number",             /[0-9]/.test(form.next)],
+                    ["One special character",  /[^A-Za-z0-9]/.test(form.next)],
+                    ["Passwords match",        form.next && form.next === form.confirm],
+                  ].map(([rule, ok]) => (
+                    <li key={rule} style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                      <span style={{ color: ok ? "#22c55e" : "#d1b3d1", fontSize: "12px" }}>{ok ? "✓" : "○"}</span>
+                      <span style={{ color: ok ? "#22c55e" : undefined }}>{rule}</span>
+                    </li>
+                  ))}
+                </ul>
               </div>
-            </div>
-          </Card>
+            </Card>
+          </div>
 
         </div>
       </div>

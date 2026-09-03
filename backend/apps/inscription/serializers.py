@@ -68,3 +68,10 @@ class InscriptionDetailSerializer(serializers.ModelSerializer):
 class TransitionSerializer(serializers.Serializer):
     """Used for promote and repeat actions."""
     new_class_id = serializers.IntegerField()
+
+
+
+class EnrollmentGrowthPointSerializer(serializers.Serializer):
+    month = serializers.DateField()
+    net   = serializers.IntegerField()
+    total = serializers.IntegerField()

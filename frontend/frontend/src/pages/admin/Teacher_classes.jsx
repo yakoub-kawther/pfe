@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { useLocation, useNavigate } from "react-router-dom";
 import { ArrowLeft, Loader2 } from "lucide-react";
 import DashboardLayout from "../../layouts/DashboardLayout";
@@ -58,36 +58,27 @@ export default function Classes_teacher() {
   const teacher     = state?.teacher;
   const teacherId   = teacher?.employee?.person_id;
 
-  const [classes, setClasses] = useState([]);
-  const [loading, setLoading] = useState(false);
-  const [error,   setError]   = useState(null);
-
   const teacherTabs = [
     { name: "Profile", path: "/Teacher_profile", state: { teacher } },
     { name: "Classes", path: "/Teacher_classes", state: { teacher } },
     { name: "Payment", path: "/Teacher_payment", state: { teacher } },
   ];
 
-  useEffect(() => {
-    if (!teacherId) return;
+  // Cached per teacher — same pattern as the other class/teacher pages.
+  const { data, isLoading, error } = useQuery({
+    queryKey: ["classes", "teacher", teacherId],
+    queryFn: async () => {
+      const res = await apiFetch(`/academic/classes/?teacher=${teacherId}`);
+      if (!res.ok) throw new Error(`Server error: ${res.status}`);
+      const json = await res.json();
+      return Array.isArray(json) ? json : (json.results ?? []);
+    },
+    enabled: !!teacherId,
+    staleTime: 5 * 60 * 1000,
+  });
 
-    const fetchClasses = async () => {
-      setLoading(true);
-      setError(null);
-      try {
-        const res = await apiFetch(`/academic/classes/?teacher=${teacherId}`);
-        if (!res.ok) throw new Error(`Server error: ${res.status}`);
-        const data = await res.json();
-        setClasses(Array.isArray(data) ? data : (data.results ?? []));
-      } catch (err) {
-        setError(err.message || "Failed to load classes.");
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchClasses();
-  }, [teacherId]);
+  const classes = data ?? [];
+  const loading = isLoading;
 
   return (
     <DashboardLayout>
@@ -152,7 +143,7 @@ export default function Classes_teacher() {
               {!loading && error && (
                 <tr>
                   <td colSpan={5} style={{ textAlign: "center", padding: "40px", color: "#ef4444", fontSize: "14px" }}>
-                    {error}
+                    {error.message}
                   </td>
                 </tr>
               )}

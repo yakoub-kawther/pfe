@@ -1,4 +1,5 @@
-import React, { useState, useEffect, useCallback, useRef } from "react";
+import React, { useState, useCallback, useRef } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import DashboardLayout from "../../layouts/DashboardLayout";
 import { Users, UserCheck, UserPlus, Loader2, ChevronLeft, ChevronRight, X, Ban } from "lucide-react";
 import Searchbar from "../../components/Searchbar";
@@ -370,22 +371,59 @@ const PlacementGroup = ({ className, outcome, students, classes, onAssign, assig
   );
 };
 
+// ─── Fetchers (outside component, so identity is stable) ────────
+const fetchStudents = async () => {
+  const res = await apiFetch("/persons/students/");
+  const data = await res.json();
+  return Array.isArray(data) ? data : (data.results ?? []);
+};
+
+const fetchClasses = async () => {
+  const res = await apiFetch("/academic/classes/");
+  const data = await res.json();
+  return Array.isArray(data) ? data : (data.results ?? []);
+};
+
+const fetchInscriptions = async () => {
+  const res = await apiFetch("/inscriptions/");
+  const data = await res.json();
+  return Array.isArray(data) ? data : (data.results ?? []);
+};
+
+const fetchWaitlisted = async () => {
+  const res = await apiFetch("/persons/students/waitlisted/");
+  const data = await res.json();
+  return Array.isArray(data) ? data : (data.results ?? []);
+};
+
+const fetchNeedsPlacement = async () => {
+  const res = await apiFetch("/persons/students/needs-placement/");
+  const data = await res.json();
+  return Array.isArray(data) ? data : (data.results ?? []);
+};
+
 // ─── Main Component ─────────────────────────────────────────────
 export default function Inscriptions() {
+  const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState("inscriptions"); // "inscriptions" | "waitlisted" | "placement"
 
-  const [students, setStudents] = useState([]);
-  const [classes, setClasses]   = useState([]);
+  const { data: students = [] } = useQuery({
+    queryKey: ["students"], queryFn: fetchStudents, staleTime: 5 * 60 * 1000,
+  });
+  const { data: classes = [] } = useQuery({
+    queryKey: ["classes"], queryFn: fetchClasses, staleTime: 5 * 60 * 1000,
+  });
+  const { data: inscriptions = [], isLoading: loadingInscriptions } = useQuery({
+    queryKey: ["inscriptions"], queryFn: fetchInscriptions, staleTime: 5 * 60 * 1000,
+  });
+  const { data: waitlisted = [], isLoading: loadingWaitlisted } = useQuery({
+    queryKey: ["waitlisted"], queryFn: fetchWaitlisted, staleTime: 5 * 60 * 1000,
+  });
+  const { data: needsPlacement = [], isLoading: loadingPlacement } = useQuery({
+    queryKey: ["needsPlacement"], queryFn: fetchNeedsPlacement, staleTime: 5 * 60 * 1000,
+  });
 
-  const [inscriptions, setInscriptions]       = useState([]);
-  const [loadingInscriptions, setLoadingInsc] = useState(false);
-
-  const [waitlisted, setWaitlisted]         = useState([]);
-  const [loadingWaitlisted, setLoadingWait] = useState(false);
-
-  const [needsPlacement, setNeedsPlacement]   = useState([]);
-  const [loadingPlacement, setLoadingPlacement] = useState(false);
-  const [assigningGroup, setAssigningGroup]   = useState(false);
+  const [assigningGroup, setAssigningGroup] = useState(false);
 
   const [searchInsc, setSearchInsc] = useState("");
   const [filterInsc, setFilterInsc] = useState("All");
@@ -397,58 +435,6 @@ export default function Inscriptions() {
 
   const [modalOpen, setModalOpen]     = useState(false);
   const [modalPreset, setModalPreset] = useState(null);
-
-  // ─── Fetchers ──────────────────────────────────────────────
-  const fetchStudents = useCallback(async () => {
-    try {
-      const res = await apiFetch("/persons/students/");
-      const data = await res.json();
-      setStudents(Array.isArray(data) ? data : (data.results ?? []));
-    } catch { /* silent */ }
-  }, []);
-
-  const fetchClasses = useCallback(async () => {
-    try {
-      const res = await apiFetch("/academic/classes/");
-      const data = await res.json();
-      setClasses(Array.isArray(data) ? data : (data.results ?? []));
-    } catch { /* silent */ }
-  }, []);
-
-  const fetchInscriptions = useCallback(async () => {
-    setLoadingInsc(true);
-    try {
-      const res = await apiFetch("/inscriptions/");
-      const data = await res.json();
-      setInscriptions(Array.isArray(data) ? data : (data.results ?? []));
-    } catch { /* silent */ } finally { setLoadingInsc(false); }
-  }, []);
-
-  const fetchWaitlisted = useCallback(async () => {
-    setLoadingWait(true);
-    try {
-      const res = await apiFetch("/persons/students/waitlisted/");
-      const data = await res.json();
-      setWaitlisted(Array.isArray(data) ? data : (data.results ?? []));
-    } catch { /* silent */ } finally { setLoadingWait(false); }
-  }, []);
-
-  const fetchNeedsPlacement = useCallback(async () => {
-    setLoadingPlacement(true);
-    try {
-      const res = await apiFetch("/persons/students/needs-placement/");
-      const data = await res.json();
-      setNeedsPlacement(Array.isArray(data) ? data : (data.results ?? []));
-    } catch { /* silent */ } finally { setLoadingPlacement(false); }
-  }, []);
-
-  useEffect(() => {
-    fetchStudents();
-    fetchClasses();
-    fetchInscriptions();
-    fetchWaitlisted();
-    fetchNeedsPlacement();
-  }, [fetchStudents, fetchClasses, fetchInscriptions, fetchWaitlisted, fetchNeedsPlacement]);
 
   // ─── Reset page to 1 when tab/search/filter changes ───────
   const filterKey =
@@ -472,8 +458,8 @@ export default function Inscriptions() {
         return;
       }
       setConfirmId(null);
-      fetchInscriptions();
-      fetchWaitlisted(); // cancelled student becomes waitlisted again
+      queryClient.invalidateQueries({ queryKey: ["inscriptions"] });
+      queryClient.invalidateQueries({ queryKey: ["waitlisted"] }); // cancelled student becomes waitlisted again
     } catch {
       alert("Network error.");
     } finally {
@@ -485,9 +471,9 @@ export default function Inscriptions() {
   const handleEnrollSuccess = () => {
     setModalOpen(false);
     setModalPreset(null);
-    fetchInscriptions();
-    fetchWaitlisted();
-    fetchNeedsPlacement();
+    queryClient.invalidateQueries({ queryKey: ["inscriptions"] });
+    queryClient.invalidateQueries({ queryKey: ["waitlisted"] });
+    queryClient.invalidateQueries({ queryKey: ["needsPlacement"] });
   };
 
   const openModal = (presetStudentId = null) => {
@@ -521,9 +507,9 @@ export default function Inscriptions() {
     if (failed > 0) {
       alert(`${success} enrolled, ${failed} failed.`);
     }
-    fetchInscriptions();
-    fetchWaitlisted();
-    fetchNeedsPlacement();
+    queryClient.invalidateQueries({ queryKey: ["inscriptions"] });
+    queryClient.invalidateQueries({ queryKey: ["waitlisted"] });
+    queryClient.invalidateQueries({ queryKey: ["needsPlacement"] });
   };
 
   // ─── Derived lists ───────────────────────────────────────────

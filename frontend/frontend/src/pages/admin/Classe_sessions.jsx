@@ -1,4 +1,5 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { useLocation, useNavigate } from "react-router-dom";
 import { ArrowLeft, BookOpen, Clock, CheckCircle, Loader2 } from "lucide-react";
 import DashboardLayout from "../../layouts/DashboardLayout";
@@ -69,28 +70,25 @@ export default function Classe_sessions() {
   const navigate  = useNavigate();
   const cls       = state?.cls;
 
-  const [sessions, setSessions] = useState([]);
-  const [loading,  setLoading]  = useState(false);
-  const [error,    setError]    = useState(null);
-  const [search,   setSearch]   = useState("");
+  const [search, setSearch] = useState("");
 
-  const fetchSessions = useCallback(async () => {
-    if (!cls?.id) return;
-    setLoading(true);
-    setError(null);
-    try {
+  // Cached per-class: revisiting this tab for the same class within
+  // staleTime shows data instantly with no network request, instead of
+  // refetching from scratch on every mount like the old useEffect version.
+  const { data, isLoading, error } = useQuery({
+    queryKey: ["sessions", cls?.id],
+    queryFn: async () => {
       const res = await apiFetch(`/academic/sessions/?class_obj=${cls.id}`);
       if (!res.ok) throw new Error(`Server error: ${res.status}`);
-      const data = await res.json();
-      setSessions(Array.isArray(data) ? data : (data.results ?? []));
-    } catch (err) {
-      setError(err.message || "Failed to load sessions.");
-    } finally {
-      setLoading(false);
-    }
-  }, [cls]);
+      const json = await res.json();
+      return Array.isArray(json) ? json : (json.results ?? []);
+    },
+    enabled: !!cls?.id,
+    staleTime: 5 * 60 * 1000,
+  });
 
-  useEffect(() => { fetchSessions(); }, [fetchSessions]);
+  const sessions = data ?? [];
+  const loading  = isLoading;
 
   const classTabs = [
     { name: "Details",  path: "/Classe_information", state: { cls } },
@@ -173,7 +171,7 @@ export default function Classe_sessions() {
               )}
               {!loading && error && (
                 <tr>
-                  <td colSpan={2} style={{ textAlign: "center", padding: "32px", color: "#dc2626", fontSize: "14px" }}>{error}</td>
+                  <td colSpan={2} style={{ textAlign: "center", padding: "32px", color: "#dc2626", fontSize: "14px" }}>{error.message}</td>
                 </tr>
               )}
               {!loading && !error && filteredSessions.length === 0 && (

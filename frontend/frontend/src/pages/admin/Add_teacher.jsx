@@ -63,6 +63,31 @@ const emptyForm = {
   status: "Active", qualifications: "", hireDate: today,
 };
 
+// Turns a DRF-style error body into a flat field->message map, plus a
+// catch-all "error" key for anything we don't recognize by name — so a
+// server error can never silently vanish just because we forgot to list
+// its field here.
+const mapServerErrors = (errData, knownFields) => {
+  const mapped = {};
+  knownFields.forEach((field) => {
+    if (errData[field]) mapped[field] = errData[field];
+  });
+  if (errData.detail)           mapped.error = errData.detail;
+  if (errData.error)            mapped.error = errData.error;
+  if (errData.non_field_errors) mapped.error = errData.non_field_errors[0];
+
+  // Fallback: if the response had keys we didn't explicitly map above,
+  // still surface something instead of failing silently.
+  if (!mapped.error && Object.keys(mapped).length === 0) {
+    const firstKey = Object.keys(errData)[0];
+    if (firstKey) {
+      const val = errData[firstKey];
+      mapped.error = Array.isArray(val) ? val[0] : String(val);
+    }
+  }
+  return mapped;
+};
+
 // ─── Component ────────────────────────────────────────────────
 const Add_teacher = () => {
   const navigate = useNavigate();
@@ -78,22 +103,16 @@ const Add_teacher = () => {
 
   // Fetch languages and positions on mount
   useEffect(() => {
-    const token = localStorage.getItem("access");
+  apiFetch("/academic/languages/")
+    .then(res => res.json())
+    .then(data => setLanguages(data))
+    .catch(err => console.error("Failed to fetch languages:", err));
 
-    fetch("http://localhost:8000/api/academic/languages/", {
-      headers: { Authorization: `Bearer ${token}` }
-    })
-      .then(res => res.json())
-      .then(data => setLanguages(data))
-      .catch(err => console.error("Failed to fetch languages:", err));
-
-    fetch("http://localhost:8000/api/academic/positions/", {
-      headers: { Authorization: `Bearer ${token}` }
-    })
-      .then(res => res.json())
-      .then(data => setPositions(data))
-      .catch(() => {});
-  }, []);
+  apiFetch("/academic/positions/")
+    .then(res => res.json())
+    .then(data => setPositions(data))
+    .catch(() => {});
+}, []);
 
   const handle = (field) => (e) => {
     setForm((prev) => ({ ...prev, [field]: e.target.value }));
@@ -151,33 +170,31 @@ const Add_teacher = () => {
           is_head_teacher : headTeacher,
           qualifications  : form.qualifications || null,
           status          : form.status.toLowerCase(),
+          // Some positions (e.g. head teacher) require login credentials
+          // to be created atomically with the teacher record itself — the
+          // backend rejects the request with a "username/password required
+          // for this position" error otherwise. Sending them here covers
+          // that case; the separate /account/create-account/ call below
+          // still runs afterward for positions that don't need this.
+          username        : form.username,
+          password        : form.password,
         },
       });
 
       if (!teacherRes.ok) {
-        const errData = await teacherRes.json();
-        const mapped = {};
-        if (errData.first_name)       mapped.first_name  = errData.first_name;
-        if (errData.last_name)        mapped.last_name   = errData.last_name;
-        if (errData.phone)            mapped.phone       = errData.phone;
-        if (errData.email)            mapped.email       = errData.email;
-        if (errData.password)         mapped.password    = errData.password;
-        if (errData.language_id)      mapped.language_id = errData.language_id;
-        if (errData.hire_date)        mapped.hire_date   = errData.hire_date;
-        if (errData.detail)           mapped.error       = errData.detail;
-        if (errData.error)            mapped.error       = errData.error;
-        if (errData.non_field_errors) mapped.error       = errData.non_field_errors[0];
+        const errData = await teacherRes.json().catch(() => ({}));
+        const mapped = mapServerErrors(errData, [
+          "first_name", "last_name", "phone", "email",
+          "password", "username", "language_id", "hire_date",
+        ]);
         setErrors(mapped);
         return;
       }
       const teacherData = await teacherRes.json();
-      console.log("FULL:", JSON.stringify(teacherData));
       const employee_id = teacherData.id
         ?? teacherData.employee?.id
         ?? teacherData.employee?.person_id
         ?? teacherData.person_id;
-
-      console.log("employee_id found:", employee_id);
 
       if (!employee_id) {
         setErrors({ error: "Could not retrieve employee ID. Check API response." });
@@ -195,12 +212,8 @@ const Add_teacher = () => {
       });
 
       if (!accountRes.ok) {
-        const errData = await accountRes.json();
-        const mapped = {};
-        if (errData.username) mapped.username = errData.username;
-        if (errData.password) mapped.password = errData.password;
-        if (errData.detail)   mapped.error    = errData.detail;
-        if (errData.error)    mapped.error    = errData.error;
+        const errData = await accountRes.json().catch(() => ({}));
+        const mapped = mapServerErrors(errData, ["username", "password"]);
         setErrors(mapped);
         return;
       }

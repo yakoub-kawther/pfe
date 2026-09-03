@@ -1,4 +1,5 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { useLocation, useNavigate } from "react-router-dom";
 import { ArrowLeft } from "lucide-react";
 import DashboardLayout from "../../layouts/DashboardLayout";
@@ -58,9 +59,7 @@ export default function Payment_teacher() {
   const teacher = state?.teacher;
   const employeeId = teacher?.employee?.person_id;
 
-  const [year, setYear]       = useState(CURRENT_YEAR);
-  const [salaries, setSalaries] = useState([]);
-  const [loading, setLoading]   = useState(true);
+  const [year, setYear] = useState(CURRENT_YEAR);
 
   const teacherTabs = [
     { name: "Profile", path: "/Teacher_profile", state: { teacher } },
@@ -68,22 +67,22 @@ export default function Payment_teacher() {
     { name: "Payment", path: "/Teacher_payment", state: { teacher } },
   ];
 
-  useEffect(() => {
-    if (!employeeId) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
-      setLoading(false);
+  // Cached per teacher+year — flipping to a year you've already viewed
+  // this session (including going back to the current year) shows it
+  // instantly instead of refetching.
+  const { data, isLoading } = useQuery({
+    queryKey: ["salaries", employeeId, year],
+    queryFn: async () => {
+      const res = await apiFetch(`/salaries/employee/${employeeId}/?year=${year}`);
+      const json = await res.json();
+      return json.salaries ?? [];
+    },
+    enabled: !!employeeId,
+    staleTime: 5 * 60 * 1000,
+  });
 
-      setSalaries([]);
-      return;
-    }
-
-    setLoading(true);
-    apiFetch(`/salaries/employee/${employeeId}/?year=${year}`)
-      .then((r) => r.json())
-      .then((data) => setSalaries(data.salaries ?? []))
-      .catch(() => setSalaries([]))
-      .finally(() => setLoading(false));
-  }, [employeeId, year]);
+  const salaries = data ?? [];
+  const loading  = isLoading;
 
   const paymentData = salaries
     .slice()

@@ -3,6 +3,8 @@ import { useLocation, useNavigate } from "react-router-dom";
 import { ArrowLeft } from "lucide-react";
 import DashboardLayout from "../../layouts/DashboardLayout";
 import { apiFetch } from "../../services/api";
+import { useLanguages } from "../../hooks/useLanguages";
+import { useAccounts } from "../../hooks/useAccounts";
 
 const today = new Date().toISOString().split("T")[0];
 
@@ -52,6 +54,10 @@ const getError = (errors, field) => {
   return null;
 };
 
+const PHONE_REGEX = /^\d{10}$/;
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const NAME_REGEX  = /^[a-zA-ZÀ-ÿ\s'-]{2,50}$/;
+
 const Edit_teacher = () => {
   const { state } = useLocation();
   const navigate  = useNavigate();
@@ -72,7 +78,8 @@ const Edit_teacher = () => {
       : "Male"
   );
   const [headTeacher,  setHeadTeacher]  = useState(teacher?.is_head_teacher ?? false);
-  const [languages,    setLanguages]    = useState([]);
+  const { languages }                   = useLanguages();
+  const { accounts }                    = useAccounts();
   const [loading,      setLoading]      = useState(false);
   const [errors,       setErrors]       = useState({});
   const [success,      setSuccess]      = useState(false);
@@ -93,20 +100,33 @@ const Edit_teacher = () => {
     password      : "",
   });
 
-  // Fetch languages on mount
+  // Fetch languages/accounts once per app session (cached across page switches)
+  // via useLanguages()/useAccounts() above — no per-page fetch needed here.
+
+  // Sync the matching account's username into the form once accounts resolve
   useEffect(() => {
-    const token = localStorage.getItem("access");
-    fetch("http://localhost:8000/api/academic/languages/", {
-      headers: { Authorization: `Bearer ${token}` },
-    })
-      .then(res => res.json())
-      .then(data => setLanguages(data))
-      .catch(err => console.error("Failed to fetch languages:", err));
-  }, []);
+    if (!person_id || accounts.length === 0) return;
+    const match = accounts.find((a) => a.person_id === person_id);
+    if (match) {
+      setForm((prev) => ({ ...prev, username: match.username }));
+    }
+  }, [person_id, accounts]);
 
   const handle = (field) => (e) => {
     setForm((prev) => ({ ...prev, [field]: e.target.value }));
     setErrors((prev) => { const u = { ...prev }; delete u[field]; return u; });
+  };
+
+  const validate = () => {
+    const errs = {};
+    if (!form.firstName.trim())                                    errs.first_name = "First name is required.";
+    else if (!NAME_REGEX.test(form.firstName.trim()))              errs.first_name = "First name must be 2–50 letters only.";
+    if (!form.lastName.trim())                                     errs.last_name  = "Last name is required.";
+    else if (!NAME_REGEX.test(form.lastName.trim()))               errs.last_name  = "Last name must be 2–50 letters only.";
+    if (form.phone.trim() && !PHONE_REGEX.test(form.phone.trim())) errs.phone      = "Phone must be exactly 10 digits.";
+    if (form.email.trim() && !EMAIL_REGEX.test(form.email.trim())) errs.email      = "Enter a valid email address.";
+    if (form.password && form.password.length < 6)                errs.password   = "Password must be at least 6 characters.";
+    return errs;
   };
 
   const handleSave = async () => {
@@ -114,6 +134,9 @@ const Edit_teacher = () => {
       setErrors({ error: "Missing teacher ID. Cannot update." });
       return;
     }
+
+    const frontendErrors = validate();
+    if (Object.keys(frontendErrors).length > 0) { setErrors(frontendErrors); return; }
 
     setLoading(true);
     setErrors({});
@@ -174,7 +197,7 @@ const Edit_teacher = () => {
       <div style={{ display: "flex", flexDirection: "column", gap: "24px", width: "100%", minWidth: 0, boxSizing: "border-box" }}>
 
         {/* Header */}
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: "14px" }}>
+        <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", flexWrap: "wrap", gap: "14px" }}>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "flex-start", gap: "14px", direction: "ltr" }}>
             <button
               onClick={() => navigate("/Teachers")}
@@ -196,7 +219,7 @@ const Edit_teacher = () => {
             </h1>
           </div>
 
-          <div style={{ display: "flex", gap: "8px" }}>
+          <div style={{ display: "flex", gap: "8px", flexWrap: "wrap", marginTop: "8px" }}>
             <button
               onClick={() => navigate("/Teachers")}
               style={{ padding: "8px 20px", borderRadius: "8px", border: "1.5px solid #e2d0e2", background: "#fff", color: "#701366", fontSize: "13px", fontFamily: "Inter, sans-serif", cursor: "pointer" }}
@@ -233,7 +256,7 @@ const Edit_teacher = () => {
         )}
 
         {/* Cards grid */}
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "24px", alignItems: "start", minWidth: 0 }}>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "24px", alignItems: "start", minWidth: 0, marginTop: "8px" }}>
 
           {/* LEFT */}
           <div style={{ display: "flex", flexDirection: "column", gap: "24px", minWidth: 0 }}>

@@ -1,4 +1,5 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { useLocation, useNavigate } from "react-router-dom";
 import { ArrowLeft, Loader2 } from "lucide-react";
 import DashboardLayout from "../../layouts/DashboardLayout";
@@ -36,28 +37,24 @@ export default function Classe_students() {
   const navigate  = useNavigate();
   const cls       = state?.cls;
 
-  const [students, setStudents] = useState([]);
-  const [loading,  setLoading]  = useState(false);
-  const [error,    setError]    = useState(null);
-  const [search,   setSearch]   = useState("");
+  const [search, setSearch] = useState("");
 
-  const fetchStudents = useCallback(async () => {
-    if (!cls?.id) return;
-    setLoading(true);
-    setError(null);
-    try {
+  // Cached per-class, same pattern as Classe_sessions/Classe_information —
+  // revisiting this tab within staleTime shows data instantly, no refetch.
+  const { data, isLoading, error } = useQuery({
+    queryKey: ["students", cls?.id],
+    queryFn: async () => {
       const res = await apiFetch(`/inscriptions/?class_id=${cls.id}&status=confirmed`);
       if (!res.ok) throw new Error(`Server error: ${res.status}`);
-      const data = await res.json();
-      setStudents(Array.isArray(data) ? data : (data.results ?? []));
-    } catch (err) {
-      setError(err.message || "Failed to load students.");
-    } finally {
-      setLoading(false);
-    }
-  }, [cls]);
+      const json = await res.json();
+      return Array.isArray(json) ? json : (json.results ?? []);
+    },
+    enabled: !!cls?.id,
+    staleTime: 5 * 60 * 1000,
+  });
 
-  useEffect(() => { fetchStudents(); }, [fetchStudents]);
+  const students = data ?? [];
+  const loading  = isLoading;
 
   const classTabs = [
     { name: "Details",  path: "/Classe_information", state: { cls } },
@@ -129,7 +126,7 @@ export default function Classe_students() {
               )}
               {!loading && error && (
                 <tr>
-                  <td colSpan={2} style={{ textAlign: "center", padding: "32px", color: "#dc2626", fontSize: "14px" }}>{error}</td>
+                  <td colSpan={2} style={{ textAlign: "center", padding: "32px", color: "#dc2626", fontSize: "14px" }}>{error.message}</td>
                 </tr>
               )}
               {!loading && !error && filteredStudents.length === 0 && (

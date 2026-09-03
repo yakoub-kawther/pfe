@@ -133,18 +133,14 @@ const Employee_profile = () => {
               </div>
             </Card>
 
-            <Card title="Account Information">
-              {account ? (
+            {account && (
+              <Card title="Account Information">
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "18px" }}>
                   <ReadField label="Username" value={account.username} />
                   <ReadField label="Role"     value={account.role} />
                 </div>
-              ) : (
-                <div style={{ padding: "14px", background: "#fef2f2", borderRadius: "8px", fontSize: "13px", color: "#991b1b", fontFamily: "Inter, sans-serif" }}>
-                  No account linked to this employee.
-                </div>
-              )}
-            </Card>
+              </Card>
+            )}
           </div>
 
         </div>

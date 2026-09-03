@@ -218,3 +218,20 @@ class SessionDetailSerializer(serializers.ModelSerializer):
     class Meta:
         model  = Session
         fields = ['id', 'session_date', 'status', 'start_time', 'end_time', 'classroom']
+
+
+class ScheduleTodaySerializer(serializers.ModelSerializer):
+    subject        = serializers.SerializerMethodField()
+    teacher_name   = serializers.SerializerMethodField()
+    classroom_name = serializers.CharField(source='classroom.name', read_only=True)
+
+    class Meta:
+        model  = Schedule
+        fields = ['id', 'subject', 'teacher_name', 'day_of_week', 'start_time', 'end_time', 'classroom_name']
+
+    def get_subject(self, obj):
+        return f"{obj.class_obj.language.language_name} – {obj.class_obj.level.level_name}"
+
+    def get_teacher_name(self, obj):
+        person = obj.class_obj.teacher.employee.person
+        return f"{person.first_name} {person.last_name}"

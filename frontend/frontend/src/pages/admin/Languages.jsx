@@ -1,4 +1,5 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import DashboardLayout from "../../layouts/DashboardLayout";
 import Tabs from "../../components/Tabs";
 import Searchbar from "../../components/Searchbar";
@@ -139,6 +140,14 @@ function EditLanguageModal({ lang, onClose, onSaved }) {
   );
 }
 
+const fetchLanguages = async (searchVal) => {
+  const qs = searchVal.trim() ? `?search=${encodeURIComponent(searchVal.trim())}` : "";
+  const res = await apiFetch(`/academic/languages/${qs}`);
+  if (!res.ok) throw new Error(`Server error: ${res.status}`);
+  const data = await res.json();
+  return Array.isArray(data) ? data : data.results ?? [];
+};
+
 export default function Languages() {
   const classTabs = [
     { name: "Classes", path: "/Classes" },
@@ -147,32 +156,21 @@ export default function Languages() {
     { name: "Positions", path: "/Positions" },
   ];
 
-  const [languages, setLanguages] = useState([]);
-  const [search, setSearch]       = useState("");
-  const [loading, setLoading]     = useState(false);
-  const [error, setError]         = useState(null);
-  const [editingLang, setEditingLang] = useState(null);
-
-  const fetchLanguages = useCallback(async (searchVal) => {
-    setLoading(true);
-    setError(null);
-    try {
-      const qs = searchVal.trim() ? `?search=${encodeURIComponent(searchVal.trim())}` : "";
-      const res = await apiFetch(`/academic/languages/${qs}`);
-      if (!res.ok) throw new Error(`Server error: ${res.status}`);
-      const data = await res.json();
-      setLanguages(Array.isArray(data) ? data : data.results ?? []);
-    } catch (err) {
-      setError(err.message || "Failed to load languages.");
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+  const queryClient = useQueryClient();
+  const [search, setSearch]                   = useState("");
+  const [debouncedSearch, setDebouncedSearch]  = useState("");
+  const [editingLang, setEditingLang]          = useState(null);
 
   useEffect(() => {
-    const timer = setTimeout(() => fetchLanguages(search), 300);
+    const timer = setTimeout(() => setDebouncedSearch(search), 300);
     return () => clearTimeout(timer);
-  }, [search, fetchLanguages]);
+  }, [search]);
+
+  const { data: languages = [], isLoading: loading, error } = useQuery({
+    queryKey: ["languages", debouncedSearch],
+    queryFn: () => fetchLanguages(debouncedSearch),
+    staleTime: 5 * 60 * 1000,
+  });
 
   const actionBtn = {
     padding: "6px",
@@ -197,7 +195,9 @@ export default function Languages() {
   };
 
   const handleSaved = (updated) => {
-    setLanguages((prev) => prev.map((l) => (l.id === updated.id ? { ...l, ...updated } : l)));
+    queryClient.setQueryData(["languages", debouncedSearch], (prev = []) =>
+      prev.map((l) => (l.id === updated.id ? { ...l, ...updated } : l))
+    );
     setEditingLang(null);
   };
 
@@ -279,7 +279,7 @@ export default function Languages() {
               {!loading && error && (
                 <tr>
                   <td colSpan={4} style={{ textAlign: "center", padding: "32px", color: "#dc2626", fontSize: "14px" }}>
-                    {error}
+                    {error.message || "Failed to load languages."}
                   </td>
                 </tr>
               )}

@@ -215,3 +215,27 @@ def update_attendance(attendance_id: int, status: str) -> Attendance:
     return attendance
 
 
+
+from datetime import datetime, timedelta, timezone as dt_timezone
+from .models import Attendance
+
+
+def get_weekly_attendance_overview():
+    
+    now = datetime.now(dt_timezone.utc)
+    weekday = now.weekday()  # Monday == 0
+    week_start = (now - timedelta(days=weekday)).replace(hour=0, minute=0, second=0, microsecond=0)
+
+    qs = Attendance.objects.filter(marked_at__gte=week_start, marked_at__lte=now)
+    total = qs.count()
+    present = qs.filter(status=Attendance.Status.PRESENT).count()
+    absent = qs.filter(status=Attendance.Status.ABSENT).count()
+    percent_present = round((present / total) * 100, 1) if total else 0
+
+    return {
+        'present': present,
+        'absent': absent,
+        'total': total,
+        'percent_present': percent_present,
+    }
+

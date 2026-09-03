@@ -1,4 +1,5 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import Sidebar, { SIDEBAR_W } from "../../components/Sidebar/Sidebar";
 import Navbar from "../../components/Navbar";
 import Searchbar from "../../components/Searchbar";
@@ -86,12 +87,35 @@ const SummaryCard = ({ icon, label, value, color }) => (
   </div>
 );
 
+// ─── Fetchers (outside component, so identity is stable) ────────
+const fetchPositions = async () => {
+  const res = await apiFetch("/academic/positions/");
+  const data = await res.json();
+  const list = Array.isArray(data) ? data : data.results ?? [];
+  return ["Teacher", ...list.map((p) => p.name)];
+};
+
+const fetchTeacherIds = async () => {
+  const res = await apiFetch("/persons/teachers/");
+  const data = await res.json();
+  const list = Array.isArray(data) ? data : data.results ?? [];
+  return new Set(list.map((t) => t.employee?.person_id));
+};
+
+const fetchSalariesSummary = async (year) => {
+  const res = await apiFetch(`/salaries/?year=${year}`);
+  if (!res.ok) return { allSalaries: [], totalAmount: 0 };
+  const data = await res.json();
+  const list = Array.isArray(data) ? data : data.results ?? [];
+  return { allSalaries: list, totalAmount: Number(data.total_amount ?? 0) };
+};
+
 const SalariesPage = () => {
+  const queryClient = useQueryClient();
   const [search, setSearch]         = useState("");
   const [position, setPosition]     = useState("All");
-  const [positions, setPositions]   = useState([]);
   const [year, setYear]             = useState(CURRENT_YEAR);
-  const [refreshKey, setRefreshKey] = useState(0);
+  const [refreshKey, setRefreshKey] = useState(0); // still needed: forces SalariesTable (self-fetching child) to remount
 
   const [selected,    setSelected]    = useState(null);
   const [modalAmount, setModalAmount] = useState("");
@@ -102,51 +126,29 @@ const SalariesPage = () => {
   const [modalError,  setModalError]  = useState(null);
   const [notice,      setNotice]      = useState(null);
 
+  const { data: positions = ["Teacher"] } = useQuery({
+    queryKey: ["positions", "salaries-filter"],
+    queryFn: fetchPositions,
+    staleTime: 5 * 60 * 1000,
+  });
+
+  const { data: teacherIds = new Set() } = useQuery({
+    queryKey: ["teachers", "ids"],
+    queryFn: fetchTeacherIds,
+    staleTime: 5 * 60 * 1000,
+  });
+
   // Salary records are one row per employee per month — NOT one row per
   // staff member. So counts here are deduplicated by employee id where
   // "staff/teacher count" is meant, and left as raw record counts where
   // "paid/pending" is meant (i.e. how many payments, not how many people).
-  const [allSalaries, setAllSalaries] = useState([]);
-  const [totalAmount, setTotalAmount] = useState(0);
-  const [teacherIds, setTeacherIds]   = useState(new Set());
-
-  useEffect(() => {
-    apiFetch("/academic/positions/")
-      .then((r) => r.json())
-      .then((data) => {
-        const list = Array.isArray(data) ? data : data.results ?? [];
-        setPositions(["Teacher", ...list.map((p) => p.name)]);
-      })
-      .catch(() => setPositions(["Teacher"]));
-  }, []);
-
-  useEffect(() => {
-    apiFetch("/persons/teachers/")
-      .then((r) => r.json())
-      .then((data) => {
-        const list = Array.isArray(data) ? data : data.results ?? [];
-        const ids = new Set(list.map((t) => t.employee?.person_id));
-        setTeacherIds(ids);
-      })
-      .catch(() => setTeacherIds(new Set()));
-  }, []);
-
-  const fetchAllForSummary = useCallback(async () => {
-    try {
-      const res = await apiFetch(`/salaries/?year=${year}`);
-      if (!res.ok) return;
-      const data = await res.json();
-      const list = Array.isArray(data) ? data : data.results ?? [];
-      setAllSalaries(list);
-      setTotalAmount(Number(data.total_amount ?? 0));
-    } catch {
-      // summary is a nice-to-have; SalariesTable's own error state covers real failures
-    }
-  }, [year]);
-
-  useEffect(() => {
-    fetchAllForSummary();
-  }, [fetchAllForSummary, refreshKey]);
+  const { data: summary } = useQuery({
+    queryKey: ["salariesSummary", year],
+    queryFn: () => fetchSalariesSummary(year),
+    staleTime: 5 * 60 * 1000,
+  });
+  const allSalaries = summary?.allSalaries ?? [];
+  const totalAmount = summary?.totalAmount ?? 0;
 
   const openModal = (record) => {
     setSelected(record);
@@ -185,7 +187,8 @@ const SalariesPage = () => {
         const errData = await res.json().catch(() => ({}));
         throw new Error(extractErrorMessage(errData, "Failed to save salary."));
       }
-      setRefreshKey((k) => k + 1);
+      queryClient.invalidateQueries({ queryKey: ["salariesSummary", year] });
+      setRefreshKey((k) => k + 1); // still forces SalariesTable to remount and refetch its own rows
       setNotice("Saved.");
     } catch (err) {
       setModalError(err.message);

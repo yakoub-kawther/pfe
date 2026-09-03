@@ -1,8 +1,8 @@
 import React, { useState } from "react";
 import {
-  LayoutDashboard, GraduationCap, Users, Briefcase,
-  BookOpen, CreditCard, Calendar, Bell, BarChart3, Settings, LogOut
-} from "lucide-react";
+  TbChartBar, TbSchool, TbUsers, TbBriefcase,
+  TbBook2, TbCreditCard, TbCalendar, TbBell, TbUserPlus, TbSettings, TbLogout
+} from "react-icons/tb";
 import { Link, useLocation } from "react-router-dom";
 import { useNavigate } from "react-router-dom";
 
@@ -21,22 +21,22 @@ function Sidebar() {
   };
 
   const navItems = [
-    { to: "/Dashboard",     icon: <LayoutDashboard size={15} />, label: "Dashboard"     },
-    { to: "/Teachers",      icon: <GraduationCap   size={15} />, label: "Teachers"      },
-    { to: "/Students",      icon: <Users           size={15} />, label: "Students"      },
-    { to: "/Employees",     icon: <Briefcase       size={15} />, label: "Employees"     },
-    { to: "/Classes",       icon: <BookOpen        size={15} />, label: "School Config" },
-    { to: "/Fees",          icon: <CreditCard      size={15} />, label: "Fees"          },
-    { to: "/Time_table",    icon: <Calendar        size={15} />, label: "Time Table"    },
-    { to: "/Notifications", icon: <Bell            size={15} />, label: "Notifications" },
-    { to: "/Inscriptions",  icon: <BarChart3       size={15} />, label: "Inscriptions"  },
-    { to: "/Settings",      icon: <Settings        size={15} />, label: "Settings"      },
+    { to: "/Dashboard",     icon: <TbChartBar   size={20} strokeWidth={1.5} />, label: "Dashboard"     },
+    { to: "/Teachers",      icon: <TbSchool     size={20} strokeWidth={1.5} />, label: "Teachers"      },
+    { to: "/Students",      icon: <TbUsers      size={20} strokeWidth={1.5} />, label: "Students"      },
+    { to: "/Employees",     icon: <TbBriefcase  size={20} strokeWidth={1.5} />, label: "Employees"     },
+    { to: "/Classes",       icon: <TbBook2      size={20} strokeWidth={1.5} />, label: "School Config" },
+    { to: "/Fees",          icon: <TbCreditCard size={20} strokeWidth={1.5} />, label: "Fees"          },
+    { to: "/Time_table",    icon: <TbCalendar   size={20} strokeWidth={1.5} />, label: "Time Table"    },
+    { to: "/Notifications", icon: <TbBell       size={20} strokeWidth={1.5} />, label: "Notifications" },
+    { to: "/Inscriptions",  icon: <TbUserPlus   size={20} strokeWidth={1.5} />, label: "Enrollment"    },
+    { to: "/Settings",      icon: <TbSettings   size={20} strokeWidth={1.5} />, label: "Settings"      },
   ];
 
   return (
     <aside style={{
       position: "fixed",
-      top: 0, left: 0,
+      top: 0, left: 2,
       width: SIDEBAR_W,
       minWidth: SIDEBAR_W,
       maxWidth: SIDEBAR_W,
@@ -52,11 +52,12 @@ function Sidebar() {
     }}>
 
       {/* ── Logo ── */}
-      <div style={{ padding: "2.5rem 0.75rem 0.5rem 1.5rem", flexShrink: 0 }}>
-        <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-start" }}>
-          <span style={{ fontSize: "2.25rem", color: "#701366", lineHeight: 1, fontWeight: 500 }}>A to Z</span>
-          <span style={{ fontSize: "0.6875rem", color: "#701366", letterSpacing: "0.15em", fontWeight: 600 }}>LINGUA</span>
-        </div>
+      <div style={{ padding: "1.5rem 0.75rem 0.5rem 0.75rem", flexShrink: 0 }}>
+        <img
+          src="/src/assets/logo.svg"
+          alt="A to Z Lingua"
+          style={{ width: "clamp(85px, 9vw, 110px)", height: "auto", display: "block" }}
+        />
       </div>
 
       {/* ── Nav ── */}
@@ -67,7 +68,7 @@ function Sidebar() {
         display: "flex",
         flexDirection: "column",
         gap: 1,
-        padding: "0.5rem 0.75rem",
+        padding: "1.5rem 0.75rem 0.5rem 0.75rem",
         scrollbarWidth: "none",
         msOverflowStyle: "none",
       }}>
@@ -134,7 +135,7 @@ function Sidebar() {
             cursor: "pointer", whiteSpace: "nowrap",
           }}
         >
-          <LogOut size={15} />
+          <TbLogout size={18} strokeWidth={1.5} />
           Log Out
         </button>
       </div>
