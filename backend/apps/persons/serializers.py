@@ -164,6 +164,7 @@ class StudentSerializer(serializers.ModelSerializer):
     languages_count         = serializers.SerializerMethodField()
     attendance_percentage   = serializers.SerializerMethodField()
     last_inscription         = serializers.SerializerMethodField()
+    status = serializers.CharField()
 
     class Meta:
         model  = Student
@@ -171,7 +172,7 @@ class StudentSerializer(serializers.ModelSerializer):
             'person', 'date_of_birth', 'special_case',
             'parent_id', 'parent_name', 'parent_phone', 'parent_relationship',
             'class_name', 'username',
-            'languages_count', 'attendance_percentage', 'last_inscription',
+            'languages_count', 'attendance_percentage', 'last_inscription', 'status' ,
         ]
 
     def get_parent_name(self, obj):

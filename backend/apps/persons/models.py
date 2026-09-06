@@ -2,6 +2,7 @@ from django.db import models
 from apps.academic.models import Language , Position
 
 
+
 class Person(models.Model):
     first_name = models.CharField(max_length=50)
     last_name  = models.CharField(max_length=50)
@@ -20,16 +21,24 @@ class Person(models.Model):
         return f"{self.first_name} {self.last_name}"
 
 
+
+
 class Student(models.Model):
     person        = models.OneToOneField(Person, on_delete=models.CASCADE, primary_key=True)
     date_of_birth = models.DateField()
     special_case  = models.CharField(max_length=255, null=True, blank=True)
-    parent        = models.ForeignKey(          # ← add this
+    parent        = models.ForeignKey(          
         'Parent',
         on_delete=models.SET_NULL,
         null=True, blank=True,
         related_name='students'
     )
+    STATUS_CHOICES = [
+        ('pending', 'Pending'),
+        ('active', 'Active'),
+        ('inactive', 'Inactive'),
+    ]
+    status = models.CharField(max_length=50, null=True, blank=True)
 
     
     
@@ -39,6 +48,13 @@ class Student(models.Model):
 
     def __str__(self):
         return self.person.first_name
+
+
+    def is_currently_active(self) -> bool:
+        
+        return self.inscriptions.filter(
+            status='confirmed', enrolled_class__status='active'
+        ).exists()
 
 
 class Parent(models.Model):

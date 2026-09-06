@@ -28,7 +28,7 @@ function Sidebar() {
     { to: "/Classes",       icon: <TbBook2      size={20} strokeWidth={1.5} />, label: "School Config" },
     { to: "/Fees",          icon: <TbCreditCard size={20} strokeWidth={1.5} />, label: "Fees"          },
     { to: "/Time_table",    icon: <TbCalendar   size={20} strokeWidth={1.5} />, label: "Time Table"    },
-    { to: "/Notifications", icon: <TbBell       size={20} strokeWidth={1.5} />, label: "Notifications" },
+    // { to: "/Notifications", icon: <TbBell       size={20} strokeWidth={1.5} />, label: "Notifications" },
     { to: "/Inscriptions",  icon: <TbUserPlus   size={20} strokeWidth={1.5} />, label: "Enrollment"    },
     { to: "/Settings",      icon: <TbSettings   size={20} strokeWidth={1.5} />, label: "Settings"      },
   ];

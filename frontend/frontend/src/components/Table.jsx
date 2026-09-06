@@ -11,21 +11,17 @@ const tdStyle = {
   padding: "12px 16px", fontSize: "14px", color: "#701366", whiteSpace: "nowrap",
 };
 
-const statusStyle = (status) => ({
-  padding: "4px 10px",
-  borderRadius: "999px",
-  fontSize: "12px",
-  fontWeight: 600,
-  display: "inline-block",
-  background: status === "active" ? "#e6f7ec" : "#f8e0f8",
-  color: status === "active" ? "#1a7f4b" : "#701366",
-  textTransform: "capitalize",
-});
-
 const attendanceColor = (pct) => {
   if (pct < 30) return "#c92c2c";
   if (pct < 70) return "#c9971c";
   return "#1a7f4b";
+};
+
+const statusStyle = (statusValue) => {
+  const s = (statusValue ?? "").toLowerCase();
+  if (s === "active")   return { bg: "#e3f5ec", color: "#1a7f4b" };
+  if (s === "inactive") return { bg: "#fbe4e4", color: "#c92c2c" };
+  return { bg: "#fdf3d9", color: "#c9971c" }; // pending / fallback
 };
 
 const PAGE_SIZE = 10;
@@ -42,13 +38,11 @@ const Table = ({ students = [], loading = false, search = "", filter = "All", ro
       fullName.toLowerCase().includes(q) ||
       (p.phone ?? "").includes(q) ||
       (s.parent_name ?? "").toLowerCase().includes(q);
-    const matchFilter = filter === "All" || (s.status ?? "").toLowerCase() === filter.toLowerCase();
+    const matchFilter = filter === "All" || (s.status ?? "pending").toLowerCase() === filter.toLowerCase();
     return matchSearch && matchFilter;
   });
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
-  // Clamp for display so a stale page number (e.g. after search/filter shrinks
-  // the result set) never renders an empty page — no state write needed.
   const currentPage = Math.min(page, totalPages);
   const paginated    = filtered.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
 
@@ -83,9 +77,9 @@ const Table = ({ students = [], loading = false, search = "", filter = "All", ro
               <th style={{ ...thStyle, paddingLeft: "30px" }}>Full Name</th>
               <th style={thStyle}>Parent Name</th>
               <th style={thStyle}>Contact</th>
-              <th style={thStyle}>Status</th>
               <th style={{ ...thStyle, textAlign: "center" }}>Attendance</th>
               <th style={{ ...thStyle, textAlign: "center" }}>Language</th>
+              <th style={{ ...thStyle, textAlign: "center" }}>Status</th>
               <th style={thStyle}>Action</th>
             </tr>
           </thead>
@@ -102,6 +96,7 @@ const Table = ({ students = [], loading = false, search = "", filter = "All", ro
                 const fullName   = `${p.first_name ?? ""} ${p.last_name ?? ""}`.trim();
                 const langCount  = s.languages_count ?? (s.enrollments ? s.enrollments.length : 0);
                 const attendance = s.attendance_percentage ?? 0;
+                const { bg: statusBg, color: statusColor } = statusStyle(s.status);
                 return (
                   <tr
                     key={p.id ?? idx}
@@ -112,16 +107,20 @@ const Table = ({ students = [], loading = false, search = "", filter = "All", ro
                     <td style={{ ...tdStyle, paddingLeft: "30px" }}>{fullName || "—"}</td>
                     <td style={tdStyle}>{s.parent_name || "—"}</td>
                     <td style={tdStyle}>{p.phone || p.email || "—"}</td>
-                    <td style={tdStyle}>
-                      <span style={statusStyle(s.status ?? "active")}>
-                        {s.status ?? "active"}
-                      </span>
-                    </td>
                     <td style={{ ...tdStyle, color: attendanceColor(attendance), fontWeight: 600, textAlign: "center" }}>
                       {attendance}%
                     </td>
                     <td style={{ ...tdStyle, textAlign: "center" }}>
                       {langCount} {langCount === 1 ? "language" : "languages"}
+                    </td>
+                    <td style={{ ...tdStyle, textAlign: "center" }}>
+                      <span style={{
+                        display: "inline-block", padding: "4px 12px", borderRadius: "999px",
+                        fontSize: "12px", fontWeight: 600, textTransform: "capitalize",
+                        background: statusBg, color: statusColor,
+                      }}>
+                        {s.status || "pending"}
+                      </span>
                     </td>
                     <td style={tdStyle}>
                       <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
@@ -165,15 +164,12 @@ const Table = ({ students = [], loading = false, search = "", filter = "All", ro
         </table>
       </div>
 
-      {/* Pagination */}
       {!loading && filtered.length > 0 && (
         <div style={{
           display: "flex", alignItems: "center", justifyContent: "space-between",
           marginTop: "16px", fontSize: "13px", color: "#701366",
         }}>
-          <span style={{ opacity: 0.6 }}>
-            {/* Showing {(page - 1) * PAGE_SIZE + 1}–{Math.min(page * PAGE_SIZE, filtered.length)} of {filtered.length} */}
-          </span>
+          <span style={{ opacity: 0.6 }} />
 
           <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
             <button

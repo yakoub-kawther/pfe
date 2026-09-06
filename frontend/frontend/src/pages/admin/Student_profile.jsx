@@ -65,16 +65,25 @@ const Card = ({ title, children }) => (
   </div>
 );
 
-const statusStyle = (status) => ({
-  padding: "4px 10px",
-  borderRadius: "999px",
-  fontSize: "12px",
-  fontWeight: 600,
-  display: "inline-block",
-  background: status === "active" ? "#e6f7ec" : "#fdecea",
-  color: status === "active" ? "#1a7f4b" : "#c92c2c",
-  textTransform: "capitalize",
-});
+const statusStyle = (status) => {
+  const s = (status ?? "pending").toLowerCase();
+  const map = {
+    active:   { background: "#e6f7ec", color: "#1a7f4b" },
+    pending:  { background: "#fdf3d9", color: "#c9971c" },
+    inactive: { background: "#fdecea", color: "#c92c2c" },
+  };
+  const { background, color } = map[s] ?? map.pending;
+  return {
+    padding: "4px 10px",
+    borderRadius: "999px",
+    fontSize: "12px",
+    fontWeight: 600,
+    display: "inline-block",
+    background,
+    color,
+    textTransform: "capitalize",
+  };
+};
 
 const backBtnStyle = {
   width: "36px", height: "32px", flexShrink: 0,
@@ -109,7 +118,7 @@ export default function Student_profile() {
   const parentName  = student?.parent_name      ?? "";
   const className   = student?.class_name       ?? student?.class ?? "";
   const username    = student?.username         ?? "";
-  const status      = (student?.status ?? "active").toLowerCase();
+  const status      = (student?.status ?? "pending").toLowerCase();
 
   const parentParts     = parentName.trim().split(" ");
   const parentFirstName = parentParts[0] ?? "";

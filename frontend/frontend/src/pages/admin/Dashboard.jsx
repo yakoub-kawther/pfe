@@ -261,7 +261,7 @@ const Dashboard = () => {
                 {[
                   { label: "Add Student",       Icon: UserPlus,   color: "#7c3aed", bg: "#f3f0ff", path: "/Add_student"   },
                   { label: "Record Payment",    Icon: CreditCard, color: "#d97706", bg: "#fffbeb", path: "/Fees"          },
-                  { label: "Send Notification", Icon: Bell,       color: "#0ea5e9", bg: "#f0f9ff", path: "/Notifications" },
+                  { label: "Add Enrollment", Icon: UserPlus, color: "#0ea5e9", bg: "#f0f9ff", path: "/Inscriptions" },
                 ].map(({ label, Icon, color, bg, path }) => (
                   <button
                     key={label}

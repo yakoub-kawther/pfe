@@ -98,6 +98,29 @@ class StudentViewSet(viewsets.ViewSet):
             serializer.errors,
             status=status.HTTP_400_BAD_REQUEST
         )
+    def partial_update(self, request, pk=None):
+      return self.update(request, pk)
+
+
+    class StudentViewSet(viewsets.ModelViewSet):
+     serializer_class = StudentSerializer
+
+     @action(detail=True, methods=['post'], url_path='set-status')
+     def set_status(self, request, pk=None):
+        student = Student.objects.filter(pk=pk).first()
+        if not student:
+            return Response({'error': 'Student not found'}, status=status.HTTP_404_NOT_FOUND)
+
+        new_status = request.data.get('status')
+        if new_status not in ('active', 'inactive'):
+            return Response(
+                {'error': "status must be 'active' or 'inactive'"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        student.status = new_status
+        student.save(update_fields=['status'])
+        return Response(StudentSerializer(student).data)
 
   
 
@@ -206,25 +229,54 @@ class EmployeeViewSet(viewsets.ViewSet):
 
     @action(detail=False, methods=['get'], url_path='non-teachers')
     def non_teachers(self, request):
-        queryset = Employee.objects.filter(
-            teacher__isnull=True
-        ).select_related('person', 'position')
-        serializer = EmployeeSerializer(queryset, many=True)
-        return Response(serializer.data)
-    
-    def partial_update(self, request, pk=None):
-        return self.update(request, pk)
+      queryset = Employee.objects.filter(
+        teacher__isnull=True
+      ).select_related('person', 'position')
+
+      status_param = request.query_params.get('status')
+      if status_param:
+        queryset = queryset.filter(status__iexact=status_param)
+
+      search = request.query_params.get('search')
+      if search:
+        queryset = queryset.filter(
+            Q(person__first_name__icontains=search) |
+            Q(person__last_name__icontains=search) |
+            Q(person__phone__icontains=search) |
+            Q(position__name__icontains=search)
+        )
+
+      serializer = EmployeeSerializer(queryset, many=True)
+      return Response(serializer.data)
 
 
 class TeacherViewSet(viewsets.ViewSet):
 
     def list(self, request):
-        teachers = Teacher.objects.select_related(
-            'employee__person',
-            'employee__position'
-        ).all()
-        serializer = TeacherSerializer(teachers, many=True)
-        return Response(serializer.data)
+      teachers = Teacher.objects.select_related(
+        'employee__person',
+        'employee__position'
+      ).all()
+
+      status_param = request.query_params.get('employee__status')
+      if status_param:
+        teachers = teachers.filter(employee__status__iexact=status_param)
+
+      is_head_teacher = request.query_params.get('is_head_teacher')
+      if is_head_teacher is not None:
+        teachers = teachers.filter(is_head_teacher=(is_head_teacher.lower() == 'true'))
+
+      search = request.query_params.get('search')
+      if search:
+        teachers = teachers.filter(
+            Q(employee__person__first_name__icontains=search) |
+            Q(employee__person__last_name__icontains=search) |
+            Q(employee__person__phone__icontains=search) |
+            Q(language__language_name__icontains=search)
+        )
+
+      serializer = TeacherSerializer(teachers, many=True)
+      return Response(serializer.data)
 
     def create(self, request):
         serializer = TeacherCreateSerializer(data=request.data)

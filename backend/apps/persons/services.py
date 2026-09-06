@@ -274,4 +274,18 @@ def demote_from_head_teacher(teacher_id):
     return teacher
 
 
+from apps.inscription.models import Inscription
+@transaction.atomic
+def confirm_inscription(inscription_id):
+    inscription = Inscription.objects.filter(pk=inscription_id).first()
+    if not inscription:
+        raise ValidationError("Inscription not found.")
 
+    inscription.status = 'confirmed'
+    inscription.save()
+
+    # auto-activate the student
+    inscription.student.status = 'active'
+    inscription.student.save(update_fields=['status'])
+
+    return inscription

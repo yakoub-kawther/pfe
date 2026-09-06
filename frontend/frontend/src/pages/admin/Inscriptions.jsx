@@ -577,7 +577,7 @@ export default function Inscriptions() {
         {/* Page Title */}
         <div style={{ marginBottom: "4px" }}>
           <h1 style={{ fontSize: "32px", fontWeight: 700, color: PURPLE, margin: 0, letterSpacing: "-0.02em", lineHeight: 1.2 }}>
-            Inscriptions
+            Enrollments
           </h1>
           <p style={{ fontSize: "14px", color: PURPLE, opacity: 0.55, margin: "4px 0 0" }}>
             Enroll students into classes and manage their registrations.
@@ -594,7 +594,7 @@ export default function Inscriptions() {
 
         {/* Tabs */}
         <section style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
-          <TabButton active={activeTab === "inscriptions"} onClick={() => setActiveTab("inscriptions")}>Inscriptions</TabButton>
+          <TabButton active={activeTab === "inscriptions"} onClick={() => setActiveTab("inscriptions")}>Enrollments</TabButton>
           <TabButton active={activeTab === "waitlisted"}   onClick={() => setActiveTab("waitlisted")}>Waitlisted</TabButton>
           <TabButton active={activeTab === "placement"}    onClick={() => setActiveTab("placement")}>
             Needs Placement{placementCount > 0 ? ` (${placementCount})` : ""}

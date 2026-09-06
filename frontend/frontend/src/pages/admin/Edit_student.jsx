@@ -130,30 +130,64 @@ const Edit_student = () => {
   };
 
   const handleSave = async () => {
-    const frontendErrors = validate();
-    if (Object.keys(frontendErrors).length > 0) { setErrors(frontendErrors); return; }
+  const frontendErrors = validate();
+  if (Object.keys(frontendErrors).length > 0) { setErrors(frontendErrors); return; }
 
-    setLoading(true);
-    setErrors({});
-    setSuccess(false);
+  setLoading(true);
+  setErrors({});
+  setSuccess(false);
 
-    try {
-      // TODO: wire to apiFetch(`/persons/students/${person.id}/`, { method: "PATCH", body: {...} })
-      // TODO: username/password updates need a PATCH endpoint on Account (not yet present in the
-      // views you shared — ToggleAccountStatusView and AdminPasswordResetView don't cover this).
-      console.log("Updated student:", {
-        ...form,
-        parentType: form.parentType === "Other" ? customType : form.parentType,
-        accountId,
-      });
-      setSuccess(true);
-      setTimeout(() => navigate("/Students"), 1200);
-    } catch {
-      setErrors({ error: "Network error. Please try again." });
-    } finally {
+  try {
+    // 1. Update person/student record
+    const res = await apiFetch(`/persons/students/${person.id}/`, {
+      method: "PATCH",
+      body: {
+        first_name   : form.firstName.trim(),
+        last_name    : form.lastName.trim(),
+        gender       : form.gender.toLowerCase(),
+        date_of_birth: form.dob,
+        phone        : form.phone.trim(),
+        email        : form.email.trim(),
+        address      : form.address.trim(),
+        special_case : form.specialCase,
+        status       : form.status.toLowerCase(),
+      },
+    });
+
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      setErrors(data.errors ?? data ?? { error: "Failed to update student." });
       setLoading(false);
+      return;
     }
-  };
+
+    // 2. Update account credentials, if changed
+    // TODO: confirm this endpoint exists — see earlier note on ToggleAccountStatusView/AdminPasswordResetView
+    if (accountId && (form.username || form.password)) {
+      const accRes = await apiFetch(`/account/accounts/${accountId}/`, {
+        method: "PATCH",
+        body: {
+          ...(form.username ? { username: form.username } : {}),
+          ...(form.password ? { password: form.password } : {}),
+        },
+      });
+
+      if (!accRes.ok) {
+        const accData = await accRes.json().catch(() => ({}));
+        setErrors(accData.errors ?? accData ?? { error: "Failed to update account." });
+        setLoading(false);
+        return;
+      }
+    }
+
+    setSuccess(true);
+    setTimeout(() => navigate("/Students"), 1200);
+  } catch {
+    setErrors({ error: "Network error. Please try again." });
+  } finally {
+    setLoading(false);
+  }
+};
 
   return (
     <DashboardLayout>

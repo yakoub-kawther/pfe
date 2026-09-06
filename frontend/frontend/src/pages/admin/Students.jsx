@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import DashboardLayout from "../../layouts/DashboardLayout.jsx";
 import Searchbar from "../../components/Searchbar.jsx";
 import Table from "../../components/Table.jsx";
-import { Users, UserCheck, UserX } from "lucide-react";
+import { Users, UserCheck, UserX, Clock } from "lucide-react";
 import { useStudents } from "../../hooks/Usestudents .js";
 
 const SummaryCard = ({ icon, label, value, color, background }) => (
@@ -37,8 +37,9 @@ const Students = () => {
   const { students, loading } = useStudents();
 
   const totalCount    = students.length;
-  const activeCount   = students.filter(s => (s.status ?? "active").toLowerCase() === "active").length;
-  const inactiveCount = totalCount - activeCount;
+  const activeCount   = students.filter(s => (s.status ?? "pending").toLowerCase() === "active").length;
+  const pendingCount  = students.filter(s => (s.status ?? "pending").toLowerCase() === "pending").length;
+  const inactiveCount = students.filter(s => (s.status ?? "pending").toLowerCase() === "inactive").length;
 
   return (
     <DashboardLayout>
@@ -70,6 +71,7 @@ const Students = () => {
         <section style={{ display: "flex", gap: "16px", marginTop: "0px" }}>
           <SummaryCard icon={<Users size={22} />}     label="Total Students"    value={totalCount}    color="#701366" />
           <SummaryCard icon={<UserCheck size={22} />} label="Active Students"   value={activeCount}   color="#1a7f4b" />
+          <SummaryCard icon={<Clock size={22} />}      label="Pending Students"  value={pendingCount}  color="#c9971c" />
           <SummaryCard icon={<UserX size={22} />}      label="Inactive Students" value={inactiveCount} color="#c92c2c" />
         </section>
 
@@ -78,12 +80,12 @@ const Students = () => {
           <h2 style={{ fontSize: "18px", fontWeight: "bold", color: "#701366", margin: 0, flexShrink: 0 }}>
             Students List</h2>
           <Searchbar
-            placeholder="Search by Name, Phone..."
-            filterOptions={["Active", "Inactive", "Graduated"]}
-            addPath="/Add_student"
-            showAdd={true}
-            onSearchChange={(val) => setSearch(val)}
-            onFilterChange={(val) => setFilter(val)}
+             placeholder="Search by Name, Phone..."
+             filterOptions={["Active", "Pending", "Inactive"]}
+             addPath="/Add_student"
+             showAdd={true}
+             onSearchChange={(val) => setSearch(val)}
+             onFilterChange={(val) => setFilter(val)}
           />
         </section>
 

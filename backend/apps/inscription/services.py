@@ -138,6 +138,10 @@ def _transition_student(student_id: int, new_class_id: int, transition_type: str
             status=Payment.Status.PENDING,
         )
 
+        # promoted/repeated straight into a new confirmed class — stays active
+        student.status = 'active'
+        student.save(update_fields=['status'])
+
     return current, new_inscription
 
 
@@ -208,3 +212,40 @@ def get_enrollment_growth(months=6):
             y += 1
 
     return result
+
+
+
+@transaction.atomic
+def create_inscription(student_id: int, class_id: int) -> Inscription:
+    from apps.payments.models import Payment
+
+    student        = get_object_or_404(Student, pk=student_id)
+    enrolled_class = get_object_or_404(Class, pk=class_id)
+
+    i = Inscription.objects.latest('inscription_date')
+    print(i)
+    print(Payment.objects.filter(inscription=i).exists())
+
+    if enrolled_class.status != 'active':
+        raise ValueError(f'Cannot enroll in a class with status "{enrolled_class.status}".')
+
+    if Inscription.objects.filter(student=student, enrolled_class=enrolled_class).exists():
+        raise ValueError('Student is already enrolled in this class.')
+
+    inscription = Inscription.objects.create(
+        student=student,
+        enrolled_class=enrolled_class,
+        status=Inscription.STATUS_CONFIRMED,
+    )
+
+    Payment.objects.create(
+        inscription=inscription,
+        amount=0,
+        status=Payment.Status.PENDING,
+    )
+
+    # auto-activate the student now that they have a confirmed enrollment
+    student.status = 'active'
+    student.save(update_fields=['status'])
+
+    return inscription
