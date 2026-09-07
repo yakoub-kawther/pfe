@@ -57,6 +57,17 @@ const Teacher_profile = () => {
     ? person.gender.charAt(0).toUpperCase() + person.gender.slice(1)
     : "—";
 
+  // `username` lives on Account, not Person — try the shapes a nested
+  // serializer is likely to use, in order, so this keeps working
+  // whichever one the backend actually returns. If none of these are
+  // populated, the TeacherSerializer/EmployeeSerializer needs to include
+  // the related account (see note below).
+  const username =
+    employee.account?.username ??
+    teacher?.account?.username ??
+    employee.username ??
+    person.username;
+
   const teacherTabs = [
     { name: "Profile", path: "/Teacher_profile", state: { teacher } },
     { name: "Classes", path: "/Teacher_classes", state: { teacher } },
@@ -136,7 +147,7 @@ const Teacher_profile = () => {
           <div style={{ display: "flex", flexDirection: "column", gap: "24px", minWidth: 0 }}>
             <Card title="Contact Information">
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "15px" }}>
-                <ReadField label="Username" value={person.username} />
+                <ReadField label="Username" value={username} />
                 <ReadField label="Phone"   value={person.phone} />
                 <ReadField label="Email"   value={person.email} />
                 <ReadField label="Address" value={person.address} full />

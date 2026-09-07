@@ -48,6 +48,69 @@ const getAge = (dob) => {
   return age;
 };
 
+// Turns a DRF-style error body into a flat field->message map, plus a
+// catch-all "error" key for anything we don't recognize by name — so a
+// server error can never silently vanish just because we forgot to list
+// its field here.
+//
+// Some backend errors (e.g. a duplicate-username IntegrityError caught in
+// a service layer) come back as a generic {"error": "..."} or
+// {"detail": "..."} instead of being keyed by field name. When that
+// happens we still want it to render inline under the right input (like
+// phone/email already do) rather than falling back to the top banner, so
+// we try to match the message text against the known field names before
+// giving up and treating it as generic.
+const FIELD_MATCH_HINTS = {
+  username         : ["username"],
+  password         : ["password"],
+  email            : ["email"],
+  phone            : ["phone"],
+  first_name       : ["first name"],
+  last_name        : ["last name"],
+  dob              : ["date of birth", "birth"],
+  parent_first_name: ["parent first name"],
+  parent_last_name : ["parent last name"],
+  parent_phone     : ["parent phone"],
+  parent_type      : ["relationship"],
+};
+
+const mapServerErrors = (errData, knownFields) => {
+  const mapped = {};
+  knownFields.forEach((field) => {
+    if (errData[field]) mapped[field] = errData[field];
+  });
+
+  const genericMsg =
+    errData.detail ||
+    errData.error ||
+    (errData.non_field_errors && errData.non_field_errors[0]);
+
+  if (genericMsg && Object.keys(mapped).length === 0) {
+    const lower = genericMsg.toLowerCase();
+    const matchedField = knownFields.find((field) => {
+      const hints = FIELD_MATCH_HINTS[field] || [field.replace("_", " ")];
+      return hints.some((hint) => lower.includes(hint));
+    });
+
+    if (matchedField) {
+      mapped[matchedField] = [genericMsg];
+    } else {
+      mapped.error = genericMsg;
+    }
+  }
+
+  // Fallback: if the response had keys we didn't explicitly map above,
+  // still surface something instead of failing silently.
+  if (!mapped.error && Object.keys(mapped).length === 0) {
+    const firstKey = Object.keys(errData)[0];
+    if (firstKey) {
+      const val = errData[firstKey];
+      mapped.error = Array.isArray(val) ? val[0] : String(val);
+    }
+  }
+  return mapped;
+};
+
 const Form = ({ onSuccess }) => {
   const [gender,      setGender]      = useState("Male");
   const [parentType,  setParentType]  = useState("");
@@ -148,8 +211,11 @@ const Form = ({ onSuccess }) => {
           },
         });
         if (!pRes.ok) {
-          const errData = await pRes.json();
-          setErrors({ error: errData.detail || errData.phone?.[0] || "Failed to create parent." });
+          const errData = await pRes.json().catch(() => ({}));
+          const mapped = mapServerErrors(errData, [
+            "parent_first_name", "parent_last_name", "parent_phone", "parent_type",
+          ]);
+          setErrors(mapped);
           return;
         }
         const pData = await pRes.json();
@@ -173,13 +239,10 @@ const Form = ({ onSuccess }) => {
         },
       });
       if (!sRes.ok) {
-        const errData = await sRes.json();
-        const mapped  = {};
-        if (errData.first_name) mapped.first_name = errData.first_name;
-        if (errData.last_name)  mapped.last_name  = errData.last_name;
-        if (errData.phone)      mapped.phone      = errData.phone;
-        if (errData.email)      mapped.email      = errData.email;
-        if (errData.detail)     mapped.error      = errData.detail;
+        const errData = await sRes.json().catch(() => ({}));
+        const mapped = mapServerErrors(errData, [
+          "first_name", "last_name", "phone", "email", "dob",
+        ]);
         setErrors(mapped);
         return;
       }
@@ -203,11 +266,8 @@ const Form = ({ onSuccess }) => {
         },
       });
       if (!aRes.ok) {
-        const errData = await aRes.json();
-        const mapped  = {};
-        if (errData.username) mapped.username = errData.username;
-        if (errData.password) mapped.password = errData.password;
-        if (errData.detail)   mapped.error    = errData.detail;
+        const errData = await aRes.json().catch(() => ({}));
+        const mapped = mapServerErrors(errData, ["username", "password"]);
         setErrors(mapped);
         return;
       }
@@ -238,7 +298,9 @@ const Form = ({ onSuccess }) => {
         </div>
       )}
 
-      {/* Global error banner */}
+      {/* Global error banner — only for errors we couldn't attribute to a
+          specific field; field-level errors (username, email, phone...)
+          render inline under their input instead. */}
       {errors.error && (
         <div style={{
           background: "#fef2f2", color: "#991b1b",

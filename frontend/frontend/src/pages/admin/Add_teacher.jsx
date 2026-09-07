@@ -67,14 +67,49 @@ const emptyForm = {
 // catch-all "error" key for anything we don't recognize by name — so a
 // server error can never silently vanish just because we forgot to list
 // its field here.
+//
+// Some backend errors (e.g. a duplicate-username IntegrityError caught in
+// a service layer) come back as a generic {"error": "..."} or
+// {"detail": "..."} instead of being keyed by field name. When that
+// happens we still want it to render inline under the right input (like
+// email/phone already do) rather than falling back to the top banner, so
+// we try to match the message text against the known field names before
+// giving up and treating it as generic.
+const FIELD_MATCH_HINTS = {
+  username  : ["username"],
+  password  : ["password"],
+  email     : ["email"],
+  phone     : ["phone"],
+  first_name: ["first name"],
+  last_name : ["last name"],
+  language_id: ["language"],
+  hire_date : ["hire date"],
+};
+
 const mapServerErrors = (errData, knownFields) => {
   const mapped = {};
   knownFields.forEach((field) => {
     if (errData[field]) mapped[field] = errData[field];
   });
-  if (errData.detail)           mapped.error = errData.detail;
-  if (errData.error)            mapped.error = errData.error;
-  if (errData.non_field_errors) mapped.error = errData.non_field_errors[0];
+
+  const genericMsg =
+    errData.detail ||
+    errData.error ||
+    (errData.non_field_errors && errData.non_field_errors[0]);
+
+  if (genericMsg && Object.keys(mapped).length === 0) {
+    const lower = genericMsg.toLowerCase();
+    const matchedField = knownFields.find((field) => {
+      const hints = FIELD_MATCH_HINTS[field] || [field.replace("_", " ")];
+      return hints.some((hint) => lower.includes(hint));
+    });
+
+    if (matchedField) {
+      mapped[matchedField] = [genericMsg];
+    } else {
+      mapped.error = genericMsg;
+    }
+  }
 
   // Fallback: if the response had keys we didn't explicitly map above,
   // still surface something instead of failing silently.
@@ -174,8 +209,10 @@ const Add_teacher = () => {
           // to be created atomically with the teacher record itself — the
           // backend rejects the request with a "username/password required
           // for this position" error otherwise. Sending them here covers
-          // that case; the separate /account/create-account/ call below
-          // still runs afterward for positions that don't need this.
+          // that case. Whether we ALSO need to call
+          // /account/create-account/ afterward depends on whether the
+          // backend already created the account for us — see the check
+          // right after this call.
           username        : form.username,
           password        : form.password,
         },
@@ -191,31 +228,49 @@ const Add_teacher = () => {
         return;
       }
       const teacherData = await teacherRes.json();
-      const employee_id = teacherData.id
+
+      // TeacherSerializer nests employee data under `employee`, and
+      // Employee's primary key is `person_id` (it's a one-to-one
+      // extension of Person), not `id`. Try that first, then fall back
+      // to other shapes in case the API response ever changes.
+      const employee_id = teacherData.employee?.person_id
         ?? teacherData.employee?.id
-        ?? teacherData.employee?.person_id
+        ?? teacherData.id
         ?? teacherData.person_id;
 
       if (!employee_id) {
         setErrors({ error: "Could not retrieve employee ID. Check API response." });
         return;
       }
-      const accountRes = await apiFetch("/account/create-account/", {
-        method: "POST",
-        body: {
-          person_type : "employee",
-          person_id   : employee_id,
-          role        : "teacher",
-          username    : form.username,
-          password    : form.password,
-        },
-      });
 
-      if (!accountRes.ok) {
-        const errData = await accountRes.json().catch(() => ({}));
-        const mapped = mapServerErrors(errData, ["username", "password"]);
-        setErrors(mapped);
-        return;
+      // TeacherSerializer includes a computed `account` field. If it's
+      // already populated here, the backend created the login account
+      // atomically as part of teacher creation (this happens for
+      // positions like head teacher, per the comment above). In that
+      // case we must NOT call /account/create-account/ again — doing so
+      // would hit a duplicate-username error even though the teacher was
+      // created successfully, which is exactly the false-positive error
+      // we were seeing.
+      const accountAlreadyCreated = !!teacherData.account;
+
+      if (!accountAlreadyCreated) {
+        const accountRes = await apiFetch("/account/create-account/", {
+          method: "POST",
+          body: {
+            person_type : "employee",
+            person_id   : employee_id,
+            role        : "teacher",
+            username    : form.username,
+            password    : form.password,
+          },
+        });
+
+        if (!accountRes.ok) {
+          const errData = await accountRes.json().catch(() => ({}));
+          const mapped = mapServerErrors(errData, ["username", "password"]);
+          setErrors(mapped);
+          return;
+        }
       }
 
       setSuccess(true);
@@ -292,7 +347,9 @@ const Add_teacher = () => {
           </div>
         )}
 
-        {/* Error banner */}
+        {/* Error banner — only shown for errors we couldn't attribute to a
+            specific field; field-level errors (username, email, phone...)
+            render inline under their input instead. */}
         {errors.error && (
           <div style={{ background: "#fef2f2", color: "#991b1b", padding: "12px 20px", borderRadius: "10px", fontSize: "14px" }}>
             {errors.error}

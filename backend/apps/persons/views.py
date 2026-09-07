@@ -67,17 +67,20 @@ class StudentViewSet(viewsets.ViewSet):
         return Response(serializer.data)
 
     def create(self, request):
-        serializer = StudentCreateSerializer(data=request.data)
-        if serializer.is_valid():
+     serializer = StudentCreateSerializer(data=request.data)
+     if serializer.is_valid():
+        try:
             student = serializer.save()
-            return Response(
-                StudentSerializer(student).data,
-                status=status.HTTP_201_CREATED
-            )
+        except ValueError as exc:
+            return Response({'error': str(exc)}, status=status.HTTP_400_BAD_REQUEST)
         return Response(
-            serializer.errors,
-            status=status.HTTP_400_BAD_REQUEST
+            StudentSerializer(student).data,
+            status=status.HTTP_201_CREATED
         )
+     return Response(
+        serializer.errors,
+        status=status.HTTP_400_BAD_REQUEST
+     )
 
     def update(self, request, pk=None):
         student = Student.objects.select_related('person').filter(pk=pk).first()
@@ -186,17 +189,20 @@ class EmployeeViewSet(viewsets.ViewSet):
         return Response(serializer.data)
 
     def create(self, request):
-        serializer = EmployeeCreateSerializer(data=request.data)
-        if serializer.is_valid():
+     serializer = EmployeeCreateSerializer(data=request.data)
+     if serializer.is_valid():
+        try:
             employee = serializer.save()
-            return Response(
-                EmployeeSerializer(employee).data,
-                status=status.HTTP_201_CREATED
-            )
+        except ValueError as exc:
+            return Response({'error': str(exc)}, status=status.HTTP_400_BAD_REQUEST)
         return Response(
-            serializer.errors,
-            status=status.HTTP_400_BAD_REQUEST
+            EmployeeSerializer(employee).data,
+            status=status.HTTP_201_CREATED
         )
+     return Response(
+        serializer.errors,
+        status=status.HTTP_400_BAD_REQUEST
+     )
 
     def retrieve(self, request, pk=None):
         employee = Employee.objects.select_related('person', 'position').filter(pk=pk).first()
@@ -279,17 +285,20 @@ class TeacherViewSet(viewsets.ViewSet):
       return Response(serializer.data)
 
     def create(self, request):
-        serializer = TeacherCreateSerializer(data=request.data)
-        if serializer.is_valid():
+     serializer = TeacherCreateSerializer(data=request.data)
+     if serializer.is_valid():
+        try:
             teacher = serializer.save()
-            return Response(
-                TeacherSerializer(teacher).data,
-                status=status.HTTP_201_CREATED
-            )
+        except ValueError as exc:
+            return Response({'error': str(exc)}, status=status.HTTP_400_BAD_REQUEST)
         return Response(
-            serializer.errors,
-            status=status.HTTP_400_BAD_REQUEST
+            TeacherSerializer(teacher).data,
+            status=status.HTTP_201_CREATED
         )
+     return Response(
+        serializer.errors,
+        status=status.HTTP_400_BAD_REQUEST
+     )
 
     def retrieve(self, request, pk=None):
         teacher = Teacher.objects.select_related(

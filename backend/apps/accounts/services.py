@@ -1,7 +1,7 @@
 # services.py
 
 from django.contrib.auth.hashers import check_password, make_password
-from django.db import models, transaction
+from django.db import models, transaction, IntegrityError
 from .models import Account, Role
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.exceptions import TokenError
@@ -66,7 +66,7 @@ def reset_password(account_id: int, old_password: str, new_password: str) -> Non
 
 # acc management
 
-def create_account(person, role_name: str,  username: str, raw_password: str) -> Account:
+def create_account(person, role_name: str, username: str, raw_password: str) -> Account:
     from apps.persons.models import Student, Employee
 
     try:
@@ -74,19 +74,16 @@ def create_account(person, role_name: str,  username: str, raw_password: str) ->
     except Role.DoesNotExist:
         raise ValueError("Invalid role.")
 
-    #
     if isinstance(person, Student) and role.name != 'student':
         raise ValueError("Student must have 'student' role.")
     if isinstance(person, Employee) and role.name == 'student':
         raise ValueError("Employee cannot have 'student' role.")
-
 
     hashed_password = make_password(raw_password)
 
     with transaction.atomic():
         kwargs = dict(
             username=username,
-            
             role=role,
             password_hash=hashed_password,
         )
@@ -98,32 +95,14 @@ def create_account(person, role_name: str,  username: str, raw_password: str) ->
         else:
             raise ValueError(f"Unsupported person type: {type(person)}")
 
-        return Account.objects.create(**kwargs)
+        try:
+            return Account.objects.create(**kwargs)
+        except IntegrityError as e:
+            if "username" in str(e):
+                raise ValueError("This username already exists.")
+            raise
 
-
-def deactivate_account(account_id: int) -> Account:
-    return _set_status(account_id, 'inactive')
-
-
-def activate_account(account_id: int) -> Account:
-    return _set_status(account_id, 'active')
-
-
-def get_account_by_person(person_id: int) -> Account:
-    account = (
-        Account.objects
-        .select_related('role', 'student', 'employee')
-        .filter(
-            models.Q(student_id=person_id) |
-            models.Q(employee_id=person_id)
-        )
-        .first()
-    )
-
-    if not account:
-        raise ValueError(f"No account found for person_id={person_id}.")
-
-    return account
+   
 
 
 def _set_status(account_id: int, new_status: str) -> Account:
